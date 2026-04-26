@@ -1,9 +1,0 @@
-teacher assesment2, 
-ayudame a continuar con un proyecto. 
-te voy a contar de que trata pero por favor no rellenes el buffer con tus comentarios. 
-1.solo ayduame pero paso por paso, no me des dos pasos al mismo tiempo, 
-2. espera a que te diga "listo" para darme el sigueinte paso- MUY IMPORTANTE
-
-
-token Github :
-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
