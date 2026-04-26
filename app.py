@@ -71,24 +71,32 @@ def login():
 
     return render_template('login.html')
 
-
-'''def get_db_connection():
-    conn = psycopg2.connect(
-        host="localhost",
-        database="BDTeacherAssessment",
-        user="postgres",
-        password="1234"
-    )
-    return conn'''
-
+#def get_db_connection():
+#    conn = psycopg2.connect(
+#       dbname="BDTeacherAssesment",
+#        user="postgres",
+##        password="1234",   # ⚠️ usa algo simple temporalmente
+#        host="127.0.0.1",
+#        port="5432"
+#   )
+#   return conn
+ 
 def get_db_connection():
-    conn = psycopg2.connect(
-        dbname="BDTeacherAssesment",
-        user="postgres",
-        password="1234",   # ⚠️ usa algo simple temporalmente
-        host="127.0.0.1",
-        port="5432"
-    )
+    database_url = os.getenv("DATABASE_URL")
+
+    if database_url:
+        # 👉 PRODUCCIÓN (Render)
+        conn = psycopg2.connect(database_url, sslmode='require')
+    else:
+        # 👉 LOCAL (tu PC)
+        conn = psycopg2.connect(
+            dbname="BDTeacherAssesment",
+            user="postgres",
+            password="1234",
+            host="127.0.0.1",
+            port="5432"
+        )
+
     return conn
 
 @app.route('/register', methods=['GET', 'POST'])
