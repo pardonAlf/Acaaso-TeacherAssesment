@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Crear Quiz</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* 🎯 BASE */
+body {
+    background: #f5f7fa;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: #2e2e2e;
+}
+
+/* 🎯 CARD */
+.card {
+    border: 1px solid #e4e7ec;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: none;
+}
+
+/* 🎯 HEADER */
+.header-quiz {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* 🎯 INPUT TÍTULO */
+.titulo-input {
+    border: none;
+    border-bottom: 1px solid #d0d5dd;
+    font-size: 16px;
+    font-weight: 500;
+    background: transparent;
+    width: 260px;
+}
+
+.titulo-input:focus {
+    outline: none;
+    border-color: #2563eb;
+}
+
+/* 🎯 BOTONES */
+.btn-sm-custom {
+    font-size: 11px;
+    padding: 5px 10px;
+}
+
+/* estilos tipo SAP / enterprise */
+.btn-vf {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.btn-multi {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.btn-ia {
+    background: #fff3cd;
+    color: #8a6d3b;
+}
+
+.btn-dark {
+    background: #1f2937;
+    color: white;
+}
+
+/* 🎯 INPUTS */
+input.form-control {
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    font-size: 12px;
+    height: 32px;
+}
+
+/* 🎯 TABLA */
+.table th {
+    font-size: 10px;
+}
+
+.table td {
+    font-size: 11px;
+    vertical-align: middle;
+}
+
+/* 🎯 BADGES */
+.badge-tipo {
+    font-size: 10px;
+    padding: 3px 6px;
+    border-radius: 4px;
+}
+
+.vf {
+    background: #ecfdf3;
+    color: #027a48;
+}
+
+.mc {
+    background: #eef4ff;
+    color: #3538cd;
+}
+
+/* ===================================== */
+/* 🔥 MODAL NIVEL SAAS */
+/* ===================================== */
+
+.modal-content {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+}
+
+.modal-header {
+    border-bottom: 1px solid #eaecf0;
+    padding: 12px 16px;
+}
+
+.modal-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #344054;
+}
+
+.modal-body {
+    padding: 16px;
+}
+
+.modal-footer {
+    border-top: 1px solid #eaecf0;
+    padding: 10px 16px;
+}
+
+/* inputs dentro del modal */
+.modal input,
+.modal textarea,
+.modal select {
+    font-size: 11px;
+    border-radius: 6px;
+}
+
+.modal label {
+    font-size: 11px;
+    color: #667085;
+    margin-bottom: 4px;
+}
+
+/* inputs */
+.modal input,
+.modal textarea {
+    border: 1px solid #d0d5dd;
+    padding: 6px 10px;
+}
+
+/* focus limpio */
+.modal input:focus,
+.modal textarea:focus {
+    border-color: #2563eb;
+    box-shadow: none;
+}
+
+/* spacing elegante en opciones */
+.opcion-edit {
+    margin-bottom: 6px;
+}
+
+/* 🔥 OVERLAY (no mueve layout) */
+#overlayLoader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(2px);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    z-index: 9999;
+}
+
+/* caja centrada */
+.loader-box {
+    background: white;
+    padding: 16px 20px;
+    border-radius: 8px;
+    width: 300px;
+
+    border: 1px solid #e4e7ec;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+.loader-text {
+    font-size: 12px;
+    margin-bottom: 8px;
+    color: #344054;
+}
+
+/* barra */
+.progress {
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background: #2563eb;
+    transition: width 0.3s ease;
+}
+    </style>
+</head>
+
+<body>
+
+    <form method="POST" id="formQuiz">
+
+        <div class="container mt-4">
+
+            <!-- HEADER -->
+            <div class="card p-3 mb-3 shadow-sm">
+                <div class="header-quiz">
+                    <input type="text" id="titulo" name="titulo" class="titulo-input w-50" placeholder="Título del Quiz">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="multiple_intentos" id="multiple_intentos" checked>
+                        <label class="form-check-label" for="multiple_intentos">
+                            Permitir múltiples intentos
+                        </label>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-success btn-sm-custom" onclick="crearPreguntaVF()">+ VF</button>
+                        <button type="button" class="btn btn-primary btn-sm-custom" onclick="crearPreguntaMultiple()">+ Múltiple</button>
+                        <input type="text" id="promptIA" class="form-control form-control-sm" placeholder="Ej: 5 preguntas VF de Naruto">
+                        <button type="button" class="btn btn-warning btn-sm-custom" onclick="generarIA()"">Generar IA</button>
+                        <input type="file" id="archivoExamen" class="form-control form-control-sm">
+                        <button type="button" class="btn btn-dark btn-sm-custom" onclick="subirExamen()">
+                            Subir examen
+                        </button>
+                        <div id="loaderIA" style="display:none;" class="mt-3">
+
+                            <div class="alert alert-info py-2 mb-2">
+                                Procesando examen con IA...
+                            </div>
+
+                            <div class="progress" style="height: 8px;">
+                                <div id="barraProgreso" 
+                                    class="progress-bar progress-bar-striped progress-bar-animated" 
+                                    style="width: 100%">
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LISTA -->
+            <div class="card shadow-sm">
+                <div class="card-body p-2">
+
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width:40px">#</th>
+                                <th style="width:90px">Tipo</th>
+                                <th>Pregunta</th>
+                                <th>Detalle</th>
+                                <th style="width:150px">Respuesta</th>
+                                <th style="width:120px">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaPreguntas"></tbody>
+                    </table>
+
+                </div>
+            </div>
+
+            <!-- GUARDAR -->
+            <div class="mt-3 text-end">
+                <button type="button" class="btn btn-dark btn-sm-custom" onclick="guardarQuiz()">Guardar Quiz</button>
+            </div>
+
+        </div>
+
+    </form>
+    <!-- 🔥 MODAL AQUÍ (FUERA del form, pero dentro del body) -->
+    <div class="modal fade" id="modalPregunta" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+        <div class="modal-header">
+            <h5 class="modal-title">Editar Pregunta</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body" id="contenidoModal">
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm-custom" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary btn-sm-custom" onclick="guardarEdicion()">Guardar</button>
+        </div>
+
+        </div>
+    </div>
+    </div>
+
+<script>
+    let preguntas = [];
+    let contador = 1;
+    let preguntaEditando = null;
+ 
+function crearPreguntaVF() {
+    preguntas.push({
+        id: contador++,
+        tipo: "vf",
+        texto: "Nueva pregunta VF",
+        correcta: "Verdadero",
+        explicacion: ""
+    });
+
+    renderTabla();
+}
+
+function crearPreguntaMultiple() {
+    preguntas.push({
+        id: contador++,
+        tipo: "multiple",
+        texto: "Nueva pregunta múltiple",
+        opciones: ["Opción 1", "Opción 2", "Opción 3", "Opción 4", "Opción 5"],
+        correcta: "Opción 1"
+    });
+
+    renderTabla();
+}
+ 
+function renderTabla() {
+    let tbody = document.getElementById("tablaPreguntas");
+    tbody.innerHTML = "";
+
+    preguntas.forEach((p, index) => {
+
+        let tipoBadge = p.tipo === "vf"
+            ? `<span class="badge-tipo vf">VF</span>`
+            : `<span class="badge-tipo mc">MULTI</span>`;
+
+        let detalle = "";
+
+        if (p.tipo === "vf") {
+            detalle = "Verdadero / Falso";
+        } else {
+            detalle = p.opciones.join("<br>");
+        }
+
+       let fila = `
+            <tr>
+                <td style="display:none;">
+                    <input type="hidden" name="explicacion_${index + 1}" value="${p.explicacion}">
+                </td>
+
+                <td>${index + 1}</td>
+                <td>${tipoBadge}</td>
+                <td>${p.texto}</td>
+                <td>${detalle}</td>
+                <td>
+                    <b>${["A","B","C","D","E"][parseInt(p.correcta) - 1]}</b>
+
+                    <input type="hidden" name="correcta_${index + 1}" value="${p.correcta}">
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="editarPregunta(${p.id})">Editar</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarPregunta(${p.id})">X</button>
+                </td>
+            </tr>
+        `;
+
+        tbody.insertAdjacentHTML("beforeend", fila);
+    });
+}
+
+function eliminarPregunta(id) {
+    preguntas = preguntas.filter(p => p.id !== id);
+    renderTabla();
+}
+
+ 
+function editarPregunta(id) {
+    let pregunta = preguntas.find(p => p.id === id);
+    preguntaEditando = pregunta;
+
+    let html = `
+        <label>Texto de la pregunta</label>
+        <input type="text" id="edit_texto" class="form-control mb-2" value="${pregunta.texto}">
+    `;
+
+    if (pregunta.tipo === "vf") {
+        html += `
+            <label>Respuesta correcta</label>
+            <select id="edit_correcta" class="form-control mb-2">
+                <option ${pregunta.correcta === "Verdadero" ? "selected" : ""}>Verdadero</option>
+                <option ${pregunta.correcta === "Falso" ? "selected" : ""}>Falso</option>
+            </select>
+
+            <label>Explicación</label>
+            <textarea id="edit_explicacion" class="form-control">${pregunta.explicacion || ""}</textarea>
+        `;
+    } else {
+        let letras = ["A", "B", "C", "D", "E"];
+
+        pregunta.opciones.forEach((op, i) => {
+            html += `
+                <div class="d-flex align-items-center mb-1">
+                    <span style="width:20px; font-size:12px; color:#6c757d;">
+                        ${letras[i]}.
+                    </span>
+                    <input type="text" class="form-control opcion-edit" value="${op}">
+                </div>
+            `;
+        });
+
+        html += `
+            <label>Respuesta correcta</label>
+            <select id="edit_correcta" class="form-control">
+                ${pregunta.opciones.map(op => `
+                    <option ${op === pregunta.correcta ? "selected" : ""}>${op}</option>
+                `).join("")}
+            </select>
+        `;
+    }
+
+    document.getElementById("contenidoModal").innerHTML = html;
+
+    let modal = new bootstrap.Modal(document.getElementById('modalPregunta'));
+    modal.show();
+}
+ 
+ 
+function guardarEdicion() {
+    if (!preguntaEditando) return;
+
+    preguntaEditando.texto = document.getElementById("edit_texto").value;
+
+    if (preguntaEditando.tipo === "vf") {
+        preguntaEditando.correcta = document.getElementById("edit_correcta").value;
+        preguntaEditando.explicacion = document.getElementById("edit_explicacion").value;
+    } else {
+        let opciones = document.querySelectorAll(".opcion-edit");
+        preguntaEditando.opciones = Array.from(opciones).map(o => o.value);
+        preguntaEditando.correcta = document.getElementById("edit_correcta").value;
+    }
+
+    renderTabla();
+
+    bootstrap.Modal.getInstance(document.getElementById('modalPregunta')).hide();
+}
+ 
+function guardarQuiz() {
+
+    let form = document.getElementById("formQuiz");
+
+    // limpiar inputs previos
+    document.querySelectorAll(".hidden-input").forEach(e => e.remove());
+
+    // título
+    let titulo = document.getElementById("titulo").value;
+
+    let inputTitulo = document.createElement("input");
+    inputTitulo.type = "hidden";
+    inputTitulo.name = "titulo";
+    inputTitulo.value = titulo;
+    inputTitulo.classList.add("hidden-input");
+    form.appendChild(inputTitulo);
+
+    // preguntas
+    preguntas.forEach((p, index) => {
+
+        let num = index + 1;
+
+        agregarInput(form, `pregunta_${num}`, p.texto);
+        agregarInput(form, `tipo_${num}`, p.tipo);
+
+        if (p.tipo === "vf") {
+
+            agregarInput(form, `correcta_${num}`, p.correcta);
+            agregarInput(form, `explicacion_${num}`, p.explicacion || "");
+
+        } else {
+
+            p.opciones.forEach((op, i) => {
+                agregarInput(form, `opcion_${num}_${i+1}`, op);
+            });
+
+            agregarInput(form, `correcta_${num}`, p.correcta);
+            agregarInput(form, `explicacion_${num}`, p.explicacion || "");
+        }
+    });
+
+    form.submit();
+}
+
+function agregarInput(form, name, value) {
+    let input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = value;
+    input.classList.add("hidden-input");
+    form.appendChild(input);
+}
+
+function cargarDesdeIA(data) {
+    preguntas = data.map((p, index) => {
+
+        console.log("DEBUG IA:", p.opciones, p.correcta);
+
+        return {
+            id: contador++,
+            tipo: p.tipo,
+            texto: p.texto,
+            correcta: p.tipo === "multiple"
+                ? (
+                    ["A","B","C","D","E"].includes(p.correcta)
+                        ? (["A","B","C","D","E"].indexOf(p.correcta) + 1).toString()
+                        : (p.opciones.map(o => o.toString()).indexOf(p.correcta.toString()) + 1).toString()
+                )
+                : p.correcta,
+            explicacion: p.explicacion || "",
+            opciones: p.opciones || []
+        };
+    });
+
+    renderTabla();
+}
+
+
+async function generarIA() {
+
+    let prompt = document.getElementById("promptIA").value;
+
+    if (!prompt) {
+        alert("Escribe algo");
+        return;
+    }
+
+    let response = await fetch("/generar_quiz_ia", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ prompt: prompt })
+    });
+
+    let data = await response.json();
+
+    cargarDesdeIA(data);
+}
+
+async function subirExamen() {
+
+    let fileInput = document.getElementById("archivoExamen");
+
+    if (fileInput.files.length === 0) {
+        alert("Selecciona un archivo");
+        return;
+    }
+
+    // 🔥 mostrar overlay
+    document.getElementById("overlayLoader").style.display = "flex";
+
+    let barra = document.getElementById("barraReal");
+    barra.style.width = "10%";
+
+    let fakeProgress = setInterval(() => {
+        let current = parseInt(barra.style.width);
+        if (current < 90) {
+            barra.style.width = (current + 10) + "%";
+        }
+    }, 300);
+
+    let formData = new FormData();
+    formData.append("archivo", fileInput.files[0]);
+
+    try {
+        let response = await fetch("/procesar_examen", {
+            method: "POST",
+            body: formData
+        });
+
+        let data = await response.json();
+
+        if (!response.ok) {
+            console.error("ERROR BACKEND:", data);
+            alert("Error IA: revisa consola");
+            document.getElementById("overlayLoader").style.display = "none";
+            return;
+        }
+
+        barra.style.width = "100%";
+
+        setTimeout(() => {
+            document.getElementById("overlayLoader").style.display = "none";
+            cargarDesdeIA(data);
+        }, 300);
+
+    } catch (error) {
+        console.error(error);
+        alert("Error conexión");
+        document.getElementById("overlayLoader").style.display = "none";
+    }
+        clearInterval(fakeProgress);
+    }
+
+
+ 
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <div id="overlayLoader" style="display:none;">
+        <div class="loader-box">
+            <div class="loader-text">Procesando examen...</div>
+            <div class="progress">
+                <div id="barraReal" class="progress-bar"></div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

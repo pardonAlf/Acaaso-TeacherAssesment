@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Sistema{% endblock %}</title>
+    <link rel="stylesheet" href="../static/css/estilos.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="dashboard">
+
+<!-- 🔥 NAVBAR GLOBAL -->
+<nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
+ 
+  <div class="container-fluid">
+
+    <a class="navbar-brand fw-bold" href="#">TeacherAssessment</a>
+
+    <!-- botón responsive -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto align-items-lg-center">
+
+        <li class="nav-item">
+          <a class="nav-link px-3" href="/dashboard_profesor">Home</a>
+        </li>
+
+        <!-- Mantenimientos -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle px-3" href="#" data-bs-toggle="dropdown">
+            Mantenimientos
+          </a>
+          <ul class="dropdown-menu dropdown-menu-dark shadow">
+            <li><a class="dropdown-item" href="/salones">Salones</a></li>
+            <li><a class="dropdown-item" href="/asignar_quiz">Asignar Quiz</a></li>
+          </ul>
+        </li>
+
+        <!-- Procesos -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle px-3" href="#" data-bs-toggle="dropdown">
+            Procesos
+          </a>
+          <ul class="dropdown-menu dropdown-menu-dark shadow">
+            <li><a class="dropdown-item" href="/dashboard_profesor">Quizzes</a></li>
+          </ul>
+        </li>
+
+        <!-- Cosultas -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle px-3" href="#" data-bs-toggle="dropdown">
+            Consultas
+          </a>
+          <ul class="dropdown-menu dropdown-menu-dark shadow">
+            <li><a class="dropdown-item" href="/resultados_salon">Salón</a></li>
+          </ul>
+        </li>
+
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+<!-- 🔥 CONTENIDO -->
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+window.addEventListener("scroll", function() {
+    const nav = document.querySelector(".navbar-custom");
+
+    if (window.scrollY > 10) {
+        nav.classList.add("scrolled");
+    } else {
+        nav.classList.remove("scrolled");
+    }
+});
+</script>
+</body>
+</html>

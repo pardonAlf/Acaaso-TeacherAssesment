@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultados</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+       
+        body {  
+        font-size: 14px;
+        }
+        body {
+        font-family: 'Inter', system-ui, sans-serif;
+        }
+        body {
+        background: #d2dae9; /* gris sólido elegante */
+        }
+        body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.02);
+        pointer-events: none;
+        }
+
+        .contenedor {
+            max-width: 1200px;
+            margin: auto;
+        }
+        .container-fluid {
+        background: #d2dae9; 
+        margin-top: 20px;
+        padding-left: 40px;
+        padding-right: 40px;
+        }
+
+        .card {
+        background: #ffffff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0; /* 👈 esto evita que desaparezca */
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        }
+
+        .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
+
+        .titulo {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+       /* TABLA PRO HD */
+        .table {
+        background: #ffffff;
+        border-radius: 10px;
+        overflow: hidden;
+        font-size: 12.5px; /* 👈 más compacto */
+        }
+
+        /* HEADER */
+        .table th {
+        background-color: #e5e7eb !important; /* 👈 gris más oscuro */
+        color: #374151;
+        font-weight: 600;
+        border-bottom: 2px solid #cbd5e1;
+        padding: 6px 8px; /* 👈 más compacto */
+        }
+
+        /* CELDAS */
+        .table td {
+        color: #111827;
+        border-bottom: 1px solid #d1d5db; /* 👈 líneas visibles */
+        padding: 5px 8px; /* 👈 filas más pegadas */
+        line-height: 1.2; /* 👈 compacta */
+        }
+
+        /* FILAS ALTERNAS (MUY IMPORTANTE EN 4K) */
+        .table tbody tr:nth-child(even) {
+        background-color: #f3f4f6; /* 👈 gris más marcado */
+        }
+
+        /* HOVER MÁS FUERTE */
+        .table tbody tr:hover {
+        background-color: #dbeafe;
+        }
+        .badge {
+            font-size: 12px;
+            padding: 4px 8px;
+        }
+
+        .nota-alta {
+        background-color: #dcfce7;
+        color: #166534;
+        }
+
+        .nota-media {
+        background-color: #fef9c3;
+        color: #854d0e;
+        }
+
+        .nota-baja {
+        background-color: #fee2e2;
+        color: #991b1b;
+        }
+
+         
+        .row > div {
+        margin-bottom: 20px;
+        }
+
+        h6 {
+        font-weight: 600;
+        color: #374151;
+        }
+
+        canvas {
+        margin-top: 10px;
+        }
+        .card canvas {
+        max-height: 220px;
+        }
+
+        .col-md-5 .card {
+        height: 100%;
+        }
+
+        /* DESKTOP (normal) */
+        .dashboard-fixed {
+        display: flex;
+        gap: 20px;
+        align-items: stretch;
+        }
+
+        /* IZQUIERDA */
+        .left-panel {
+        width: 35%;
+        min-width: 320px;
+        }
+
+        /* DERECHA */
+        .right-panel {
+        width: 65%;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        }
+
+        /* FILAS DERECHA */
+        .right-top,
+        .right-bottom {
+        display: flex;
+        gap: 15px;
+        }
+
+        .right-top > div,
+        .right-bottom > div {
+        flex: 1;
+        }
+
+        /* 🔥 SOLO en pantallas pequeñas cambia */
+        @media (max-width: 992px) {
+            .dashboard-fixed {
+                flex-direction: column;
+            }
+
+            .left-panel,
+            .right-panel {
+                width: 100%;
+            }
+
+            .right-top,
+            .right-bottom {
+                flex-direction: column;
+            }
+        }
+                
+
+       
+        .card.mb-4 {
+        background: #ffffff;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        }
+
+        .card.mb-4 h4 {
+        color: #1f2937;
+        font-weight: 600;
+        }
+        .card.mb-4::before {
+        content: "";
+        display: block;
+        height: 4px;
+        background: #2563eb;
+        border-radius: 14px 14px 0 0;
+        }
+        @media (min-resolution: 2dppx) {
+            body {
+                background: linear-gradient(135deg, #728bac, #114180);
+            }
+        }
+        #pdf-content {
+        background: white;
+        }
+
+        @media print {
+
+            body * {
+                visibility: hidden;
+            }
+
+            #pdf-export, #pdf-export * {
+                visibility: visible;
+            }
+
+            #pdf-export {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+
+        }
+         
+    </style>
+</head>
+
+<body>
+
+<div id="pdf-content">
+    
+
+<div class="container-fluid mt-4">
+    <div class="card mb-4 p-3 d-flex justify-content-between align-items-center" style="flex-direction: row; margin-top:'20px'">   
+        <h4 style="margin:0; font-weight:600; color:#2c3e50;">
+            📊 QUIZ {{ titulo_quiz }}
+        </h4>
+        <div>
+            <button onclick="generarPDF()" class="btn btn-sm btn-outline-primary me-2">
+                📄 PDF
+            </button>
+            <a href="/" class="btn btn-sm btn-outline-secondary">Volver</a>
+        </div>
+    </div>
+    <div class="dashboard-fixed">
+
+        <!-- IZQUIERDA -->
+        <div class="left-panel">
+            <div class="card p-3 h-100">
+
+                <!-- HEADER -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 style="margin:0;">📊 Lista de alumnos</h6>
+                    <span class="badge bg-secondary">{{ resultados|length }} alumnos</span>
+                </div>
+
+                <!-- TABLA -->
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>DNI</th>
+                            <th>Alumno</th>
+                            <th>✔</th>
+                            <th>Total</th>
+                            <th>Nota</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in resultados %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ r[0] }}</td>
+                            <td>{{ r[1] }} {{ r[2] }}</td>
+                            <td>{{ r[3] }}</td>
+                            <td>{{ r[4] }}</td>
+                            <td>
+                                {% if r[5] >= 16 %}
+                                    <span class="badge nota-alta">{{ r[5] }}</span>
+                                {% elif r[5] >= 11 %}
+                                    <span class="badge nota-media">{{ r[5] }}</span>
+                                {% else %}
+                                    <span class="badge nota-baja">{{ r[5] }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+
+        <!-- DERECHA -->
+        <div class="right-panel">
+
+            <div class="right-top">
+                <div class="card p-3 w-50">
+                    <h6>Top 10 Alumnos</h6>
+                    <canvas id="graficoTop"></canvas>
+                </div>
+
+                <div class="card p-3 w-50">
+                    <h6>Preguntas más falladas</h6>
+                    <canvas id="graficoPreguntas"></canvas>
+                </div>
+            </div>
+
+            <div class="right-bottom">
+                <div class="card p-3 w-50">
+                    <h6>Aprobados vs Desaprobados</h6>
+                    <canvas id="graficoPie"></canvas>
+                </div>
+
+                <div class="card p-3 w-50">
+                    <h6>Distribución de notas</h6>
+                    <canvas id="graficoNotas"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+    
+
+</div>
+ 
+<div id="pdf-export" style="
+    display:none;
+    background:white;
+    width:794px;           /* A4 */
+    margin:auto;
+    padding:40px 50px;
+    font-family: Arial;
+">
+
+    <!-- 🔹 HEADER -->
+    <div style="
+        display:flex;
+        justify-content:space-between;
+        font-size:12px;
+        color:#6b7280;
+        margin-bottom:10px;
+    ">
+        <div>
+            <strong style="font-size:14px; color:#111827;">ACAASO</strong><br>
+            Sistema de Evaluación
+        </div>
+
+        <div style="text-align:right;">
+            Fecha: {{ now().strftime('%d/%m/%Y') if now else '' }}<br>
+            Reporte académico
+        </div>
+    </div>
+
+    <hr style="margin:15px 0 25px 0;">
+
+    <!-- 🔹 TÍTULO -->
+    <h1 style="
+        text-align:center;
+        font-size:22px;
+        margin-bottom:5px;
+        color:#111827;
+    ">
+        QUIZ {{ titulo_quiz }}
+    </h1>
+
+    <p style="
+        text-align:center;
+        font-size:13px;
+        color:#6b7280;
+        margin-bottom:25px;
+    ">
+        Reporte de evaluación
+    </p>
+
+    <!-- 🔹 TABLA GRANDE (PROTAGONISTA) -->
+    <div style="margin-bottom:40px;">
+
+        <table style="
+            width:100%;
+            border-collapse: collapse;
+            border: 1px soldi black;
+            font-size:15px;  /* 👈 MÁS GRANDE */
+        ">
+            <thead>
+                <tr style="background:#9ca3af; color:white;">
+                    <th style="padding:10px; border:1px solid #cbd5e1;">#</th>
+                    <th style="padding:10px; border:1px solid #cbd5e1;">DNI</th>
+                    <th style="padding:10px; border:1px solid #cbd5e1;">Alumno</th>
+                    <th style="padding:10px; border:1px solid #cbd5e1;">Correctas</th>
+                    <th style="padding:10px; border:1px solid #cbd5e1;">Total</th>
+                    <th style="padding:10px; border:1px solid #cbd5e1;">Nota</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for r in resultados %}
+                <tr>
+                    <td style="padding:8px; border:1px solid #e5e7eb; text-align:center;">
+                        {{ loop.index }}
+                    </td>
+
+                    <td style="padding:8px; border:1px solid #e5e7eb;">
+                        {{ r[0] }}
+                    </td>
+
+                    <td style="padding:8px; border:1px solid #e5e7eb;">
+                        {{ r[1] }} {{ r[2] }}
+                    </td>
+
+                    <td style="padding:8px; border:1px solid #e5e7eb; text-align:center;">
+                        {{ r[3] }}
+                    </td>
+
+                    <td style="padding:8px; border:1px solid #e5e7eb; text-align:center;">
+                        {{ r[4] }}
+                    </td>
+
+                    <td style="
+                        padding:8px;
+                        border:1px solid #e5e7eb;
+                        text-align:center;
+                        font-weight:bold;
+                        font-size:15px;
+                        color:#1d4ed8;
+                    ">
+                        {{ r[5] }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    </div>
+
+    <!-- 🔹 GRÁFICOS (MÁS COMPACTOS) -->
+    <div>
+
+        <h3 style="
+            text-align:center;
+            font-size:15px;
+            margin-bottom:20px;
+            color:#374151;
+        ">
+            Análisis gráfico
+        </h3>
+
+        <table style="width:100%;">
+            <tr>
+                <td style="padding:10px;">
+                    <img id="pdfTop" style="width:100%;">
+                </td>
+                <td style="padding:10px;">
+                    <img id="pdfPreguntas" style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:10px;">
+                    <img id="pdfPie" style="width:100%;">
+                </td>
+                <td style="padding:10px;">
+                    <img id="pdfNotas" style="width:100%;">
+                </td>
+            </tr>
+        </table>
+
+    </div>
+
+</div>
+<script>
+    const topLabels = {{ top_nombres | tojson }};
+    const topData = {{ top_puntajes | tojson }};
+ 
+    const coloresAzules = [
+        "#93c5fd",
+        "#60a5fa",
+        "#3b82f6",
+        "#2563eb",
+        "#1d4ed8",
+        "#1e40af",
+        "#1e3a8a",
+        "#172554"
+    ];
+
+    new Chart(document.getElementById('graficoTop'), {
+        type: 'bar',
+        data: {
+            labels: topLabels,
+            datasets: [{
+                label: 'Correctas',
+                data: topData,
+                backgroundColor: coloresAzules
+            }]
+        },
+        options: {
+            indexAxis: 'y'
+        }
+    });
+
+    const preguntasLabels = {{ preguntas_labels | safe }};
+    const preguntasData = {{ preguntas_fallos | safe }};
+    const preguntasTooltips = {{ preguntas_tooltips | tojson }};
+
+    const coloresRojos = [
+        "#fca5a5",
+        "#f87171",
+        "#ef4444",
+        "#dc2626",
+        "#b91c1c",
+        "#991b1b",
+        "#7f1d1d",
+        "#450a0a"
+    ];
+
+    new Chart(document.getElementById('graficoPreguntas'), {
+        type: 'bar',
+        data: {
+            labels: preguntasLabels,
+            datasets: [{
+                label: 'Errores',
+                data: preguntasData,
+                backgroundColor: coloresRojos
+            }]
+        },
+        options: {
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        title: function(context) {
+                            const index = context[0].dataIndex;
+                            return preguntasTooltips[index]; // 👈 muestra texto real
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    const aprobadosdata = {{ aprobados_data | safe }};
+
+    new Chart(document.getElementById('graficoPie'), {
+        type: 'pie',
+        data: {
+            labels: ['Excelente','MuyBien','Bien','Regular','Mal'],
+            datasets: [{
+                data: aprobadosdata,
+                backgroundColor: [
+                "#22c55e",  // verde
+                "#34cf15",  // verde
+                "#c9eb0d",  // verde
+                "#f8b90d",  // verde
+                "#ef4444"   // rojo
+                ]
+            }]
+        }
+    });
+
+    const grises = [
+        "#9ca3af",
+        "#6b7280",
+        "#4b5563",
+        "#374151"
+    ];
+
+    const notasdata = {{ notas_data | safe }};
+    const notaslabels = {{ notas_labels | safe }};
+
+    new Chart(document.getElementById('graficoNotas'), {
+        type: 'bar',
+        data: {
+            labels: notaslabels,
+            datasets: [{
+                label: 'Cantidad',
+                data: notasdata,
+                backgroundColor: grises
+            }]
+        }
+    });
+ 
+</script> 
+<script>
+async function generarPDF() {
+
+    // 🔥 convertir gráficos
+    document.getElementById("pdfTop").src =
+        document.getElementById("graficoTop").toDataURL();
+
+    document.getElementById("pdfPreguntas").src =
+        document.getElementById("graficoPreguntas").toDataURL();
+
+    document.getElementById("pdfPie").src =
+        document.getElementById("graficoPie").toDataURL();
+
+    document.getElementById("pdfNotas").src =
+        document.getElementById("graficoNotas").toDataURL();
+
+    const pdfDiv = document.getElementById("pdf-export");
+    pdfDiv.style.display = "block";
+
+    const canvas = await html2canvas(pdfDiv, { scale: 2 });
+
+    pdfDiv.style.display = "none";
+
+    const imgData = canvas.toDataURL("image/png");
+
+    // 🔥 VISOR (separado del documento)
+    const ventana = window.open("", "_blank");
+
+    ventana.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {
+                    margin:0;
+                    background:#e5e7eb;
+                    text-align:center;
+                    font-family:Arial;
+                }
+
+                .toolbar {
+                    background:white;
+                    padding:8px;
+                    border-bottom:1px solid #ddd;
+                }
+
+                .paper {
+                    width:794px;
+                    margin:20px auto;
+                    background:white;
+                    padding:20px;
+                    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+                }
+
+                img {
+                    width:100%;
+                }
+            </style>
+        </head>
+        <body>
+
+            <!-- 👇 DOCUMENTO LIMPIO -->
+            <div class="paper">
+                <img src="${imgData}">
+            </div>
+
+        </body>
+        </html>
+    `);
+
+    ventana.document.close();
+}
+</script>
+
+</body>
+</html>

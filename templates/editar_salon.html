@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="card shadow-sm" style="max-width:500px; margin:auto;">
+
+        <div class="card-header">
+            <h6 class="mb-0 fw-bold">Editar Salón</h6>
+        </div>
+
+        <div class="card-body">
+
+            <form method="POST">
+
+                <div class="mb-3">
+                    <label class="form-label">Código</label>
+                    <input type="text" name="codigo" class="form-control"
+                           value="{{ salon[1] }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Descripción</label>
+                    <input type="text" name="descripcion" class="form-control"
+                           value="{{ salon[2] }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Estado</label>
+                    <select name="estado" class="form-select">
+                        <option value="A" {% if salon[3]=='A' %}selected{% endif %}>Activo</option>
+                        <option value="I" {% if salon[3]=='I' %}selected{% endif %}>Inactivo</option>
+                    </select>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="/salones" class="btn btn-secondary btn-sm">Cancelar</a>
+                    <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

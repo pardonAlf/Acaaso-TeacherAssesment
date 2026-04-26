@@ -1,0 +1,219 @@
+1. ¿Qué es el software?
+
+A) Solo programas de internet
+B) Parte física del computador
+C) Conjunto de programas y datos
+D) Solo el sistema operativo
+E) Solo aplicaciones móviles
+
+✅ Respuesta: C
+💡 Explicación: El PPT define el software como el conjunto de programas, procedimientos, reglas y datos que hacen funcionar un sistema.
+
+2. ¿Cómo se clasifica el software según sus libertades?
+
+A) Básico y avanzado
+B) Libre y privativo
+C) Público y privado
+D) Local y remoto
+E) Antiguo y moderno
+
+✅ Respuesta: B
+💡 Explicación: Se divide en software libre y software privativo según las libertades que ofrece.
+
+3. ¿Qué permite el software libre?
+
+A) Solo usar el programa
+B) Usarlo y venderlo sin restricciones
+C) Usar, copiar, estudiar, modificar y redistribuir
+D) Solo modificarlo
+E) Solo copiarlo
+
+✅ Respuesta: C
+💡 Explicación: Esa es la definición central del software libre según el PPT.
+
+4. ¿Quién definió el concepto de Copyleft?
+
+A) Bill Gates
+B) Steve Jobs
+C) Linus Torvalds
+D) Richard Stallman
+E) Mark Zuckerberg
+
+✅ Respuesta: D
+💡 Explicación: El término Copyleft fue definido por Richard Stallman.
+
+5. ¿Qué es un sistema operativo?
+
+A) Un programa de juegos
+B) Software que administra el hardware
+C) Solo una interfaz gráfica
+D) Un antivirus
+E) Un navegador web
+
+✅ Respuesta: B
+💡 Explicación: El SO gestiona los recursos del hardware y permite la interacción con el usuario.
+
+6. ¿Qué caracteriza a un sistema operativo libre?
+
+A) Es pago
+B) No tiene código
+C) Respeta las cuatro libertades
+D) Solo funciona en servidores
+E) No se puede modificar
+
+✅ Respuesta: C
+💡 Explicación: Un SO libre respeta las libertades de uso, estudio, modificación y distribución.
+
+7. ¿Qué significa “transparencia” en software libre?
+
+A) Interfaz bonita
+B) Código oculto
+C) Acceso al código fuente
+D) Uso gratuito
+E) Fácil instalación
+
+✅ Respuesta: C
+💡 Explicación: Transparencia implica acceso total al código fuente.
+
+8. ¿Cuál es una ventaja del software libre?
+
+A) Alto costo
+B) Baja seguridad
+C) Personalización total
+D) Dependencia de empresas
+E) Uso limitado
+
+✅ Respuesta: C
+💡 Explicación: Permite adaptarlo a necesidades específicas.
+
+9. ¿Cuál es una desventaja del software libre?
+
+A) Gratis
+B) Seguridad alta
+C) Curva de aprendizaje
+D) Código abierto
+E) Comunidad activa
+
+✅ Respuesta: C
+💡 Explicación: Puede ser difícil para usuarios nuevos.
+
+10. ¿Cuál es el sistema operativo libre más popular?
+
+A) Windows
+B) macOS
+C) GNU/Linux
+D) DOS
+E) Android
+
+✅ Respuesta: C
+💡 Explicación: GNU/Linux es el más difundido según el PPT.
+
+11. ¿Qué es FreeBSD?
+
+A) Un antivirus
+B) Un sistema UNIX-like
+C) Un navegador
+D) Un lenguaje
+E) Un virus
+
+✅ Respuesta: B
+💡 Explicación: Es un sistema robusto tipo UNIX.
+
+12. ¿Qué es ReactOS?
+
+A) Un editor de texto
+B) Sistema compatible con Windows
+C) Un antivirus
+D) Una app móvil
+E) Un servidor web
+
+✅ Respuesta: B
+💡 Explicación: Busca ejecutar software de Windows.
+
+13. ¿Qué es una distribución (distro)?
+
+A) Un virus
+B) Una variante de Linux con herramientas
+C) Un hardware
+D) Un navegador
+E) Un archivo
+
+✅ Respuesta: B
+💡 Explicación: Incluye kernel, interfaz y aplicaciones.
+
+14. ¿Cuál es una distro amigable para principiantes?
+
+A) Arch Linux
+B) Ubuntu
+C) FreeBSD
+D) Fedora Server
+E) Kali Linux
+
+✅ Respuesta: B
+💡 Explicación: Ubuntu es fácil de usar y recomendado para новичios.
+
+15. ¿Qué distro es altamente personalizable y para avanzados?
+
+A) Ubuntu
+B) Debian
+C) Arch Linux
+D) Mint
+E) Fedora
+
+✅ Respuesta: C
+💡 Explicación: Arch Linux está orientado a usuarios avanzados.
+
+16. ¿Dónde se usan los sistemas operativos libres?
+
+A) Solo en casas
+B) Solo en colegios
+C) Educación, gobierno y empresas
+D) Solo en celulares
+E) Solo en videojuegos
+
+✅ Respuesta: C
+💡 Explicación: Tienen múltiples aplicaciones: educación, gobierno, empresas.
+
+17. ¿Qué sistema móvil está basado en Linux?
+
+A) iOS
+B) Windows Phone
+C) Android
+D) Symbian
+E) BlackBerry
+
+✅ Respuesta: C
+💡 Explicación: Android usa el kernel Linux.
+
+18. ¿Cuál es alternativa libre a Microsoft Office?
+
+A) Photoshop
+B) LibreOffice
+C) Chrome
+D) Windows
+E) Notepad
+
+✅ Respuesta: B
+💡 Explicación: LibreOffice reemplaza herramientas de oficina.
+
+19. ¿Por qué usar software libre en educación?
+
+A) Es más difícil
+B) Limita el aprendizaje
+C) Fomenta pensamiento crítico
+D) Solo sirve para expertos
+E) Es obligatorio
+
+✅ Respuesta: C
+💡 Explicación: Promueve independencia y aprendizaje activo.
+
+20. ¿Qué organización usa sistemas libres?
+
+A) Netflix
+B) NASA
+C) TikTok
+D) Instagram
+E) Spotify
+
+✅ Respuesta: B
+💡 Explicación: NASA usa software libre para procesamiento de datos.

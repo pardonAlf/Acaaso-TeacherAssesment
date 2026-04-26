@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- 🔍 BUSCADOR -->
+    <div class="d-flex align-items-center mb-3" style="gap:6px;">
+        <span style="font-size:12px; font-weight:600; color:#0f172a;">
+            Resultados por salón:
+        </span>
+
+        <div style="width:420px;" class="position-relative">
+
+            <input type="text" id="buscarSalon"
+                class="form-control form-control-sm"
+                style="height:28px; font-size:12px;"
+                placeholder="Buscar...">
+
+            <div id="listaSalones"
+                class="list-group position-absolute w-100"
+                style="z-index:1000; font-size:12px;"></div>
+
+            <input type="hidden" id="salon_id">
+        </div>
+    </div>
+
+    <!-- 📋 TABLA -->
+    <div class="card shadow-sm p-3 mb-4">
+        <table class="tabla">
+            <thead>
+                <tr>
+                    <th>DNI</th>
+                    <th>Alumno</th>
+                    {% for q in quizzes %}
+                        <th>Quiz {{ loop.index }}</th>
+                    {% endfor %}
+                    <th>Promedio</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for fila in resultado %}
+                <tr>
+                    <td>{{ fila.dni }}</td>
+                    <td>{{ fila.alumno }}</td>
+                    {% for q in quizzes %}
+                        <td>{{ fila[q] }}</td>
+                    {% endfor %}
+                    <td><strong>{{ fila.promedio }}</strong></td>
+                    <td>
+                        <button 
+                            class="btn btn-danger btn-sm"
+                            onclick="eliminarAlumno('{{ fila.dni }}', '{{ fila.alumno_id }}', this)">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 📊 GRÁFICOS -->
+    <div class="row">
+
+        <div class="col-md-6">
+            <div class="card-grafico">
+                <h6 class="titulo-grafico">Distribución de notas</h6>
+                <canvas id="graficoPastel"></canvas>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card-grafico">
+                <h6 class="titulo-grafico">Frecuencia de notas</h6>
+                <canvas id="graficoBarras"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row mt-4">
+
+        <div class="col-md-6">
+            <div class="card-grafico">
+                <h6 class="titulo-grafico">Top alumnos</h6>
+                <canvas id="top5"></canvas>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card-grafico">
+                <h6 class="titulo-grafico">Riesgo académico</h6>
+                <canvas id="extra"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- 📦 CHART -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+let salones = {{ salones | tojson }};
+let salonSeleccionado = {{ salon_seleccionado | tojson }};
+let notas = {{ notas | tojson }};
+let nombres = {{ nombres | tojson }};
+let seleccionando = false;
+
+
+// 🔍 BUSCADOR
+document.getElementById("buscarSalon").addEventListener("input", function() {
+
+    if (seleccionando) {
+        seleccionando = false;
+        return;
+    }
+
+    let texto = this.value.toLowerCase().trim();
+    let lista = document.getElementById("listaSalones");
+    lista.innerHTML = "";
+
+    if (texto.length < 2) return;
+
+    salones
+        .filter(s => (s[2] || "").toLowerCase().includes(texto))
+        .forEach(s => {
+
+            let item = document.createElement("a");
+            item.className = "list-group-item list-group-item-action";
+            item.innerText = s[2];
+
+            item.onclick = function() {
+                seleccionando = true;
+
+                document.getElementById("buscarSalon").value = s[2];
+                document.getElementById("salon_id").value = s[0];
+                lista.innerHTML = "";
+
+                let form = document.createElement("form");
+                form.method = "POST";
+                form.action = "/resultados_salon";
+
+                let input = document.createElement("input");
+                input.type = "hidden";
+                input.name = "salon_id";
+                input.value = s[0];
+
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+            };
+
+            lista.appendChild(item);
+        });
+});
+
+if (salonSeleccionado) {
+    let salon = salones.find(s => s[0] == salonSeleccionado);
+    if (salon) {
+        document.getElementById("buscarSalon").value = salon[2];
+    }
+}
+
+//////////////////////////////////////////////////
+// 📊 GRÁFICOS
+//////////////////////////////////////////////////
+
+if (notas.length > 0) {
+
+    //////////////////////////////////////////////////
+    // 🎯 1. PASTEL (CON ALUMNOS)
+    //////////////////////////////////////////////////
+    let niveles = {
+        "Excelente": [],
+        "Muy bien": [],
+        "Bien": [],
+        "Regular": [],
+        "Mal": []
+    };
+
+    notas.forEach((n, i) => {
+        let alumno = nombres[i] + " (" + n + ")";
+
+        if (n >= 18) niveles["Excelente"].push(alumno);
+        else if (n >= 16) niveles["Muy bien"].push(alumno);
+        else if (n >= 14) niveles["Bien"].push(alumno);
+        else if (n >= 11) niveles["Regular"].push(alumno);
+        else niveles["Mal"].push(alumno);
+    });
+
+    new Chart(graficoPastel, {
+        type: 'pie',
+        data: {
+            labels: Object.keys(niveles),
+            datasets: [{
+                data: Object.values(niveles).map(x => x.length)
+            }]
+        },
+        options: {
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label;
+                            let lista = niveles[label];
+
+                            return [
+                                label + " (" + lista.length + ")",
+                                ...lista
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    //////////////////////////////////////////////////
+    // 📊 2. BARRAS (CON ALUMNOS)
+    //////////////////////////////////////////////////
+    let rangos = {}, alumnosPorRango = {};
+
+    for (let i = 0; i <= 20; i += 2) {
+        let key = `${i}-${i+2}`;
+        rangos[key] = 0;
+        alumnosPorRango[key] = [];
+    }
+
+    notas.forEach((n, i) => {
+        let base = Math.floor(n / 2) * 2;
+        let key = `${base}-${base+2}`;
+
+       if (!rangos[key]) {
+            rangos[key] = 0;
+            alumnosPorRango[key] = [];
+        }
+
+        rangos[key]++;
+        alumnosPorRango[key].push(nombres[i] + " (" + n + ")");
+    });
+
+    new Chart(graficoBarras, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(rangos),
+            datasets: [{
+                data: Object.values(rangos)
+            }]
+        },
+        options: {
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let rango = context.label;
+                            let lista = alumnosPorRango[rango];
+
+                            return [
+                                rango + " (" + lista.length + ")",
+                                ...lista
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    //////////////////////////////////////////////////
+    // 🏆 3. TOP 10 (CON ALUMNOS)
+    //////////////////////////////////////////////////
+    let combinado = nombres.map((n, i) => ({
+        nombre: n,
+        nota: notas[i]
+    })).sort((a,b)=>b.nota-a.nota).slice(0,10);
+
+    new Chart(top5, {
+        type: 'bar',
+        data: {
+            labels: combinado.map(x=>x.nombre),
+            datasets: [{
+                data: combinado.map(x=>x.nota),
+                backgroundColor: [
+                    "#0b3c5d","#115173","#1a659e","#2d7dd2",
+                    "#3f8efc","#5aa9e6","#7fc8f8","#a9def9","#cfe8ff","#e7f5ff"
+                ]
+            }]
+        },
+        options: {
+            indexAxis:'y',
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let i = context.dataIndex;
+                            let alumno = combinado[i];
+                            return alumno.nombre + " (" + alumno.nota + ")";
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    //////////////////////////////////////////////////
+    // 🚨 4. RIESGO (CON ALUMNOS)
+    //////////////////////////////////////////////////
+    let riesgo = [], bien = [];
+
+    nombres.forEach((n, i) => {
+        if (notas[i] <= 10) riesgo.push(n + " (" + notas[i] + ")");
+        else bien.push(n + " (" + notas[i] + ")");
+    });
+
+    new Chart(extra, {
+        type: 'doughnut',
+        data: {
+            labels: ["En riesgo","Aprobados"],
+            datasets: [{
+                data: [riesgo.length, bien.length],
+                backgroundColor: ["#dc2626","#16a34a"]
+            }]
+        },
+        options: {
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label;
+                            let lista = label === "En riesgo" ? riesgo : bien;
+
+                            return [
+                                label + " (" + lista.length + ")",
+                                ...lista
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+}
+</script>
+<script>
+function eliminarAlumno(dni, alumno_id, btn) {
+
+    fetch(`/obtener_quizzes_alumno/${alumno_id}`)
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.length === 0) {
+            alert("No tiene quizzes registrados");
+            return;
+        }
+
+        // 🔹 SOLO 1 quiz → borrar directo
+        if (data.length === 1) {
+
+            if (!confirm("¿Eliminar respuestas de este quiz?")) return;
+
+            eliminarDirecto(alumno_id, data[0].quiz_id, btn);
+            return;
+        }
+
+        // 🔹 MÁS DE 1 → (luego ponemos modal)
+        alert("Tiene múltiples quizzes (siguiente paso: modal)");
+    });
+}
+
+
+// 🔥 función real de borrado (no tocar luego)
+function eliminarDirecto(alumno_id, quiz_id, btn) {
+
+    fetch("/eliminar_respuestas", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `alumno_id=${alumno_id}&quiz_id=${quiz_id}`
+    })
+    .then(() => {
+        const fila = btn.closest("tr");
+        fila.remove();
+    });
+}
+</script>
+
+{% endblock %}

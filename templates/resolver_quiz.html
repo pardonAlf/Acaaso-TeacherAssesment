@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Resolver Quiz</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body {
+    min-height: 100vh;
+    margin: 0;
+
+    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
+                url("{{ url_for('static', filename='img/quiz-acaaso.png') }}");
+
+    background-size: cover;          /* 🔥 clave */
+    background-position: center -50px;     /* centra siempre */
+    background-repeat: no-repeat;
+    background-attachment: fixed;    /* efecto pro */
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card-quiz {
+    background: rgba(255,255,255,0.95);
+    padding: 30px;
+    border-radius: 15px;
+
+    width: 90%;
+    max-width: 600px;
+
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.opcion {
+    display: block;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    border: 1px solid #ddd;
+}
+
+.opcion:hover {
+    background: #f1f1f1;
+}
+
+@media (max-width: 768px) {
+    .card-quiz {
+        padding: 20px;
+    }
+
+    h4 {
+        font-size: 18px;
+    }
+}
+@media (max-width: 1366px) {
+    body {
+        background-position: top center -50px;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="card-quiz">
+
+    <h5 id="contador"></h5>
+         
+    <h4 id="pregunta"></h4>
+
+    <div id="opciones"></div>
+
+    <button class="btn btn-primary mt-3 w-100" id="btnSiguiente" disabled>
+        Siguiente
+    </button>
+
+</div>
+
+<script>
+
+function getMensaje(nota) {
+    if (nota == 20) return "🎉 Excelente desempeño";
+    if (nota >= 14) return "👍 Buen trabajo";
+    return "📚 Puedes mejorar";
+}
+
+const alumno_id = {{ alumno_id | default(None) | tojson }};
+const quiz_id = {{ quiz_id | default(None) | tojson }};
+const salon_quiz_id = {{ salon_quiz_id | default(None) | tojson }};
+let preguntas = {{ preguntas | tojson }};
+ 
+
+let index = 0;
+let respuestas = {};
+ 
+
+function cargarPregunta() {
+    let p = preguntas[index];
+
+    document.getElementById("contador").innerText = 
+        "Pregunta " + (index + 1) + " de " + preguntas.length;
+
+    document.getElementById("pregunta").innerText = p.texto;
+
+    let opcionesHTML = "";
+
+    p.opciones.forEach(op => {
+        opcionesHTML += `
+            <label class="opcion">
+                <input type="radio" name="opcion" value="${op.id}" onclick="seleccionar(${p.id}, ${op.id})">
+                ${op.texto}
+            </label>
+        `;
+    });
+
+    document.getElementById("opciones").innerHTML = opcionesHTML;
+
+    if (index === preguntas.length - 1) {
+        document.getElementById("btnSiguiente").innerText = "Enviar";
+    } else {
+        document.getElementById("btnSiguiente").innerText = "Siguiente";
+    }
+
+    // 🔥 AQUI VA ESTO
+    /*
+    if (index === preguntas.length - 1) {
+        document.body.innerHTML = `
+        <div style="
+            height:100vh;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color:white;
+            font-family: 'Segoe UI', sans-serif;
+            flex-direction:column;
+        ">
+            <div style="
+                width:50px;
+                height:50px;
+                border:5px solid #ccc;
+                border-top:5px solid #22c55e;
+                border-radius:50%;
+                animation: spin 1s linear infinite;
+            "></div>
+
+            <p style="margin-top:20px; font-size:18px;">
+                Procesando tu evaluación...
+            </p>
+        </div>
+
+        <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        </style>
+        `;
+        document.getElementById("btnSiguiente").innerText = "Enviar";
+    } else {
+        document.getElementById("btnSiguiente").innerText = "Siguiente";
+    }
+    */
+    }
+
+function seleccionar(pregunta_id, opcion_id) {
+    respuestas[pregunta_id] = opcion_id;
+    document.getElementById("btnSiguiente").disabled = false;
+}
+
+document.getElementById("btnSiguiente").addEventListener("click", () => {
+
+    // 🔥 SI ES LA ÚLTIMA → ENVIAR
+    if (index === preguntas.length - 1) {
+
+        document.getElementById("btnSiguiente").disabled = true; // 🔥 SOLO AQUÍ
+
+        fetch("/guardar_respuestas", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                alumno_id: alumno_id,
+                salon_quiz_id: salon_quiz_id,  // 🔥 ESTE ES EL CLAVE
+                respuestas: respuestas
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+
+        const modo = "{{ session.get('modo') }}";
+
+        if (modo === "local") {
+
+            alert(`Resultado: ${data.correctas}/${data.total} - Nota: ${data.nota}`);
+
+            window.location.href = "/"; // 🔥 vuelve al inicio
+
+        } else {
+
+            document.body.innerHTML = `
+                <div style="
+                    height:60vh;
+                    display:flex;
+                    justify-content:center;
+                    align-items:center;
+                    background: linear-gradient(135deg, #0f172a, #1e293b);
+                    font-family: 'Segoe UI', sans-serif;
+                ">
+                    <div style="
+                        background:white;
+                        padding:40px;
+                        border-radius:16px;
+                        text-align:center;
+                        width:350px;
+                        box-shadow:0 10px 30px rgba(0,0,0,0.3);
+                    ">
+                        <h4 style="color:#64748b; margin-bottom:10px;">Resultado</h4>
+
+                        <p style="color:#22c55e; font-size:14px;">
+                            ${data.correctas} / ${data.total} correctas
+                        </p>
+
+                        <h1 style="
+                            font-size:60px;
+                            margin:10px 0;
+                            color:#0f172a;
+                        ">
+                            ${data.nota}
+                        </h1>
+
+                        <p style="color:#475569; margin-bottom:15px;">
+                            ${getMensaje(data.nota)}
+                        </p>
+
+                        <button onclick="salir()" style="
+                            margin-top:10px;
+                            padding:10px 20px;
+                            border:none;
+                            border-radius:8px;
+                            background:#22c55e;
+                            color:white;
+                            font-size:16px;
+                            cursor:pointer;
+                        ">
+                            Finalizar
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+    })
+
+    } else {
+        // 🔥 SI NO → SIGUE
+        index++;
+        cargarPregunta();
+    }
+
+});
+
+cargarPregunta();
+
+function salir() {
+    window.location.href = "about:blank";
+}
+
+history.pushState(null, null, location.href);
+window.onpopstate = function () {
+    history.go(1);
+};
+
+</script>
+
+</body>
+</html>

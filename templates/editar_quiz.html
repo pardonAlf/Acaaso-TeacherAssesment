@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Quiz</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .card {
+            border: none;
+            border-radius: 10px;
+        }
+
+        .pregunta-item {
+            padding: 6px 10px;
+        }
+
+        .pregunta-item input {
+            font-size: 13px;
+            padding: 5px 8px;
+        }
+
+        .pregunta-item .form-control {
+            border: 1px solid #e0e0e0;
+        }
+
+        .pregunta-item .form-control:focus {
+            box-shadow: none;
+            border-color: #0d6efd;
+        }
+
+        .pregunta-header {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        .border-success {
+            background-color: #f0fff4;
+        }
+        .pregunta-item {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+
+        .pregunta-texto {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .opcion-item {
+            display: flex;
+            align-items: center;
+            background: #f7f8fa;
+            border-radius: 8px;
+            padding: 6px 10px;
+            margin-bottom: 5px;
+        }
+
+        .opcion-item input[type="text"] {
+            border: none;
+            background: transparent;
+            font-size: 13px;
+        }
+
+        .opcion-item input[type="text"]:focus {
+            outline: none;
+            box-shadow: none;
+        }
+
+        .letra-opcion {
+            font-size: 12px;
+            color: #6c757d;
+            width: 18px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <div class="container mt-4">
+
+        <form method="POST">
+            <!-- HEADER -->
+            <div class="card p-3 mb-3 shadow-sm">
+                <div class="d-flex justify-content-between align-items-center">
+                    <input type="text" name="titulo" class="form-control border-0 border-bottom w-50"
+                        style="font-size:18px; font-weight:500;"
+                        value="{{ quiz[0] }}">
+
+                    <button type="button" class="btn btn-primary btn-sm" onclick="agregarPregunta()">
+                        + Pregunta
+                    </button>
+                </div>
+            </div>
+
+            <!-- LISTA -->
+            <div id="preguntas">
+
+                {% for p in preguntas %}
+                {% set num = loop.index %}
+
+                <div class="pregunta-item border-bottom py-2">
+
+                    <!-- HEADER -->
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+
+                        <div class="d-flex align-items-center gap-2">
+
+                            <span class="text-muted" style="font-size:11px;">#{{ num }}</span>
+
+                            <select name="tipo_{{ num }}"
+                                    class="form-select form-select-sm"
+                                    style="width:90px;"
+                                    onchange="cambiarTipo(this, {{ num }})">
+
+                                <option value="vf" {% if p.tipo == 'vf' %}selected{% endif %}>VF</option>
+                                <option value="multiple" {% if p.tipo == 'multiple' %}selected{% endif %}>Multi</option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <!-- PREGUNTA -->
+                    <input type="text"
+                        name="pregunta_{{ num }}"
+                        class="form-control form-control-sm pregunta-texto"
+                        value="{{ p.texto }}">
+
+                    <!-- CONTENIDO -->
+                    <div id="extra_{{ num }}">
+
+                        {% if p.tipo == 'vf' %}
+
+                            <div class="d-flex gap-2">
+
+                                <select name="correcta_{{ num }}"
+                                        class="form-select form-select-sm"
+                                        style="width:140px;">
+
+                                    <option value="Verdadero"
+                                        {% for op in p.opciones %}
+                                            {% if op[0] == 'Verdadero' and op[1] %}selected{% endif %}
+                                        {% endfor %}>
+                                        Verdadero
+                                    </option>
+
+                                    <option value="Falso"
+                                        {% for op in p.opciones %}
+                                            {% if op[0] == 'Falso' and op[1] %}selected{% endif %}
+                                        {% endfor %}>
+                                        Falso
+                                    </option>
+
+                                </select>
+
+                                <input type="text"
+                                    name="explicacion_{{ num }}"
+                                    class="form-control form-control-sm"
+                                    placeholder="Explicación"
+                                    value="{{ p.explicacion or '' }}">
+
+                            </div>
+
+                        {% else %}
+
+                            {% for op in p.opciones %}
+                            <div class="d-flex align-items-center mb-1">
+
+                                <input type="radio"
+                                    name="correcta_{{ num }}"
+                                    value="{{ op[0] }}"
+                                    class="me-2"
+                                    {% if op[1] %}checked{% endif %}>
+
+                                <span style="width:18px; font-size:11px; color:#6c757d;">
+                                    {{ ['A','B','C','D','E'][loop.index0] }}
+                                </span>
+
+                                <input type="text"
+                                    name="opcion_{{ num }}_{{ loop.index }}"
+                                    class="form-control form-control-sm {% if op[1] %}border-success{% endif %}"
+                                    value="{{ op[0] }}">
+
+                            </div>
+                            {% endfor %}
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            <!-- GUARDAR -->
+            <div class="mt-3 text-end">
+                <button class="btn btn-dark btn-sm">Guardar Cambios</button>
+            </div>
+
+        </form>
+
+    </div>
+
+    <!-- 🔥 JS -->
+    <script>
+    let contador = {{ preguntas|length + 1 }};
+
+    function agregarPregunta() {
+        const div = document.createElement("div");
+        div.className = "card mb-3 p-3";
+
+        div.innerHTML = `
+            <label>Pregunta ${contador}</label>
+            <input type="text" name="pregunta_${contador}" class="form-control mb-2">
+
+            <select name="tipo_${contador}" class="form-select mb-2" onchange="cambiarTipo(this, ${contador})">
+                <option value="vf">Verdadero/Falso</option>
+                <option value="multiple">Opción múltiple</option>
+            </select>
+
+            <div id="extra_${contador}"></div>
+        `;
+
+        document.getElementById("preguntas").appendChild(div);
+        // 🔥 ESTA ES LA CLAVE
+        cambiarTipo(div.querySelector("select"), contador);
+        contador++;
+    }
+
+    function cambiarTipo(select, num) {
+        const div = document.getElementById("extra_" + num);
+
+        if (select.value === "vf") {
+            div.innerHTML = `
+                <select name="correcta_${num}" class="form-select mb-2">
+                    <option value="Verdadero">Verdadero</option>
+                    <option value="Falso">Falso</option>
+                </select>
+                <input type="text" name="explicacion_${num}" class="form-control" placeholder="Explicación">
+            `;
+        } else {
+            let opciones = "";
+        for (let i = 1; i <= 5; i++) {
+            opciones += `
+                <div class="form-check d-flex align-items-center mb-1">
+                    <input class="form-check-input me-2"
+                        type="radio"
+                        name="correcta_${num}"
+                        value="${i}">
+
+                    <input type="text"
+                        name="opcion_${num}_${i}"
+                        class="form-control"
+                        placeholder="Opción ${i}">
+                </div>
+            `;
+        }
+                div.innerHTML = opciones;
+        }
+    }
+    </script>
+
+</body>
+</html>

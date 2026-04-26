@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Salón{% endblock %}
+
+{% block content %}
+
+<h4>Crear Salón</h4>
+
+<form method="POST" action="/guardar_salon">
+
+    <div class="mb-3">
+        <label>Código</label>
+        <input type="text" name="codigo" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label>Descripción</label>
+        <input type="text" name="descripcion" class="form-control" required>
+    </div>
+
+    <button class="btn btn-success">Guardar</button>
+    <a href="/salones" class="btn btn-secondary">Cancelar</a>
+
+</form>
+
+{% endblock %}

@@ -1,0 +1,443 @@
+/* =========================
+   BASE GLOBAL STYLES
+========================= */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Botones globales */
+.btn-primary {
+    background-color: #0066ff;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #004ecc;
+}
+
+body {
+    position: relative;
+}
+.steps {
+    padding: 60px 20px;
+}
+
+.card {
+    border-radius: 12px;
+}
+
+.step {
+  background: #f9fafb;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  transition: transform 0.3s ease;
+}
+
+.step:hover {
+  transform: translateY(-5px);
+}
+.step-row {
+  margin-bottom: 60px;
+}
+
+.step-img {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  transition: transform 0.3s ease;
+}
+
+.step-img:hover {
+  transform: scale(1.03);
+}
+
+/* =========================
+   NAVBAR STYLES
+========================= */
+
+/* navbar más elegante */
+.navbar {
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+/* links */
+.nav-link {
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    color: #60a5fa !important;
+}
+
+/* botones */
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 13px;
+}
+
+/* texto usuario */
+.navbar span {
+    opacity: 0.85;
+}
+/* 🔹 Navbar sistema */
+.navbar .nav-link {
+    font-size: 13px;          /* más compacto */
+    font-weight: 500;         /* semi-bold elegante */
+    letter-spacing: 0.3px;    /* mejor lectura */
+    color: #cbd5e1 !important; /* gris claro moderno */
+}
+
+/* Hover */
+.navbar .nav-link:hover {
+    color: #60a5fa !important; /* azul suave */
+}
+
+/* Dropdown título */
+.navbar .dropdown-toggle {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* estado inicial (arriba) */
+.navbar-custom {
+    background: rgba(15, 23, 42, 0.95); /* más sólido */
+    transition: all 0.3s ease;
+}
+
+/* al hacer scroll → TRANSPARENTE */
+.navbar-custom.scrolled {
+    background: rgba(15, 23, 42, 0.3); /* transparente */
+    backdrop-filter: blur(10px);       /* 🔥 efecto glass */
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.dashboard {
+    padding-top: 80px;
+}
+
+/* Dropdown items */
+.dropdown-menu .dropdown-item {
+    font-size: 13px;
+    padding: 8px 14px;
+}
+
+/* Hover dropdown */
+.dropdown-menu .dropdown-item:hover {
+    background-color: #1e40af;
+    color: #fff;
+}
+
+/* =========================
+   BRAND OVERLAY (ACAASO)
+========================= */
+
+.brand-overlay {
+    position: absolute;
+    top: 80px; /* debajo del navbar */
+    width: 100%;
+    text-align: center;
+
+    font-size: 3rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+
+    color: rgba(255, 255, 255, 0.2); /* gris apagado */
+
+    transition: 0.3s;
+    cursor: default;
+}
+
+/* Hover efecto elegante */
+.brand-overlay:hover {
+    color: rgba(255, 255, 255, 0.8);
+    transform: scale(1.05);
+}
+
+/* =========================
+   HERO SECTION
+========================= */
+
+.hero {
+    height: 90vh;
+
+    /* 👇 AQUÍ ESTÁ EL BACKGROUND */
+    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+                url("/static/img/hero2.jpg");
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* =========================
+   DASHBOARD PROFESOR
+========================= */
+
+body.dashboard {
+    background-color: #eaf3ff;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 13px;
+    color: #0f172a;
+}
+ 
+
+/* contenedor */
+.dashboard .container {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+/* título */
+.titulo {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.card-grafico {
+    background: white;
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    margin-bottom: 15px;
+}
+
+.titulo-grafico {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 10px;
+}
+
+.card-grafico canvas {
+    max-height: 250px;
+}
+
+
+/* acciones */
+.acciones button {
+    background: transparent;
+    border: 1px solid #e5e7eb;
+    padding: 5px 10px;
+    margin-right: 5px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.acciones button:hover {
+    background: #f1f5f9;
+}
+
+.acciones .danger {
+    color: #ef4444;
+    border-color: #ef4444;
+}
+
+/* tabla */
+.table-container {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.tabla {
+    width: 100%;
+    font-size: 12px;
+    border-collapse: collapse;
+}
+table.tabla thead th {
+    background-color: #799eec !important;
+    color: white !important;
+}
+.thead-dashboard th {
+    background-color: #6f8fcf !important;
+    color: white !important;
+}
+
+.tabla th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #4a668d;
+    padding: 6px;
+    background: #f8fafc;
+}
+
+.tabla td {
+    padding: 4px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.tabla tr:hover {
+    background: #f1f5f9;
+}
+
+
+/* SOLO afecta tablas dashboard */
+.tabla-dashboard thead th {
+    background-color: #6b92e6 !important;
+    color: white !important;
+    font-size: 13px;
+}
+
+/* filas */
+.tabla-dashboard td {
+    font-size: 13px;
+}
+
+/* hover elegante */
+.tabla-dashboard tbody tr:hover {
+    background-color: #f1f5f9;
+}
+/* badges */
+.badge-ok {
+    background: #22c55e;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 11px;
+}
+
+.badge-off {
+    color: #9ca3af;
+}
+
+/*===========================
+PLANES
+=============================*/
+.plan-card {
+    position: relative;
+    background: url("../img/imagen_licencias.png") center/cover no-repeat;
+    border-radius: 12px;
+    padding: 25px;
+    margin: 10px;
+    color: white;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    transition: 0.3s;
+}
+
+/* overlay oscuro para que se lea */
+.plan-overlay {
+    position: absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background: rgba(15, 23, 42, 0.75);
+    z-index: 1;
+}
+li{
+    color:#0c343b98;
+    font-weight: bold;
+}
+.precioplan{
+    display:flex;
+    width: 150px;
+    transform: translateX(50px);
+}
+
+/* contenido encima */
+.plan-card * {
+    position: relative;
+    z-index: 2;
+}
+
+.plan-card:hover {
+    transform: translateY(-8px) scale(1.03);
+}
+
+/* botón */
+.btn-plan {
+    background: #2563eb;
+    border: none;
+    padding: 8px;
+    width: 100%;
+    border-radius: 6px;
+    color: white;
+}
+
+.btn-plan:hover {
+    background: #1d4ed8;
+}
+
+/* =========================
+   TABLA QUIZZES PRO
+========================= */
+.contenido-panel {
+    background: rgba(255,255,255,0.95);
+    border-radius: 15px;
+     
+    padding: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+/* título */
+.contenido-panel h3 {
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+/* tabla */
+.table {
+    border-radius: 10px;
+    overflow: hidden;
+}
+ 
+
+/* =========================
+   BOTONES PANEL
+========================= */
+
+.botones-panel{
+    margin-top:20px;
+}
+.btn{
+    height: 30px;
+    line-height: 20px;
+}
+/* =========================
+   FOOTER
+========================= */
+
+footer {
+    margin-top: 40px;
+}
+footer a {
+  transition: color 0.3s ease;
+}
+
+footer a:hover {
+  color: #ffffff;
+}
+
+footer i {
+  font-size: 20px;
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+footer i:hover {
+  transform: scale(1.2);
+  color: #60a5fa;
+}
+@media (max-width: 768px) {
+  footer div {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+}

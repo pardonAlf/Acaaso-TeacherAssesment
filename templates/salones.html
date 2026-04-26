@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Salones{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- 🔷 HEADER ESTÁNDAR (MISMO ESTILO QUE QUIZZES) -->
+    <div class="card shadow-sm">
+
+        <div class="card-header d-flex justify-content-between align-items-center">
+
+            <h6 class="mb-0 fw-bold">Salones</h6>
+
+            <button class="btn btn-primary btn-sm" onclick="crearSalon()">
+                + Crear
+            </button>
+
+        </div>
+
+        <div class="card-body p-0">
+          
+            <table class="tabla"> 
+                <thead class="thead-dashboard">
+                    <tr>
+                        <th style="width:60px;">ID</th>
+                        <th>Código</th>
+                        <th>Descripción</th>
+                        <th style="width:100px;">Estado</th>
+                        <th style="width:120px;">Quizzes</th>
+                        <th style="width:150px;">Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for s in salones %}
+                    <tr>
+                        <td>{{ s[0] }}</td>
+                        <td>{{ s[1] }}</td>
+                        <td>{{ s[2] }}</td>
+
+                        <!-- estado bonito -->
+                        <td>
+                            <span class="badge bg-success">Activo</span>
+                        </td>
+
+                        <!-- cantidad quizzes (temporal) -->
+                        <td>
+                            <span class="badge bg-secondary">
+                                {{ s[5] if s|length > 5 else 0 }}
+                            </span>
+                        </td>
+
+                        <!-- acciones -->
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary"
+                                onclick="editarSalon({{ s[0] }})">
+                                Editar
+                            </button>
+
+                            <button class="btn btn-sm btn-outline-danger"
+                                onclick="eliminarSalon({{ s[0] }})">
+                                Eliminar
+                            </button>
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+function crearSalon() {
+    window.location.href = "/crear_salon";
+}
+
+function editarSalon(id) {
+    window.location.href = "/editar_salon/" + id;
+}
+
+function eliminarSalon(id) {
+
+    Swal.fire({
+        title: '¿Eliminar salón?',
+        text: "Esta acción no se puede deshacer",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#2563eb',
+        cancelButtonColor: '#dc2626',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+
+        if (result.isConfirmed) {
+            window.location.href = "/eliminar_salon/" + id;
+        }
+
+    });
+
+}
+</script>
+
+{% endblock %}

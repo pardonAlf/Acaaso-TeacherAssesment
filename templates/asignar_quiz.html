@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h6 class="titulo">Asignar Quiz a Salón</h6>
+</div>
+
+<!-- 🔍 BUSCAR SALON -->
+<div class="mb-2 d-flex align-items-center">
+
+    <!-- SALON -->
+    <label style="width:60px; font-size:11px; color:#6b7280;">Salón</label>
+
+    <div class="position-relative" style="flex:1; max-width:400px;">
+        <input type="text" id="buscarSalon" class="form-control form-control-sm" placeholder="Buscar salón...">
+        <div id="listaSalones" class="list-group position-absolute w-100" style="z-index:1000; font-size:12px;"></div>
+    </div>
+
+</div>
+
+<div class="mb-2 d-flex align-items-center">
+
+    <!-- QUIZ -->
+    <label style="width:60px; font-size:11px; color:#6b7280;">Quiz</label>
+
+    <div class="position-relative" style="flex:1; max-width:400px;">
+        <input type="text" id="buscarQuiz" class="form-control form-control-sm" placeholder="Buscar quiz...">
+        <div id="listaQuiz" class="list-group position-absolute w-100" style="z-index:1000; font-size:12px;"></div>
+    </div>
+
+    <!-- BOTON -->
+    <button class="btn btn-primary btn-sm ms-2" onclick="asignar()">Asignar</button>
+
+</div>
+
+<input type="hidden" id="salon_id">
+<input type="hidden" id="quiz_id">
+
+ 
+
+<!-- 📋 TABLA DE QUIZZES ASIGNADOS -->
+<table class="tabla">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Quiz</th>
+            <th>Código</th>
+            <th style="width:80px;"></th>
+        </tr>
+    </thead>
+    <tbody id="tablaAsignados"></tbody>
+</table>
+
+<script>
+let quizzes = {{ quizzes|tojson }};
+
+document.getElementById("buscarQuiz").addEventListener("keyup", function() {
+
+    let texto = this.value.toLowerCase();
+    let lista = document.getElementById("listaQuiz");
+
+    lista.innerHTML = "";
+
+    if (texto.length < 2) return;
+
+    let filtrados = quizzes.filter(q =>
+        (q[0] + " " + q[1]).toLowerCase().includes(texto)
+    );
+
+    filtrados.forEach(q => {
+        let item = document.createElement("a");
+        item.className = "list-group-item list-group-item-action";
+        item.innerText = `${q[0]} - ${q[1]}`;
+
+        item.onclick = () => {
+            document.getElementById("buscarQuiz").value = item.innerText;
+            document.getElementById("quiz_id").value = q[0];
+            lista.innerHTML = "";
+        };
+
+        lista.appendChild(item);
+    });
+});
+
+// 🔍 FILTRO SALON
+let salones = {{ salones|tojson }};
+
+document.getElementById("buscarSalon").addEventListener("keyup", function() {
+
+    let texto = this.value.toLowerCase();
+    let lista = document.getElementById("listaSalones");
+
+    lista.innerHTML = "";
+
+    if (texto.length < 2) return; // 🔥 mínimo 2 letras
+
+    let filtrados = salones.filter(s => 
+        (s[1] + " " + s[2]).toLowerCase().includes(texto)
+    );
+
+    filtrados.forEach(s => {
+        let item = document.createElement("a");
+        item.className = "list-group-item list-group-item-action";
+        item.innerText = `${s[1]} - ${s[2]}`;
+
+        item.onclick = () => {
+            document.getElementById("buscarSalon").value = item.innerText;
+            document.getElementById("salon_id").value = s[0];
+            lista.innerHTML = "";
+
+            // 🔥 cargar tabla automáticamente
+            cargarAsignados(s[0]);
+        };
+
+        lista.appendChild(item);
+    });
+});
+
+// 📥 CARGAR QUIZZES ASIGNADOS
+function cargarAsignados(salon_id) {
+    fetch(`/obtener_asignaciones/${salon_id}`)
+        .then(res => res.json())
+        .then(data => {
+
+            let tbody = document.getElementById("tablaAsignados");
+            tbody.innerHTML = "";
+
+            data.forEach(q => {
+                let tr = `
+                    <tr>
+                        <td>${q.id}</td>
+                        <td>${q.titulo}</td>
+                        <td id="codigo_${q.id}">
+                            ${q.codigo ? `<span class="badge-ok">${q.codigo}</span>` : '<span class="badge-off">—</span>'}
+                        </td>
+                        <td style="text-align:right;">
+                            <button class="btn btn-sm btn-secondary" onclick="generarCodigo(${q.id})">⚡</button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarAsignacion(${q.id})">✕</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += tr;
+            });
+
+        });
+}
+
+function generarCodigo(id) {
+
+    fetch(`/generar_codigo_asignacion/${id}`, {
+        method: "POST"
+    })
+    .then(res => res.json())
+    .then(() => {
+
+        // 🔥 recargar toda la tabla
+        let salon_id = document.getElementById("salon_id").value;
+        cargarAsignados(salon_id);
+
+    });
+}
+
+function eliminarAsignacion(id) {
+
+    if (!confirm("¿Eliminar este quiz del salón?")) return;
+
+    fetch(`/eliminar_asignacion/${id}`, {
+        method: "DELETE"
+    })
+    .then(() => {
+        document.getElementById("fila_" + id).remove();
+    });
+}
+
+
+// 💾 ASIGNAR QUIZ
+function asignar() {
+    let salon_id = document.getElementById("salon_id").value;
+    let quiz_id = document.getElementById("quiz_id").value;
+
+    if (!salon_id || !quiz_id) {
+        alert("Selecciona salón y quiz");
+        return;
+    }
+
+    fetch("/guardar_asignacion", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            salon_id: salon_id,
+            quiz_id: quiz_id
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.status === "error") {
+
+            alert(data.message);
+
+            // 🔥 limpiar campo quiz
+            document.getElementById("buscarQuiz").value = "";
+            document.getElementById("quiz_id").value = "";
+
+            return;
+        }
+
+        cargarAsignados(salon_id);
+
+        document.getElementById("buscarQuiz").value = "";
+        document.getElementById("quiz_id").value = "";
+
+    });
+}
+</script>
+
+{% endblock %}

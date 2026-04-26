@@ -1,0 +1,85 @@
+PREGUNTAS DE VERDADERO/FALSO (V/F) - JavaScript (Variables)
+
+1. En JavaScript, "var" se utiliza para declarar variables. ( )
+2. Las variables declaradas con "let" tienen alcance de bloque. ( )
+3. "const" permite cambiar el valor de una variable después de declararla. ( )
+4. JavaScript es un lenguaje con tipado dinámico. ( )
+5. Se puede declarar una variable sin asignarle valor inicial. ( )
+6. "var" respeta el alcance de bloque igual que "let". ( )
+7. Una variable puede cambiar de tipo de dato en JavaScript. ( )
+8. "const" requiere inicializar la variable al momento de declararla. ( )
+9. Es obligatorio usar punto y coma al final de cada declaración. ( )
+10. El nombre de una variable puede comenzar con un número. ( )
+
+
+PREGUNTAS DE OPCIÓN MÚLTIPLE (A-E) - JavaScript (Variables)
+
+11. ¿Cuál es la forma correcta de declarar una variable?
+A) variable x = 5
+B) var x = 5
+C) int x = 5
+D) declare x = 5
+E) v x = 5
+
+12. ¿Qué palabra clave crea una variable de bloque?
+A) var
+B) const
+C) let
+D) static
+E) define
+
+13. ¿Cuál de estas opciones NO es válida en JavaScript?
+A) let nombre = "Juan"
+B) var edad = 20
+C) const PI = 3.14
+D) int numero = 10
+E) let x
+
+14. ¿Qué sucede si declaras una variable con "const"?
+A) Se puede modificar libremente
+B) No necesita valor inicial
+C) No puede cambiar su valor
+D) Se convierte en global
+E) Es temporal
+
+15. ¿Cuál es el tipo de dato de una variable sin valor asignado?
+A) null
+B) undefined
+C) string
+D) number
+E) boolean
+
+16. ¿Qué palabra clave tiene alcance global o de función?
+A) let
+B) const
+C) var
+D) static
+E) private
+
+17. ¿Cuál es un nombre de variable válido?
+A) 1variable
+B) var
+C) _nombre
+D) nombre-variable
+E) nombre variable
+
+18. ¿Qué permite JavaScript respecto a los tipos de variables?
+A) Solo números
+B) Solo texto
+C) Tipado estático
+D) Tipado dinámico
+E) Tipado fijo
+
+19. ¿Cuál es la forma correcta de declarar una constante?
+A) let PI = 3.14
+B) const PI = 3.14
+C) var PI
+D) constant PI = 3.14
+E) define PI = 3.14
+
+20. ¿Qué sucede si redeclaras una variable con "let" en el mismo bloque?
+A) Funciona normal
+B) Se ignora
+C) Error
+D) Se sobreescribe
+E) Se vuelve global

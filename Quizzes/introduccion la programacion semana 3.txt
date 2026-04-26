@@ -1,0 +1,159 @@
+1. ¿Qué hace parseInt(prompt(...))?
+A) Convierte texto a decimal
+B) Convierte texto a entero
+C) Muestra texto
+D) Suma números
+E) Convierte a string
+Respuesta: B
+
+2. ¿Qué tipo de dato es num1?
+A) String
+B) Boolean
+C) Entero
+D) Array
+E) Objeto
+Respuesta: C
+
+3. ¿Qué operación realiza division = num1 / num2?
+A) Suma
+B) Resta
+C) Multiplicación
+D) División
+E) Potencia
+Respuesta: D
+
+4. ¿Qué hace parseInt(division)?
+A) Convierte a texto
+B) Obtiene parte decimal
+C) Obtiene parte entera
+D) Redondea hacia arriba
+E) Multiplica
+Respuesta: C
+
+5. ¿Cómo se obtiene la parte decimal?
+A) division + entero
+B) division * entero
+C) division - entero
+D) division / entero
+E) entero - division
+Respuesta: C
+
+6. ¿Qué hace toString()?
+A) Convierte a número
+B) Convierte a texto
+C) Elimina decimales
+D) Suma valores
+E) Duplica valor
+Respuesta: B
+
+7. ¿Qué hace .length?
+A) Cuenta caracteres
+B) Suma números
+C) Convierte texto
+D) Divide valores
+E) Elimina espacios
+Respuesta: A
+
+8. ¿Por qué se usa largo=largo-2?
+A) Para sumar
+B) Para eliminar "0."
+C) Para dividir
+D) Para convertir
+E) Para multiplicar
+Respuesta: B
+
+9. ¿Qué hace Math.pow(10,largo)?
+A) Divide
+B) Suma
+C) Eleva 10 a una potencia
+D) Convierte a string
+E) Resta
+Respuesta: C
+
+10. ¿Qué hace valor=multi*decimal?
+A) Divide
+B) Convierte decimal a entero
+C) Suma
+D) Resta
+E) Imprime
+Respuesta: B
+
+11. ¿Qué hace document.write()?
+A) Lee datos
+B) Muestra en pantalla
+C) Borra datos
+D) Convierte texto
+E) Hace cálculos
+Respuesta: B
+
+12. ¿Cuál es el resultado si num1=10 y num2=2?
+A) 2
+B) 4
+C) 5
+D) 10
+E) 20
+Respuesta: C
+
+13. ¿Qué pasa si num2 es 0?
+A) Funciona normal
+B) Error o infinito
+C) Devuelve 0
+D) Devuelve 1
+E) Se detiene el programa
+Respuesta: B
+
+14. ¿Qué hace este if? if(num2==0){ alert("Error") }
+A) Suma
+B) Muestra error si divide entre 0
+C) Convierte texto
+D) Multiplica
+E) No hace nada
+Respuesta: B
+
+15. ¿Qué operador es ==?
+A) Asignación
+B) Comparación
+C) Suma
+D) División
+E) Potencia
+Respuesta: B
+
+16. ¿Qué hace toUpperCase()?
+A) Minúsculas
+B) Mayúsculas
+C) Números
+D) Borra texto
+E) Invierte texto
+Respuesta: B
+
+17. ¿Qué hace toLowerCase()?
+A) Mayúsculas
+B) Minúsculas
+C) Elimina texto
+D) Duplica texto
+E) Divide texto
+Respuesta: B
+
+18. ¿Qué hace if(valor > 10)?
+A) Suma
+B) Compara si es mayor que 10
+C) Divide
+D) Convierte
+E) Imprime
+Respuesta: B
+
+19. ¿Qué palabra clave inicia una condición?
+A) for
+B) while
+C) if
+D) var
+E) function
+Respuesta: C
+
+20. ¿Qué hace var?
+A) Ejecuta código
+B) Declara variables
+C) Imprime
+D) Compara
+E) Convierte
+Respuesta: B

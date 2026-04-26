@@ -1,0 +1,159 @@
+1. ¿Qué etiqueta se usa para definir la cabecera de la página?
+A) <head>
+B) <top>
+C) <header>
+D) <section>
+E) <nav>
+Respuesta: C
+
+2. ¿Qué propiedad CSS centra el contenido horizontalmente con margin:auto?
+A) padding
+B) margin
+C) border
+D) width
+E) display
+Respuesta: B
+
+3. ¿Qué propiedad se usa para aplicar Flexbox en el header?
+A) position:flex
+B) flex-direction
+C) display:flex
+D) align:flex
+E) justify:flex
+Respuesta: C
+
+4. ¿Qué propiedad distribuye los elementos con espacio alrededor?
+A) align-items
+B) justify-content: space-around
+C) flex-wrap
+D) margin:auto
+E) padding
+Respuesta: B
+
+5. ¿Qué propiedad alinea verticalmente los elementos en el centro?
+A) justify-content
+B) align-items
+C) text-align
+D) line-height
+E) display
+Respuesta: B
+
+6. ¿Qué selector se usa para clases?
+A) #
+B) .
+C) *
+D) @
+E) &
+Respuesta: B
+
+7. ¿Qué selector se usa para IDs?
+A) .
+B) #
+C) *
+D) $
+E) %
+Respuesta: B
+
+8. ¿Qué propiedad cambia el color de fondo?
+A) color
+B) background
+C) background-color
+D) fill
+E) border-color
+Respuesta: C
+
+9. ¿Qué propiedad hace un elemento circular?
+A) border
+B) border-radius
+C) shape
+D) circle
+E) radius
+Respuesta: B
+
+10. ¿Qué propiedad define el alto de un elemento?
+A) width
+B) size
+C) height
+D) padding
+E) margin
+Respuesta: C
+
+11. ¿Qué propiedad centra texto horizontalmente?
+A) align-items
+B) justify-content
+C) text-align
+D) margin
+E) padding
+Respuesta: C
+
+12. ¿Qué propiedad se usa para separar el contenido interno?
+A) margin
+B) padding
+C) border
+D) width
+E) height
+Respuesta: B
+
+13. ¿Qué propiedad define el borde de un elemento?
+A) outline
+B) border
+C) line
+D) edge
+E) stroke
+Respuesta: B
+
+14. ¿Qué valor de display se usa en article?
+A) block
+B) inline
+C) grid
+D) flex
+E) none
+Respuesta: D
+
+15. ¿Qué porcentaje de ancho tiene .img?
+A) 100%
+B) 25%
+C) 75%
+D) 50%
+E) 10%
+Respuesta: D
+
+16. ¿Qué propiedad permite centrar verticalmente texto usando altura?
+A) padding
+B) line-height
+C) margin
+D) align-items
+E) display
+Respuesta: B
+
+17. ¿Qué etiqueta contiene "imagen principal"?
+A) <article>
+B) <header>
+C) <section>
+D) <footer>
+E) <div>
+Respuesta: C
+
+18. ¿Cuántos elementos .menu hay en el header?
+A) 3
+B) 4
+C) 5
+D) 6
+E) 2
+Respuesta: B
+
+19. ¿Qué propiedad se usa para distribuir los .box en fila?
+A) display:flex
+B) float
+C) position
+D) grid
+E) inline
+Respuesta: A
+
+20. ¿Qué etiqueta se usa para el pie de página?
+A) <bottom>
+B) <end>
+C) <footer>
+D) <section>
+E) <div>
+Respuesta: C

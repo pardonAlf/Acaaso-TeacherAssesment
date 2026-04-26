@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="container mt-5">
+
+<h2>Resultados del Quiz</h2>
+
+<canvas id="graficoNotas"></canvas>
+<h3>Aprobados vs Desaprobados</h3>
+<canvas id="pieChart"></canvas>
+
+<script>
+    // 🔥 PROTECCIÓN TOTAL (evita errores de Jinja)
+    const notas = JSON.parse('{{ resultados | tojson | safe }}');
+
+    let valores = notas.map(n => n.nota);
+    let labels = notas.map(n => "Alumno " + n.alumno);
+
+    // 📊 Gráfico de barras
+    new Chart(document.getElementById('graficoNotas'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Notas',
+                data: valores
+            }]
+        }
+    });
+
+    // 🔥 AQUÍ ESTÁ LA CLAVE (string → número)
+    const aprobados = Number("{{ aprobados or 0 }}");
+    const desaprobados = Number("{{ desaprobados or 0 }}");
+
+    // 🥧 Gráfico de pastel
+    new Chart(document.getElementById('pieChart'), {
+        type: 'pie',
+        data: {
+            labels: ['Aprobados', 'Desaprobados'],
+            datasets: [{
+                data: [aprobados, desaprobados]
+            }]
+        }
+    });
+</script>
+
+</body>
+</html>
