@@ -27,7 +27,17 @@ USUARIO_TEST = "admin"
 PASSWORD_TEST = "1234"
 EMAIL_REMITENTE = "pardoalf@gmail.com"
 EMAIL_PASSWORD = "pxvr oyrf uhgb xugj"
+ 
+@app.context_processor
+def inject_version():
+    return dict(version=get_version())
 
+def get_version():
+    try:
+        with open("version.txt") as f:
+            return f.read().strip()
+    except:
+        return "v1.0"
 
 @app.route('/')
 def home():

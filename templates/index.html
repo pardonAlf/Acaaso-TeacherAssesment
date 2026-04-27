@@ -71,6 +71,17 @@
 <!-- HERO -->
 <section class="hero">
     <div>
+        <div style="text-align: center; margin-bottom: 10px;">
+            <span style="
+                background: rgba(0,0,0,0.6);
+                color: white;
+                padding: 4px 12px;
+                border-radius: 10px;
+                font-size: 13px;
+            ">
+                Version: {{ version }}
+            </span>
+        </div>
         <h1>Evalúa. Analiza. Mejora.</h1>
         <p>Plataforma inteligente de evaluación docente</p>
         <br>
@@ -243,6 +254,7 @@
       <h3>TeacherAssessment</h3>
       <p>Plataforma inteligente para crear, compartir y analizar evaluaciones en tiempo real.</p>
       <img src="{{ url_for('static', filename='img/footer_explicacion.png') }}" alt="Explicación" style="width:100%; max-width:200px; margin-top:10px;">
+       
     </div>
 
     <!-- Columna 2 -->
@@ -278,6 +290,8 @@
     © 2026 TeacherAssessment - Todos los derechos reservados
   </div>
 </footer>
+
+
 
 </body>
 </html>
