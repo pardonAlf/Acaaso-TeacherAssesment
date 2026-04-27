@@ -2168,6 +2168,16 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
 
         for op in item["opciones"]:
             texto = op["texto"]
+
+            if op["correcta"] and op["marcada"]:
+                texto = f'<font color="green">✅ {texto}</font>'
+
+            elif op["correcta"]:
+                texto = f'<font color="green">✔ {texto}</font>'
+
+            elif op["marcada"]:
+                texto = f'<font color="red">❌ {texto}</font>'
+
             fila.append(Paragraph(texto, styles['Normal']))
 
             if len(fila) == 3:
