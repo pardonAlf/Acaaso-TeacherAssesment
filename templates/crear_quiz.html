@@ -237,6 +237,10 @@ input.form-control {
                         <label class="form-check-label" for="multiple_intentos">
                             Permitir múltiples intentos
                         </label>
+                        <label class="form-check-label" style="margin-left: 45px;">
+                            <input class="form-check-input" type="checkbox" id="enviar_solucionario" name="enviar_solucionario">
+                            Enviar solucionario al finalizar
+                        </label>
                     </div>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-success btn-sm-custom" onclick="crearPreguntaVF()">+ VF</button>
@@ -374,7 +378,13 @@ function renderTabla() {
                 <td>${p.texto}</td>
                 <td>${detalle}</td>
                 <td>
-                    <b>${["A","B","C","D","E"][parseInt(p.correcta) - 1]}</b>
+                    <b>
+                        ${
+                            p.tipo === "vf"
+                            ? p.correcta
+                            : ["A","B","C","D","E"][parseInt(p.correcta) - 1]
+                        }
+                    </b>
 
                     <input type="hidden" name="correcta_${index + 1}" value="${p.correcta}">
                 </td>
@@ -404,18 +414,30 @@ function editarPregunta(id) {
         <input type="text" id="edit_texto" class="form-control mb-2" value="${pregunta.texto}">
     `;
 
+    // 🔥 CASO VERDADERO / FALSO
     if (pregunta.tipo === "vf") {
+
+        let correctaVF = "";
+        let opCorrecta = pregunta.opciones.find(op => op.es_correcta);
+
+        if (opCorrecta) {
+            correctaVF = opCorrecta.texto;
+        }
+
         html += `
             <label>Respuesta correcta</label>
             <select id="edit_correcta" class="form-control mb-2">
-                <option ${pregunta.correcta === "Verdadero" ? "selected" : ""}>Verdadero</option>
-                <option ${pregunta.correcta === "Falso" ? "selected" : ""}>Falso</option>
+                <option ${correctaVF === "Verdadero" ? "selected" : ""}>Verdadero</option>
+                <option ${correctaVF === "Falso" ? "selected" : ""}>Falso</option>
             </select>
 
             <label>Explicación</label>
             <textarea id="edit_explicacion" class="form-control">${pregunta.explicacion || ""}</textarea>
         `;
+
     } else {
+
+        // 🔹 MULTIPLE
         let letras = ["A", "B", "C", "D", "E"];
 
         pregunta.opciones.forEach((op, i) => {
@@ -424,16 +446,20 @@ function editarPregunta(id) {
                     <span style="width:20px; font-size:12px; color:#6c757d;">
                         ${letras[i]}.
                     </span>
-                    <input type="text" class="form-control opcion-edit" value="${op}">
+                    <input type="text" class="form-control opcion-edit" value="${op.texto}">
                 </div>
             `;
         });
+
+        // 🔥 obtener correcta
+        let opCorrecta = pregunta.opciones.find(op => op.es_correcta);
+        let correctaTexto = opCorrecta ? opCorrecta.texto : "";
 
         html += `
             <label>Respuesta correcta</label>
             <select id="edit_correcta" class="form-control">
                 ${pregunta.opciones.map(op => `
-                    <option ${op === pregunta.correcta ? "selected" : ""}>${op}</option>
+                    <option ${op.texto === correctaTexto ? "selected" : ""}>${op.texto}</option>
                 `).join("")}
             </select>
         `;
@@ -562,7 +588,21 @@ async function generarIA() {
 
     let data = await response.json();
 
-    cargarDesdeIA(data);
+    // 🔥 NORMALIZAR VF
+    data.forEach(p => {
+
+    // 🔹 VF
+    if (p.tipo === "vf") {
+        p.opciones = ["Verdadero", "Falso"];
+        // dejamos p.correcta como viene
+    }
+
+    // 🔹 MULTIPLE (NO tocar estructura)
+    // dejamos opciones como array de strings
+
+});
+
+cargarDesdeIA(data);
 }
 
 async function subirExamen() {

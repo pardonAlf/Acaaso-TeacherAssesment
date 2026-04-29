@@ -86,7 +86,21 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <input type="text" name="titulo" class="form-control border-0 border-bottom w-50"
                         style="font-size:18px; font-weight:500;"
-                        value="{{ quiz[0] }}">
+                        value="{{ quiz.titulo }}">
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="multiple_intentos" id="multiple_intentos"
+                            {% if quiz.multiple_intentos %}checked{% endif %}>
+                        <label class="form-check-label" for="multiple_intentos">
+                            Permitir múltiples intentos
+                        </label>
+                        <br>
+                        <label class="form-check-label"  ">
+                            <input class="form-check-input" type="checkbox" id="enviar_solucionario" name="enviar_solucionario"
+                                {% if quiz.enviar_solucionario %}checked{% endif %}>
+                            Enviar solucionario al finalizar
+                        </label>
+                    </div>
 
                     <button type="button" class="btn btn-primary btn-sm" onclick="agregarPregunta()">
                         + Pregunta

@@ -8,6 +8,7 @@ from datetime import datetime
 import smtplib
 from email.message import EmailMessage
 import psycopg2
+from flask import send_file
  
  
 import threading
@@ -163,6 +164,113 @@ def dashboard_profesor():
     conn.close()
 
     return render_template('dashboard_profesor.html', quizzes=quizzes)
+
+
+@app.route('/reporte_quiz/<int:quiz_id>')
+def reporte_quiz(quiz_id):
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # 🔹 obtener preguntas y opciones
+    cur.execute("""
+        SELECT p.texto, o.texto, o.es_correcta
+        FROM preguntas p
+        JOIN opciones o ON o.pregunta_id = p.id
+        WHERE p.quiz_id = %s
+        ORDER BY p.id
+    """, (quiz_id,))
+
+    data = cur.fetchall()
+    
+    cur.execute("""
+        SELECT titulo
+        FROM quiz
+        WHERE id = %s
+    """, (quiz_id,))
+
+    titulo_quiz = cur.fetchone()[0]
+
+    cur.close()
+    conn.close()
+
+    # 🚀 GENERAR PDF
+    from io import BytesIO
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from datetime import datetime
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    # 🔹 HEADER
+    logo = Image("static/img/logo.png", width=80, height=50)
+
+    header = [[logo, Paragraph(f"""
+    <b>ACAASO</b><br/>
+    <b>Reporte:</b> Solucionario<br/>
+    <b>Usuario:</b> {session.get('usuario')}<br/>
+    <b>Fecha:</b> {datetime.now().strftime("%d/%m/%Y %H:%M")}
+    """, styles['Normal'])]]
+
+    tabla_header = Table(header, colWidths=[100, 350])
+    tabla_header.setStyle(TableStyle([
+        ('BOX', (0,0), (-1,-1), 1.5, colors.black),
+        ('BACKGROUND', (0,0), (-1,-1), colors.whitesmoke),
+    ]))
+
+    elements.append(tabla_header)
+    elements.append(Spacer(1, 15))
+
+    elements.append(Paragraph("<b>SOLUCIONARIO</b>", styles['Title']))
+    elements.append(Spacer(1, 10))
+
+    # 🔹 AGRUPAR POR PREGUNTA
+    preguntas = {}
+    for p_texto, o_texto, correcta in data:
+        if p_texto not in preguntas:
+            preguntas[p_texto] = []
+        preguntas[p_texto].append((o_texto, correcta))
+
+    # 🔹 CONTENIDO
+    for i, (pregunta, opciones) in enumerate(preguntas.items(), start=1):
+        elements.append(Paragraph(f"{i}. {pregunta}", styles['Heading3']))
+        elements.append(Spacer(1, 5))
+
+        tabla_data = []
+
+        for op_texto, correcta in opciones:
+            if correcta:
+                texto = f"✔ {op_texto}"
+            else:
+                texto = op_texto
+
+            tabla_data.append([Paragraph(texto, styles['Normal'])])
+
+        tabla = Table(tabla_data)
+        tabla.setStyle(TableStyle([
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+            ('BOX', (0,0), (-1,-1), 1, colors.black),
+        ]))
+
+        elements.append(tabla)
+        elements.append(Spacer(1, 10))
+
+    doc.build(elements)
+    buffer.seek(0)
+
+    #return send_file(buffer, as_attachment=False,
+    #            download_name="reporte.pdf",
+    #            mimetype='application/pdf')
+    
+    return send_file(buffer,
+                 as_attachment=False,
+                 download_name=f"{titulo_quiz}.pdf",
+                 mimetype='application/pdf')
 
 @app.route('/alumno')
 def alumno():
@@ -545,6 +653,7 @@ def crear_quiz():
         titulo = request.form['titulo']
         usuario = session.get('usuario')
         multiple_intentos = request.form.get('multiple_intentos') == 'on'
+        enviar_solucionario = request.form.get("enviar_solucionario") == "on"
         
         if not usuario:
             return redirect('/login')
@@ -554,8 +663,8 @@ def crear_quiz():
 
         # crear quiz
         cur.execute(
-            "INSERT INTO quiz (titulo, usuario, estado, multiple_intentos) VALUES (%s, %s, %s, %s) RETURNING id",
-            (titulo, usuario, 'A', multiple_intentos)
+            "INSERT INTO quiz (titulo, usuario, estado, multiple_intentos,enviar_solucionario) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (titulo, usuario, 'A', multiple_intentos,enviar_solucionario)
         )
         quiz_id = cur.fetchone()[0]
         
@@ -748,11 +857,13 @@ def editar_quiz(quiz_id):
     if request.method == 'POST':
 
         titulo = request.form['titulo']
+        multiple_intentos = request.form.get("multiple_intentos") == "on"
+        enviar_solucionario = request.form.get("enviar_solucionario") == "on"
 
         # actualizar título
         cur.execute(
-            "UPDATE quiz SET titulo=%s WHERE id=%s",
-            (titulo, quiz_id)
+            "UPDATE quiz SET titulo=%s, multiple_intentos=%s, enviar_solucionario=%s WHERE id=%s",
+            (titulo, multiple_intentos, enviar_solucionario, quiz_id)
         )
 
         # 🔥 borrar todo
@@ -774,6 +885,7 @@ def editar_quiz(quiz_id):
                     (quiz_id, texto, tipo)
                 )
                 pregunta_id = cur.fetchone()[0]
+                
 
                 if tipo == "vf":
                     correcta = request.form.get(f"correcta_{num}")
@@ -814,8 +926,19 @@ def editar_quiz(quiz_id):
         return redirect(url_for('dashboard_profesor'))
 
     # 🔹 GET (lo que ya tenías)
-    cur.execute("SELECT titulo FROM quiz WHERE id=%s", (quiz_id,))
-    quiz = cur.fetchone()
+    cur.execute("""
+    SELECT titulo, multiple_intentos, enviar_solucionario
+        FROM quiz
+        WHERE id=%s
+    """, (quiz_id,))
+
+    row = cur.fetchone()
+
+    quiz = {
+        "titulo": row[0],
+        "multiple_intentos": row[1],
+        "enviar_solucionario": row[2]
+    }
 
     cur.execute("""
         SELECT id, texto, tipo,explicacion
@@ -1188,6 +1311,14 @@ def guardar_respuestas():
 
     nota = round((correctas / total) * 20, 2)
     fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M")
+    
+    cur.execute("""
+        SELECT enviar_solucionario
+        FROM quiz
+        WHERE id = %s
+    """, (quiz_id,))
+
+    enviar_solucionario = cur.fetchone()[0]
 
     cur.close()
     conn.close()
@@ -1195,7 +1326,7 @@ def guardar_respuestas():
     # 🚀 BACKGROUND TASK
     threading.Thread(
         target=generar_y_enviar_reporte,
-        args=(detalle, nota, correo, nombre_completo, alumno_id, titulo_quiz, dni, fecha_hora)
+        args=(detalle, nota, correo, nombre_completo, alumno_id, titulo_quiz, dni, fecha_hora, enviar_solucionario)
     ).start()
 
     # ⚡ RESPUESTA RÁPIDA
@@ -2117,7 +2248,7 @@ def eliminar_quiz(quiz_id):
     return redirect(url_for('dashboard_profesor'))
 
 
-def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, titulo_quiz, dni, fecha_hora):
+def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, titulo_quiz, dni, fecha_hora, enviar_solucionario):
     
     from io import BytesIO
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
@@ -2209,17 +2340,20 @@ Hola {nombre_completo},
 
 Tu nota final es: {nota}
 """)
+    if enviar_solucionario:
+        msg.add_attachment(buffer.getvalue(),
+                        maintype='application',
+                        subtype='pdf',
+                        filename=f"reporte_{alumno_id}.pdf")
 
-    msg.add_attachment(buffer.getvalue(),
-                       maintype='application',
-                       subtype='pdf',
-                       filename=f"reporte_{alumno_id}.pdf")
+    if enviar_solucionario:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(EMAIL_REMITENTE, EMAIL_PASSWORD)
+            smtp.send_message(msg)
 
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login(EMAIL_REMITENTE, EMAIL_PASSWORD)
-        smtp.send_message(msg)
-
-    print("✅ correo enviado en background")
+        print("✅ correo enviado en background")
+    else:
+        print("ℹ️ solucionario no enviado (configuración del quiz)")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

@@ -17,6 +17,7 @@
             <button onclick="generarCodigo()">Código</button>
             <button onclick="verResultados()">Resultados</button>
             <button class="danger" onclick="eliminarQuiz()">Eliminar</button>
+            <button onclick="generarReporte()">Exportar Quiz</button>
         </div>
 
         <!-- TABLA -->
@@ -62,6 +63,14 @@
  
 
     <script>
+
+        function generarReporte() {
+            let id = obtenerSeleccionado();
+            if (id) {
+                window.open("/reporte_quiz/" + id, "_blank");
+            }
+        }
+
         function obtenerSeleccionado() {
             let seleccionado = document.querySelector('input[name="quiz_id"]:checked');
 
