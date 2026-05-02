@@ -54,7 +54,7 @@ def login():
         cur = conn.cursor()
 
         cur.execute(
-            "SELECT id, usuario, rol FROM usuarios WHERE usuario=%s AND password=%s",
+            "SELECT id, usuario, rol,cempre FROM usuarios WHERE usuario=%s AND password=%s",
             (usuario, password)
         )
 
@@ -68,6 +68,7 @@ def login():
             session['user_id'] = user[0]
             session['usuario'] = user[1]
             session['rol'] = user[2]
+            session['cempre'] = user[3]
 
             # 🔀 REDIRECCIÓN POR ROL
             if user[2] == 'profesor':
@@ -155,9 +156,11 @@ def dashboard_profesor():
             LEFT JOIN preguntas p ON p.quiz_id = z.id
             LEFT JOIN respuestas_alumno r ON r.pregunta_id = p.id
             WHERE z.estado = 'A'
+            AND z.cempre= %s
+            AND z.usuario_id = %s
             GROUP BY z.id, z.titulo, z.codigo
             ORDER BY z.id DESC
-        """)
+        """, (session['cempre'], session['user_id']))
     quizzes = cur.fetchall()
 
     cur.close()
@@ -310,11 +313,12 @@ def ingresar_codigo():
 def ingresar_dni():
     if request.method == 'POST':
         dni = request.form['dni']
+         
 
         conn = get_db_connection()
         cur = conn.cursor()
 
-        cur.execute("SELECT id, nombre, apellido, correo FROM alumnos WHERE dni=%s", (dni,))
+        cur.execute("SELECT id, nombre, apellido, correo FROM alumnos WHERE dni=%s  ", (dni, ))
         alumno = cur.fetchone()
 
         if alumno:
@@ -397,6 +401,7 @@ def ingresar_dni():
 
 @app.route('/resolver_quiz_salon/<int:salon_quiz_id>/<int:alumno_id>')
 def resolver_quiz_salon(salon_quiz_id, alumno_id):
+   
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -405,7 +410,7 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
     cur.execute("""
         SELECT quiz_id
         FROM salon_quiz
-        WHERE id = %s
+        WHERE id = %s 
     """, (salon_quiz_id,))
 
     row = cur.fetchone()
@@ -465,17 +470,23 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
 
 @app.route('/obtener_asignaciones/<int:salon_id>')
 def obtener_asignaciones(salon_id):
+    
+    if 'user_id' not in session:
+        return jsonify({"error": "No autenticado"}), 401
 
     conn = get_db_connection()
     cur = conn.cursor()
+    
+   
 
     cur.execute("""
         SELECT sq.id, q.titulo, sq.codigo
         FROM salon_quiz sq
         JOIN quiz q ON q.id = sq.quiz_id
         WHERE sq.salon_id = %s
+        AND q.usuario_id = %s
         ORDER BY sq.id DESC
-    """, (salon_id,))
+    """, (salon_id,session['user_id'],))
 
     data = cur.fetchall()
 
@@ -663,8 +674,8 @@ def crear_quiz():
 
         # crear quiz
         cur.execute(
-            "INSERT INTO quiz (titulo, usuario, estado, multiple_intentos,enviar_solucionario) VALUES (%s, %s, %s, %s, %s) RETURNING id",
-            (titulo, usuario, 'A', multiple_intentos,enviar_solucionario)
+            "INSERT INTO quiz (titulo,cempre,usuario_id, usuario, estado, multiple_intentos,enviar_solucionario) VALUES (%s,%s,%s, %s, %s, %s, %s) RETURNING id",
+            (titulo,session['cempre'],session['user_id'], usuario, 'A', multiple_intentos,enviar_solucionario)
         )
         quiz_id = cur.fetchone()[0]
         
@@ -858,7 +869,7 @@ def editar_quiz(quiz_id):
 
         titulo = request.form['titulo']
         multiple_intentos = request.form.get("multiple_intentos") == "on"
-        enviar_solucionario = request.form.get("enviar_solucionario") == "on"
+        enviar_solucionario = bool(request.form.get("enviar_solucionario"))
 
         # actualizar título
         cur.execute(
@@ -1175,6 +1186,9 @@ def acceso_quiz(codigo):
 
 @app.route('/resolver_quiz/<int:quiz_id>/<int:alumno_id>')
 def resolver_quiz(quiz_id, alumno_id):
+    
+    salon_quiz_id = None
+ 
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -1196,8 +1210,16 @@ def resolver_quiz(quiz_id, alumno_id):
             WHERE pregunta_id = %s
         """, (p[0],))
 
-        opciones = cur.fetchall()
+        opciones_raw = cur.fetchall()
 
+        opciones = [
+            {
+                "id": op[0],       # 🔥 IMPORTANTE
+                "texto": op[1]
+            }
+            for op in opciones_raw
+        ]
+        
         data.append({
             'id': p[0],
             'texto': p[1],
@@ -1235,12 +1257,30 @@ def guardar_respuestas():
     valor_por_pregunta = 20 / total
 
     # 🔍 obtener quiz_id
-    cur.execute("""
-        SELECT quiz_id
-        FROM salon_quiz
-        WHERE id = %s
-    """, (salon_quiz_id,))
-    quiz_id = cur.fetchone()[0]
+    if salon_quiz_id:
+        cur.execute("""
+            SELECT quiz_id
+            FROM salon_quiz
+            WHERE id = %s
+        """, (salon_quiz_id,))
+        
+        row = cur.fetchone()
+        quiz_id = row[0] if row else None
+    else:
+        quiz_id = data.get("quiz_id")
+
+    # 🔥 fallback de seguridad (NO rompe nada)
+    if not quiz_id:
+        print("⚠️ quiz_id no vino, usando pregunta")
+        
+        cur.execute("""
+            SELECT quiz_id
+            FROM preguntas
+            WHERE id = %s
+        """, (list(respuestas.keys())[0],))
+        
+        row = cur.fetchone()
+        quiz_id = row[0] if row else None
 
     # 🔥 LOOP PRINCIPAL
     for pregunta_id, opcion_id in respuestas.items():
@@ -1317,8 +1357,14 @@ def guardar_respuestas():
         FROM quiz
         WHERE id = %s
     """, (quiz_id,))
+    
+    print("DEBUG quiz_id:", quiz_id)
+    
 
-    enviar_solucionario = cur.fetchone()[0]
+    row = cur.fetchone()
+    enviar_solucionario = row[0] if row else False
+    
+    print("DEBUG enviar_solucionario:", enviar_solucionario)
 
     cur.close()
     conn.close()
@@ -2054,17 +2100,18 @@ def ver_resultados(quiz_id):
 
     # 🔥 4. PREGUNTAS MÁS FALLADAS (simple demo)
     cur.execute("""
-      SELECT p.norden, p.texto, COUNT(*) as errores
+      SELECT 
+            p.id,
+            p.texto,
+            COUNT(*) AS errores
         FROM respuestas_alumno r
         JOIN preguntas p ON r.pregunta_id = p.id
-        JOIN opciones o ON o.pregunta_id = p.id
-        WHERE o.es_correcta = false 
+        JOIN opciones o ON r.opcion_id = o.id
+        WHERE o.es_correcta = false
         AND p.quiz_id = %s
-        AND r.opcion_id = o.id
-        AND p.norden IS NOT NULL
-        GROUP BY p.norden, p.texto
+        GROUP BY p.id, p.texto
         ORDER BY errores DESC
-        LIMIT 10
+        LIMIT 10;
     """, (quiz_id,))
 
     preguntas = cur.fetchall()

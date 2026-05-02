@@ -390,3 +390,93 @@ select * from opciones
 
 select * from preguntas
 select * from opciones
+_______________________________________________________________________
+CREATE TABLE empresa (
+    cempre SERIAL PRIMARY KEY,
+    dempre VARCHAR(100),
+    fcreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    licencia BOOLEAN DEFAULT TRUE,
+    estado BOOLEAN DEFAULT TRUE
+);
+INSERT INTO empresa ( dempre)
+VALUES ('ADEX');
+
+ALTER TABLE usuarios
+ADD COLUMN cempre INTEGER;
+
+UPDATE usuarios
+SET cempre = 1;
+
+ALTER TABLE usuarios
+ADD CONSTRAINT fk_usuarios_empresa
+FOREIGN KEY (cempre) REFERENCES empresa(cempre);
+
+ALTER TABLE quiz
+ADD COLUMN cempre INTEGER;
+
+UPDATE quiz
+SET cempre = 1;
+
+ALTER TABLE quiz
+ADD CONSTRAINT fk_quiz_empresa
+FOREIGN KEY (cempre) REFERENCES empresa(cempre);
+
+ALTER TABLE salon_quiz
+ADD COLUMN cempre INTEGER;
+
+UPDATE salon_quiz
+SET cempre = 1;
+
+ALTER TABLE salon_quiz
+ADD CONSTRAINT fk_salon_empresa
+FOREIGN KEY (cempre) REFERENCES empresa(cempre);
+
+select * from usuarios
+select * from alumnos
+
+ALTER TABLE alumnos
+ADD COLUMN cempre INTEGER;
+
+UPDATE alumnos
+SET cempre = 1;
+
+ALTER TABLE alumnos
+ADD CONSTRAINT fk_salon_empresa
+FOREIGN KEY (cempre) REFERENCES empresa(cempre);
+
+SELECT id, titulo, cempre
+FROM quiz
+LIMIT 10;
+
+SELECT id, usuario, rol, cempre
+FROM usuarios;
+
+ALTER TABLE quiz
+ADD COLUMN usuario_id INTEGER;
+
+select * from usuarios
+
+UPDATE quiz
+SET usuario_id = 2;
+
+SELECT id, titulo, usuario_id
+FROM quiz;
+
+SELECT id, titulo, usuario_id
+FROM quiz
+ORDER BY id DESC;
+
+SELECT sq.id, sq.quiz_id, q.usuario_id
+FROM salon_quiz sq
+JOIN quiz q ON q.id = sq.quiz_id;
+
+select * from salon
+select * from salon_quiz where salon_id=3
+select * from quiz
+
+SELECT sq.id, q.titulo, sq.codigo
+        FROM salon_quiz sq
+        JOIN quiz q ON q.id = sq.quiz_id
+        WHERE sq.salon_id = 3
+        AND q.usuario_id = 2
+        ORDER BY sq.id DESC

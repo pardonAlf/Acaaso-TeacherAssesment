@@ -364,7 +364,12 @@ function renderTabla() {
         if (p.tipo === "vf") {
             detalle = "Verdadero / Falso";
         } else {
-            detalle = p.opciones.join("<br>");
+            let letras = ["A","B","C","D","E"];
+
+            detalle = p.opciones.map((op, i) => {
+                let texto = (typeof op === "object") ? op.texto : op;
+                return `${letras[i]}) ${texto}`;
+            }).join("<br>");
         }
 
        let fila = `
@@ -418,10 +423,19 @@ function editarPregunta(id) {
     if (pregunta.tipo === "vf") {
 
         let correctaVF = "";
-        let opCorrecta = pregunta.opciones.find(op => op.es_correcta);
 
-        if (opCorrecta) {
-            correctaVF = opCorrecta.texto;
+// 🔥   soporta ambos formatos (IA y manual)
+        if (Array.isArray(pregunta.opciones)) {
+
+            if (typeof pregunta.opciones[0] === "object") {
+                // caso IA
+                let opCorrecta = pregunta.opciones.find(op => op.es_correcta);
+                if (opCorrecta) correctaVF = opCorrecta.texto;
+
+            } else {
+                // caso manual
+                correctaVF = pregunta.correcta || "";
+            }
         }
 
         html += `
@@ -446,7 +460,7 @@ function editarPregunta(id) {
                     <span style="width:20px; font-size:12px; color:#6c757d;">
                         ${letras[i]}.
                     </span>
-                    <input type="text" class="form-control opcion-edit" value="${op.texto}">
+                    <input type="text" class="form-control opcion-edit" value="${op.texto || op}">
                 </div>
             `;
         });
@@ -457,10 +471,15 @@ function editarPregunta(id) {
 
         html += `
             <label>Respuesta correcta</label>
-            <select id="edit_correcta" class="form-control">
-                ${pregunta.opciones.map(op => `
-                    <option ${op.texto === correctaTexto ? "selected" : ""}>${op.texto}</option>
-                `).join("")}
+            <select id="edit_correcta" class="form-control">              
+                ${pregunta.opciones.map((op, i) => {
+                    let texto = (typeof op === "object") ? op.texto : op;
+                    let letra = ["A","B","C","D","E"][i];
+
+                    return `<option value="${i+1}" ${letra === pregunta.correcta ? "selected" : ""}>
+                        ${letra}
+                            </option>`;
+                }).join("")}
             </select>
         `;
     }

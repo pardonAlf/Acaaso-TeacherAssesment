@@ -26,7 +26,7 @@
       <ul class="navbar-nav me-auto align-items-lg-center">
 
         <li class="nav-item">
-          <a class="nav-link px-3" href="/dashboard_profesor">Home</a>
+          <a class="nav-link px-3" href="/">Home</a>
         </li>
 
         <!-- Mantenimientos -->
@@ -62,6 +62,18 @@
 
       </ul>
     </div>
+
+    <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+
+      <span style="color:white;">
+          {{ session['usuario'] }} - {{ session['rol'] }}
+      </span>
+
+      <a href="/logout" class="btn btn-sm btn-light">
+          Log off
+      </a>
+
+  </div>
 
   </div>
 </nav>
