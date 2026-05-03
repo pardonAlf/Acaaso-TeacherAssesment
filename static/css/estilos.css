@@ -397,6 +397,11 @@ li{
     border-radius: 10px;
     overflow: hidden;
 }
+
+/* 🔥 siempre mostrar scrollbar vertical */
+body {
+    overflow-y: scroll;
+}
  
 
 /* =========================

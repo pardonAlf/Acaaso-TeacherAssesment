@@ -9,6 +9,10 @@ import smtplib
 from email.message import EmailMessage
 import psycopg2
 from flask import send_file
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.styles import Font
+from collections import defaultdict
  
  
 import threading
@@ -46,42 +50,42 @@ def home():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # 🔥 SIEMPRE cargar empresas
+    cur.execute("SELECT dempre FROM empresa ORDER BY dempre")
+    empresas = cur.fetchall()
+
     if request.method == 'POST':
         usuario = request.form['usuario']
         password = request.form['password']
 
-        conn = get_db_connection()
-        cur = conn.cursor()
-
         cur.execute(
-            "SELECT id, usuario, rol,cempre FROM usuarios WHERE usuario=%s AND password=%s",
+            "SELECT id, usuario, rol, cempre FROM usuarios WHERE usuario=%s AND password=%s",
             (usuario, password)
         )
 
         user = cur.fetchone()
 
-        cur.close()
-        conn.close()
-
         if user:
-            # 🔐 GUARDAMOS EN SESIÓN
             session['user_id'] = user[0]
             session['usuario'] = user[1]
             session['rol'] = user[2]
             session['cempre'] = user[3]
-
-            # 🔀 REDIRECCIÓN POR ROL
-            if user[2] == 'profesor':
-                return redirect('/')
-            elif user[2] == 'alumno':
-                return redirect('/alumno')
-            else:
-                return redirect('/admin')
-
+ 
+            cur.close(); conn.close()
+            return redirect('/')
+             
         else:
+            cur.close(); conn.close()
             return "Usuario o contraseña incorrectos ❌"
 
-    return render_template('login.html')
+    cur.close()
+    conn.close()
+
+    return render_template("login.html", empresas=empresas)
 
 #def get_db_connection():
 #    conn = psycopg2.connect(
@@ -143,7 +147,28 @@ def dashboard_profesor():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("""
+    if session['rol'] == 'admin':
+        cur.execute("""
+            SELECT 
+                z.id,
+                u.usuario,
+                z.titulo, 
+                COUNT(DISTINCT r.alumno_id) AS alumnos,
+                (select count(distinct p.id)  
+                    from preguntas p
+                    where p.quiz_id=z.id) AS preguntas,
+                z.codigo 
+                FROM quiz z
+                INNER JOIN usuarios u on u.id=z.usuario_id
+                LEFT JOIN preguntas p ON p.quiz_id = z.id
+                LEFT JOIN respuestas_alumno r ON r.pregunta_id = p.id
+                WHERE z.estado = 'A'
+                AND z.cempre= %s
+                GROUP BY z.id,u.usuario, z.titulo, z.codigo
+                ORDER BY z.id DESC
+            """, (session['cempre'], ))
+    else:
+        cur.execute("""
             SELECT 
                 z.id,
                 z.titulo, 
@@ -152,21 +177,44 @@ def dashboard_profesor():
                     from preguntas p
                     where p.quiz_id=z.id) AS preguntas,
                 z.codigo 
-            FROM quiz z
-            LEFT JOIN preguntas p ON p.quiz_id = z.id
-            LEFT JOIN respuestas_alumno r ON r.pregunta_id = p.id
-            WHERE z.estado = 'A'
-            AND z.cempre= %s
-            AND z.usuario_id = %s
-            GROUP BY z.id, z.titulo, z.codigo
-            ORDER BY z.id DESC
-        """, (session['cempre'], session['user_id']))
+                FROM quiz z
+                LEFT JOIN preguntas p ON p.quiz_id = z.id
+                LEFT JOIN respuestas_alumno r ON r.pregunta_id = p.id
+                WHERE z.estado = 'A'
+                AND z.cempre= %s
+                AND z.usuario_id = %s
+                GROUP BY z.id, z.titulo, z.codigo
+                ORDER BY z.id DESC
+            """, (session['cempre'], session['user_id']))
+        
     quizzes = cur.fetchall()
-
     cur.close()
     conn.close()
 
     return render_template('dashboard_profesor.html', quizzes=quizzes)
+
+@app.route('/profesores')
+def profesores():
+
+    if 'rol' not in session or session['rol'] != 'admin':
+        return "Acceso no autorizado", 403
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id, dni, nombre, apellido, usuario,password,correo,fecha_creacion
+        FROM usuarios
+        WHERE rol = 'profesor' AND cempre = %s
+        ORDER BY nombre
+    """, (session['cempre'],))
+
+    profesores = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return render_template('profesores.html', profesores=profesores)
 
 
 @app.route('/reporte_quiz/<int:quiz_id>')
@@ -280,6 +328,78 @@ def alumno():
     if 'usuario' in session:
         return f"Bienvenido alumno {session['usuario']} 🎓"
     return redirect('/login')
+
+@app.route('/registrar_admin', methods=['POST'])
+def registrar_admin():
+
+    data = request.get_json()
+
+    codigo = data.get("codigo")
+
+    # 🔐 VALIDACIÓN (temporal)
+    CODIGO_VALIDO = "VCX234"
+
+    if codigo != CODIGO_VALIDO:
+        return jsonify({
+            "mensaje": "Código de verificación inválido"
+        }), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    empresa_nombre = data.get("empresa")
+
+    # 🔍 buscar empresa
+    cur.execute("""
+        SELECT cempre FROM empresa
+        WHERE dempre = %s
+    """, (empresa_nombre,))
+
+    row = cur.fetchone()
+
+    if row:
+        cempre = row[0]
+    else:
+        # crear empresa
+        cur.execute("""
+            INSERT INTO empresa (dempre)
+            VALUES (%s)
+            RETURNING cempre
+        """, (empresa_nombre,))
+        
+        cempre = cur.fetchone()[0]
+
+    usuario = data.get("usuario")
+    password = data.get("password")
+    dni = data.get("dni")
+    nombre = data.get("nombre")
+    apellido = data.get("apellido")
+    correo = data.get("correo")
+
+    # 🔍 validar si ya existe usuario
+    cur.execute("""
+        SELECT id FROM usuarios
+        WHERE usuario = %s
+    """, (usuario,))
+
+    if cur.fetchone():
+        return jsonify({
+            "mensaje": "El usuario ya existe"
+        }), 400
+
+    # 🔥 INSERT COMPLETO
+    cur.execute("""
+        INSERT INTO usuarios (
+            usuario, password, rol, dni, nombre, apellido, correo, cempre
+        )
+            VALUES (%s, %s, 'admin', %s, %s, %s, %s, %s)
+        """, (usuario, password, dni, nombre, apellido, correo, cempre))
+
+    conn.commit()
+    
+    return jsonify({
+        "mensaje": "Usuario administrador creado correctamente"
+    })
 
 
 @app.route('/admin')
@@ -1382,6 +1502,85 @@ def guardar_respuestas():
         "total": total,
         "nota": nota
     })
+    
+    
+@app.route('/exportar_quiz_excel/<int:quiz_id>')
+def exportar_quiz_excel(quiz_id):
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # 🔹 traer datos ordenados
+    cur.execute("""
+        SELECT p.id, p.texto, o.texto, o.es_correcta
+        FROM preguntas p
+        JOIN opciones o ON p.id = o.pregunta_id
+        WHERE p.quiz_id = %s
+        ORDER BY p.id, o.id
+    """, (quiz_id,))
+
+    rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    # 🔹 agrupar preguntas
+    preguntas = defaultdict(list)
+
+    for r in rows:
+        pregunta_id = r[0]
+        pregunta_texto = r[1]
+
+        preguntas[(pregunta_id, pregunta_texto)].append({
+            "opcion": r[2],
+            "correcta": r[3]
+        })
+
+    # 📊 crear Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Quiz"
+
+    letras = ['a', 'b', 'c', 'd', 'e', 'f']
+    fila = 1
+
+    for (pid, texto_pregunta), opciones in preguntas.items():
+
+        # 🔥 PREGUNTA COMO CABECERA
+        celda = ws.cell(row=fila, column=1, value=texto_pregunta)
+        celda.font = Font(bold=True)
+
+        fila += 1
+
+        # 🔹 opciones
+        for i, op in enumerate(opciones):
+
+            letra = letras[i] if i < len(letras) else f"{i})"
+            texto = f"{letra}) {op['opcion']}"
+
+            if op["correcta"]:
+                texto += "  ✔"
+
+            ws.cell(row=fila, column=1, value=texto)
+            fila += 1
+
+        # 🔹 espacio entre preguntas
+        fila += 1
+
+    # 🔹 ajustar ancho columna
+    ws.column_dimensions['A'].width = 100
+
+    # guardar
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"quiz_{quiz_id}.xlsx",
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
     
 #@app.route('/guardar_respuestas', methods=['POST'])
 def guardar_respuestas1():

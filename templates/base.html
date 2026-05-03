@@ -35,6 +35,11 @@
             Mantenimientos
           </a>
           <ul class="dropdown-menu dropdown-menu-dark shadow">
+            {% if session['rol'] == 'admin' %}
+                <li><a class="dropdown-item" href="/profesores" >
+                    Gestionar Profesores
+                </a></li>
+            {% endif %}
             <li><a class="dropdown-item" href="/salones">Salones</a></li>
             <li><a class="dropdown-item" href="/asignar_quiz">Asignar Quiz</a></li>
           </ul>

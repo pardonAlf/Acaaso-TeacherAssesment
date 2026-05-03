@@ -18,15 +18,25 @@
             <button onclick="verResultados()">Resultados</button>
             <button class="danger" onclick="eliminarQuiz()">Eliminar</button>
             <button onclick="generarReporte()">Exportar Quiz</button>
+            <button onclick="exportarExcelSeleccionado()">Exportar Excel</button>
+            <button  onclick="activarFiltro()" >Filtrar</button>
+
+            <input type="text" id="inputFiltro"
+                class="form-control form-control-sm d-inline-block ms-2"
+                style="width:250px; visibility:hidden;"
+                placeholder="Buscar...">
         </div>
 
         <!-- TABLA -->
         <div class="table-container">
-            <table class="tabla">
+            <table id="tablaQuizzes" class="tabla"> 
                 <thead>
                     <tr>
                         <th></th>
                         <th>ID</th>
+                        {% if session['rol'] == 'admin' %}
+                            <th>Usuario</th>
+                        {% endif %}
                         <th>Título</th>
                         
                         <th>Alumnos</th>
@@ -41,17 +51,35 @@
                         <td>
                             <input type="radio" name="quiz_id" value="{{ q[0] }}">
                         </td>
-                        <td>{{ q[0] }}</td>
-                        <td>{{ q[1] }}</td>
-                        <td>{{ q[2] }}</td>
-                        <td>{{ q[3] }}</td>
-                        <td>
-                            {% if q[4] %}
-                                <span class="badge-ok">{{ q[4] }}</span>
-                            {% else %}
-                                <span class="badge-off">—</span>
-                            {% endif %}
-                        </td>
+                        {% if session['rol'] == 'admin' %}
+                            <td>{{ q[0] }}</td>
+                            <td>{{ q[1] }}</td>
+                            <td>{{ q[2] }}</td>
+                            <td>{{ q[3] }}</td>
+                            <td>{{ q[4] }}</td>
+                                
+
+                            <td>
+                                {% if q[5] %}
+                                    <span class="badge-ok">{{ q[5] }}</span>
+                                {% else %}
+                                    <span class="badge-off">—</span>
+                                {% endif %}
+                            </td>
+                        {% else %}
+                            <td>{{ q[0] }}</td>
+                            <td>{{ q[1] }}</td>
+                            <td>{{ q[2] }}</td>
+                            <td>{{ q[3] }}</td>
+                                
+                            <td>
+                                {% if q[4] %}
+                                    <span class="badge-ok">{{ q[4] }}</span>
+                                {% else %}
+                                    <span class="badge-off">—</span>
+                                {% endif %}
+                            </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -60,6 +88,63 @@
         </div>
 
     </div>
+    <script>
+    function exportarExcelSeleccionado() {
+
+        let seleccionado = document.querySelector('input[name="quiz_id"]:checked');
+
+        if (!seleccionado) {
+            alert("Seleccione un quiz");
+            return;
+        }
+
+        let quiz_id = seleccionado.value;
+
+        window.location.href = `/exportar_quiz_excel/${quiz_id}`;
+    }
+    </script>
+
+    <script>
+    document.getElementById("inputFiltro").addEventListener("input", function() {
+
+        let texto = this.value.toLowerCase().trim();
+
+        let filas = document.querySelectorAll("#tablaQuizzes tbody tr");
+
+        // 🔥 antes de 3 caracteres → no mostrar nada
+        if (texto.length < 3) {
+            filas.forEach(fila => fila.style.display = "none");
+            return;
+        }
+
+        // 🔍 filtrar
+        filas.forEach(fila => {
+
+            let contenido = fila.innerText.toLowerCase();
+
+            if (contenido.includes(texto)) {
+                fila.style.display = "";
+            } else {
+                fila.style.display = "none";
+            }
+
+        });
+
+    });
+    </script>
+    <script>
+    function activarFiltro() {
+
+        let input = document.getElementById("inputFiltro");
+
+        input.style.visibility = "visible";
+        input.focus();
+        // limpiar tabla (tbody)
+        let filas = document.querySelectorAll("#tablaQuizzes tbody tr");
+
+        filas.forEach(fila => fila.style.display = "none");
+    }
+    </script>
  
 
     <script>
