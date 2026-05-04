@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultado del Alumno</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            padding: 30px;
+            background: #e5e7eb;
+            font-family: Arial, sans-serif;
+        }
+
+        .pregunta {
+            margin-bottom: 20px;
+        }
+
+       .correcta {
+            color: #2e7d32;
+            font-weight: 600;
+        }
+
+        .incorrecta {
+            color: #c62828;
+            font-weight: 600;
+        }
+
+        .opcion {
+            margin-bottom: 4px;
+        }
+
+        .seleccionada {
+            font-weight: bold;
+        }
+
+        /* HOJA A4 */
+        .a4-page {
+            width: 794px; /* A4 aprox en px */
+            min-height: 1123px;
+            margin: 40px auto;
+            background: white;
+            padding: 40px 50px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-radius: 6px;
+        }
+
+        /* PARA PDF (opcional luego) */
+        @media print {
+            body {
+                background: white;
+            }
+
+            .a4-page {
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+                border-radius: 0;
+            }
+        }
+
+        .btn-pdf {
+            background: #1f2937;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .btn-pdf:hover {
+            background: #111827;
+        }
+    </style>
+</head>
+<body>
+    <div class="a4-page"> 
+        <div style="
+        display:flex; 
+        justify-content:space-between; 
+        align-items:center; 
+        border-bottom:2px solid #e5e7eb; 
+        padding-bottom:12px; 
+        margin-bottom:25px;
+    ">
+
+            <!-- IZQUIERDA -->
+            <div style="display:flex; align-items:center; gap:15px;">
+
+                <img src="/static/img/logo.png" style="height:100px;">
+
+                <div>
+                    <div style="font-size:20px; font-weight:700; color:#1f2937;">
+                        Reporte de Evaluación
+                    </div>
+                    <div style="font-size:11px; color:#9ca3af;">
+                        Plataforma ACAASO • Reporte automático
+                    </div>
+
+                    <div style="font-size:13px; color:#6b7280; margin-top:4px;">
+                        <b>Alumno:</b> {{ alumno_nombre }}<br>
+                        <b>Fecha:</b> {{ fecha }}
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- DERECHA -->
+            <button onclick="exportarPDF()" 
+                class="btn-pdf">
+                📄 Exportar PDF
+            </button>
+            <div style="
+                border:2px solid #1f2937; 
+                border-radius:8px;
+                padding:10px 20px; 
+                text-align:center;
+                min-width:100px;
+                background:#f9fafb;
+            ">
+                
+                <div style="font-size:11px; color:#6b7280; letter-spacing:1px;">
+                    NOTA
+                </div>
+
+                <div style="font-size:34px; font-weight:700; color:#111827;">
+                    {{ nota }}
+                </div>
+            </div>
+
+        </div>
+
+    {% set pregunta_actual = None %}
+    {% set contador = 0 %}
+
+    {% for pregunta, opciones in preguntas.items() %}
+        {% set contador = contador + 1 %}
+
+        <div class="pregunta">
+            <b>{{ loop.index }}. {{ pregunta }}</b>
+            <ul>
+
+            {% for op in opciones %}
+                <li style="margin-bottom:4px;
+                    {% if op.es_correcta %} color:#2e7d32; font-weight:600;{% endif %}
+                    {% if op.opcion_id == op.respuesta_alumno and not op.es_correcta %}color:#c62828; font-weight:600;{% endif %}
+                ">
+
+                    {{ op.opcion }}
+
+                    {% if op.es_correcta %}
+                        <span style="margin-left:8px;">✔</span>
+                    {% elif op.opcion_id == op.respuesta_alumno %}
+                        <span style="margin-left:8px;">✖</span>
+                    {% endif %}
+
+                </li>
+            {% endfor %}
+
+            </ul>
+        </div>
+    {% endfor %}
+    </div>
+
+<script>
+
+function exportarPDF() {
+
+    const boton = document.querySelector('.btn-pdf');
+
+    // ocultar botón al imprimir
+    boton.style.display = 'none';
+
+    window.print();
+
+    // volver a mostrar
+    setTimeout(() => {
+        boton.style.display = 'inline-block';
+    }, 500);
+}
+
+</script>
+
+</body>
+</html>

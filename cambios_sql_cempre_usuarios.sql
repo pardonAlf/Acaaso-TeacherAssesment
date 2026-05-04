@@ -56,3 +56,23 @@ VALUES (
 );
 
 SELECT usuario, rol, cempre FROM usuarios;
+
+ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS unique_usuario;
+ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS unique_dni;
+
+ALTER TABLE usuarios 
+ADD CONSTRAINT unique_usuario_empresa UNIQUE (usuario, cempre);
+
+ALTER TABLE usuarios 
+ADD CONSTRAINT unique_dni_empresa UNIQUE (dni, cempre);
+
+UNIQUE (usuario, cempre)
+UNIQUE (dni, cempre)
+
+select * from usuarios
+
+DELETE FROM usuarios 
+WHERE (usuario IS NULL OR usuario = '')
+AND rol = 'profesor';
+
+select * from salon

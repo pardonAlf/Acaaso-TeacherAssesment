@@ -13,6 +13,13 @@ from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font
 from collections import defaultdict
+from openpyxl.styles import Font, Alignment, Border, Side
+from openpyxl.drawing.image import Image as XLImage
+from collections import defaultdict
+from io import BytesIO
+from flask import send_file
+from datetime import datetime
+from flask import session, redirect, url_for
  
  
 import threading
@@ -48,39 +55,52 @@ def get_version():
 def home():
     return render_template('index.html')
 
+def es_admin():
+    return session.get('rol') == 'admin'
+
+def es_profesor():
+    return session.get('rol') == 'profesor'
+
+from werkzeug.security import check_password_hash
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
 
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # 🔥 SIEMPRE cargar empresas
     cur.execute("SELECT dempre FROM empresa ORDER BY dempre")
     empresas = cur.fetchall()
 
     if request.method == 'POST':
+
         usuario = request.form['usuario']
         password = request.form['password']
 
-        cur.execute(
-            "SELECT id, usuario, rol, cempre FROM usuarios WHERE usuario=%s AND password=%s",
-            (usuario, password)
-        )
+        cur.execute("""
+            SELECT id, usuario, password, rol, cempre
+            FROM usuarios
+            WHERE usuario = %s
+        """, (usuario,))
 
         user = cur.fetchone()
 
         if user:
-            session['user_id'] = user[0]
-            session['usuario'] = user[1]
-            session['rol'] = user[2]
-            session['cempre'] = user[3]
- 
-            cur.close(); conn.close()
-            return redirect('/')
-             
-        else:
-            cur.close(); conn.close()
-            return "Usuario o contraseña incorrectos ❌"
+            db_password = user[2]
+
+            # 🔐 validar hash (si aún no usas hash, temporalmente deja ==)
+            if db_password == password or check_password_hash(db_password, password):
+
+                session['user_id'] = user[0]
+                session['usuario'] = user[1]
+                session['rol'] = user[3]
+                session['cempre'] = user[4]
+
+                cur.close(); conn.close()
+                return redirect('/')
+
+        cur.close(); conn.close()
+        return render_template("login.html", empresas=empresas, error="Credenciales incorrectas")
 
     cur.close()
     conn.close()
@@ -96,6 +116,11 @@ def login():
 #        port="5432"
 #   )
 #   return conn
+
+def require_admin():
+    if 'user_id' not in session or session.get('rol') != 'admin':
+        return False
+    return True
  
 def get_db_connection():
     database_url = os.getenv("DATABASE_URL")
@@ -144,6 +169,14 @@ def register():
 
 @app.route('/dashboard_profesor')
 def dashboard_profesor():
+    
+    if 'user_id' not in session:
+            return redirect(url_for('login'))
+
+    if session['rol'] == 'admin':
+        # lógica admin
+        pass
+    
     conn = get_db_connection()
     cur = conn.cursor()
 
@@ -1503,14 +1536,17 @@ def guardar_respuestas():
         "nota": nota
     })
     
-    
 @app.route('/exportar_quiz_excel/<int:quiz_id>')
 def exportar_quiz_excel(quiz_id):
 
     conn = get_db_connection()
     cur = conn.cursor()
+    
+    # 🔹 título
+    cur.execute("SELECT titulo FROM quiz WHERE id = %s", (quiz_id,))
+    titulo_quiz = cur.fetchone()[0]
 
-    # 🔹 traer datos ordenados
+    # 🔹 preguntas + opciones
     cur.execute("""
         SELECT p.id, p.texto, o.texto, o.es_correcta
         FROM preguntas p
@@ -1526,51 +1562,88 @@ def exportar_quiz_excel(quiz_id):
 
     # 🔹 agrupar preguntas
     preguntas = defaultdict(list)
-
     for r in rows:
-        pregunta_id = r[0]
-        pregunta_texto = r[1]
-
-        preguntas[(pregunta_id, pregunta_texto)].append({
+        preguntas[(r[0], r[1])].append({
             "opcion": r[2],
             "correcta": r[3]
         })
 
-    # 📊 crear Excel
+    # 📊 Excel
     wb = Workbook()
     ws = wb.active
     ws.title = "Quiz"
 
+    # 🔹 columnas
+    ws.column_dimensions['A'].width = 60
+    ws.column_dimensions['B'].width = 60
+
+    # =========================
+    # 🔥 HEADER
+    # =========================
+
+    # 🔹 LOGO en A1:B2
+    try:
+        logo = XLImage("static/img/logo.png")
+
+        base_width = 70
+        ratio = base_width / logo.width
+        logo.width = base_width
+        logo.height = int(logo.height * ratio)
+
+        ws.add_image(logo, "A1")
+    except:
+        pass
+
+    # 🔹 TÍTULO en A3:B3
+    ws.merge_cells('A3:B3')
+    celda_titulo = ws.cell(row=3, column=1, value=titulo_quiz)
+    celda_titulo.font = Font(size=14, bold=True)
+    celda_titulo.alignment = Alignment(horizontal="center", vertical="center")
+
+    # 🔹 línea separadora (fila 4)
+    thin = Side(style='thin')
+    for col in range(1, 3):
+        ws.cell(row=4, column=col).border = Border(bottom=thin)
+
+    # =========================
+    # 🔹 CONTENIDO
+    # =========================
+
+    fila = 5
     letras = ['a', 'b', 'c', 'd', 'e', 'f']
-    fila = 1
+    contador = 1
 
     for (pid, texto_pregunta), opciones in preguntas.items():
 
-        # 🔥 PREGUNTA COMO CABECERA
-        celda = ws.cell(row=fila, column=1, value=texto_pregunta)
+        # 🔹 PREGUNTA
+        ws.merge_cells(start_row=fila, start_column=1, end_row=fila, end_column=2)
+
+        texto = f"{contador}. {texto_pregunta}"
+        celda = ws.cell(row=fila, column=1, value=texto)
         celda.font = Font(bold=True)
+        celda.alignment = Alignment(wrap_text=True)
 
         fila += 1
 
-        # 🔹 opciones
+        # 🔹 OPCIONES
         for i, op in enumerate(opciones):
-
             letra = letras[i] if i < len(letras) else f"{i})"
-            texto = f"{letra}) {op['opcion']}"
+            texto_op = f"   {letra}) {op['opcion']}"
 
             if op["correcta"]:
-                texto += "  ✔"
+                texto_op += "  ✔"
 
-            ws.cell(row=fila, column=1, value=texto)
+            ws.merge_cells(start_row=fila, start_column=1, end_row=fila, end_column=2)
+
+            celda_op = ws.cell(row=fila, column=1, value=texto_op)
+            celda_op.alignment = Alignment(wrap_text=True)
+
             fila += 1
 
-        # 🔹 espacio entre preguntas
         fila += 1
+        contador += 1
 
-    # 🔹 ajustar ancho columna
-    ws.column_dimensions['A'].width = 100
-
-    # guardar
+    # 🔹 guardar
     buffer = BytesIO()
     wb.save(buffer)
     buffer.seek(0)
@@ -1580,8 +1653,8 @@ def exportar_quiz_excel(quiz_id):
         as_attachment=True,
         download_name=f"quiz_{quiz_id}.xlsx",
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    
+    )   
+
 #@app.route('/guardar_respuestas', methods=['POST'])
 def guardar_respuestas1():
 
@@ -1845,10 +1918,26 @@ def guardar_respuestas1():
 @app.route('/salones')
 def ver_salones():
 
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    rol = session['rol']
+    cempre = session['cempre']
+
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("""
+    # 🧠 lógica según rol
+    if rol == 'admin':
+        filtro = "WHERE s.estado='A' AND s.cempre = %s"
+        params = (cempre,)
+    else:
+        # profesor
+        filtro = "WHERE s.estado='A' AND s.cempre = %s AND s.usuario_id = %s"
+        params = (cempre, user_id)
+
+    query = f"""
         SELECT 
             s.id, 
             s.codigo, 
@@ -1858,11 +1947,12 @@ def ver_salones():
             COUNT(sq.id) as total_quizzes
         FROM salon s
         LEFT JOIN salon_quiz sq ON sq.salon_id = s.id
-        WHERE s.estado='A'
+        {filtro}
         GROUP BY s.id
         ORDER BY s.id DESC
-    """)
+    """
 
+    cur.execute(query, params)
     salones = cur.fetchall()
 
     cur.close()
@@ -1934,16 +2024,25 @@ def crear_salon():
 @app.route('/guardar_salon', methods=['POST'])
 def guardar_salon():
 
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
     codigo = request.form['codigo']
     descripcion = request.form['descripcion']
+
+    user_id = session['user_id']
+    cempre = session['cempre']
+
+    if not codigo or not descripcion:
+        return "Campos obligatorios", 400
 
     conn = get_db_connection()
     cur = conn.cursor()
 
     cur.execute("""
-        INSERT INTO salon (codigo, descripcion, usuario, estado)
-        VALUES (%s, %s, %s, 'A')
-    """, (codigo, descripcion, 'pardolf'))  # 👈 luego puedes hacerlo dinámico
+        INSERT INTO salon (codigo, descripcion, usuario_id, cempre, estado)
+        VALUES (%s, %s, %s, %s, 'A')
+    """, (codigo, descripcion, user_id, cempre))
 
     conn.commit()
     cur.close()
@@ -1954,13 +2053,50 @@ def guardar_salon():
 @app.route('/asignar_quiz')
 def asignar_quiz():
 
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    rol = session['rol']
+    cempre = session['cempre']
+
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT id, codigo, descripcion FROM salon ORDER BY id DESC")
+    # 🔹 SALONES
+    if rol == 'admin':
+        cur.execute("""
+            SELECT id, codigo, descripcion
+            FROM salon
+            WHERE cempre = %s
+            ORDER BY id DESC
+        """, (cempre,))
+    else:
+        cur.execute("""
+            SELECT id, codigo, descripcion
+            FROM salon
+            WHERE cempre = %s AND usuario_id = %s
+            ORDER BY id DESC
+        """, (cempre, user_id))
+
     salones = cur.fetchall()
 
-    cur.execute("SELECT id, titulo FROM quiz ORDER BY id DESC")
+    # 🔹 QUIZZES
+    if rol == 'admin':
+        cur.execute("""
+            SELECT id, titulo
+            FROM quiz
+            WHERE cempre = %s
+            ORDER BY id DESC
+        """, (cempre,))
+    else:
+        cur.execute("""
+            SELECT id, titulo
+            FROM quiz
+            WHERE cempre = %s AND usuario_id = %s
+            ORDER BY id DESC
+        """, (cempre, user_id))
+
     quizzes = cur.fetchall()
 
     cur.close()
@@ -2010,122 +2146,144 @@ def guardar_asignacion():
 
     return jsonify({"status": "ok"})
 
-
 @app.route('/resultados_salon', methods=['GET', 'POST'])
 def resultados_salon():
 
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    rol = session['rol']
+    cempre = session['cempre']
+
     conn = get_db_connection()
     cur = conn.cursor()
-    
+
     salon_id = request.form.get('salon_id') or request.args.get('salon_id')
 
-    print("SALON:", salon_id)
+    # 🔹 SALONES FILTRADOS
+    if rol == 'admin':
+        cur.execute("""
+            SELECT id, codigo, descripcion
+            FROM salon
+            WHERE cempre = %s
+            ORDER BY id DESC
+        """, (cempre,))
+    else:
+        cur.execute("""
+            SELECT id, codigo, descripcion
+            FROM salon
+            WHERE cempre = %s AND usuario_id = %s
+            ORDER BY id DESC
+        """, (cempre, user_id))
 
-    # 🔍 siempre cargar salones
-    cur.execute("""
-        SELECT id, codigo, descripcion
-        FROM salon
-        ORDER BY id DESC
-    """)
     salones = cur.fetchall()
 
     quizzes = []
     tabla = []
-    salon_id = None
     notas = []
     nombres = []
 
-    if request.method == 'POST':
+    # 🔐 VALIDAR SALON_ID (CLAVE)
+    if salon_id:
 
-        salon_id = request.form.get('salon_id')
-        print(salon_id)
-
-        if salon_id:
-
+        if rol == 'admin':
             cur.execute("""
-                SELECT 
-                        a.dni,
-                        a.id AS alumno_id,
-                        a.nombre,
-                        a.apellido,
-                        sq.id AS quiz_id,
-                        q.titulo,
-                        ROUND(
-                            (
-                                COUNT(DISTINCT CASE WHEN o.es_correcta THEN ra.pregunta_id END)::decimal
-                                / NULLIF(COUNT(DISTINCT ra.pregunta_id), 0)
-                            ) * 20,
-                        2) AS nota
-                    FROM respuestas_alumno ra
-                    JOIN alumnos a ON a.id = ra.alumno_id
-                    JOIN opciones o ON o.id = ra.opcion_id
-                    JOIN salon_quiz sq ON sq.id = ra.salon_quiz_id
-                    JOIN quiz q ON q.id = sq.quiz_id
-                    WHERE sq.salon_id = %s
-                    GROUP BY a.id, a.dni, a.nombre, a.apellido, sq.id, q.titulo
-                    ORDER BY a.nombre;
-            """, (salon_id,))
-
-            data = cur.fetchall()
-            
+                SELECT id FROM salon
+                WHERE id = %s AND cempre = %s
+            """, (salon_id, cempre))
+        else:
             cur.execute("""
-                SELECT sq.id, q.titulo
-                FROM salon_quiz sq
-                JOIN quiz q ON q.id = sq.quiz_id
-                WHERE sq.salon_id = %s
-            """, (salon_id,))
+                SELECT id FROM salon
+                WHERE id = %s AND cempre = %s AND usuario_id = %s
+            """, (salon_id, cempre, user_id))
 
-            todos_quizzes = cur.fetchall()
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return "No autorizado", 403
 
+    # 🔹 PROCESO SOLO SI ES POST
+    if request.method == 'POST' and salon_id:
 
-            for row in data:
-                print(row)
-            # 🔥 pivot
-            resultado = {}
-            quizzes_set = set()
+        # 🔹 RESULTADOS
+        cur.execute("""
+            SELECT 
+                a.dni,
+                a.id AS alumno_id,
+                a.nombre,
+                a.apellido,
+                sq.id AS quiz_id,
+                q.titulo,
+                ROUND(
+                    (
+                        COUNT(DISTINCT CASE WHEN o.es_correcta THEN ra.pregunta_id END)::decimal
+                        / NULLIF(COUNT(DISTINCT ra.pregunta_id), 0)
+                    ) * 20,
+                2) AS nota
+            FROM respuestas_alumno ra
+            JOIN alumnos a ON a.id = ra.alumno_id
+            JOIN opciones o ON o.id = ra.opcion_id
+            JOIN salon_quiz sq ON sq.id = ra.salon_quiz_id
+            JOIN quiz q ON q.id = sq.quiz_id
+            JOIN salon s ON s.id = sq.salon_id
+            WHERE sq.salon_id = %s
+              AND s.cempre = %s
+            GROUP BY a.id, a.dni, a.nombre, a.apellido, sq.id, q.titulo
+            ORDER BY a.nombre
+        """, (salon_id, cempre))
 
-            # 🔹 armar estructura
-            for row in data:
-                dni, alumno_id, nombre, apellido, quiz_id, quiz, nota = row
+        data = cur.fetchall()
 
-                if alumno_id not in resultado:                  
-                    resultado[alumno_id] = {
-                        "alumno_id": alumno_id,   # 🔥 AGREGAR
-                        "dni": dni,
-                        "alumno": f"{nombre} {apellido}"
-                    }
-                 
+        # 🔹 QUIZZES DEL SALON
+        cur.execute("""
+            SELECT sq.id, q.titulo
+            FROM salon_quiz sq
+            JOIN quiz q ON q.id = sq.quiz_id
+            JOIN salon s ON s.id = sq.salon_id
+            WHERE sq.salon_id = %s
+              AND s.cempre = %s
+        """, (salon_id, cempre))
 
-                resultado[alumno_id][quiz_id] = nota  
-                
-                
-            quizzes = [q[0] for q in todos_quizzes]
-            quiz_nombres = {q[0]: q[1] for q in todos_quizzes}
+        todos_quizzes = cur.fetchall()
 
-            # 🔹 convertir a lista + completar faltantes + promedio
-            tabla = []
+        # 🔥 PIVOT (igual que ya lo tienes)
+        resultado = {}
 
-            for alumno_id, fila in resultado.items():
+        for row in data:
+            dni, alumno_id, nombre, apellido, quiz_id, quiz, nota = row
 
-                suma = 0
-                count = 0
+            if alumno_id not in resultado:
+                resultado[alumno_id] = {
+                    "alumno_id": alumno_id,
+                    "dni": dni,
+                    "alumno": f"{nombre} {apellido}"
+                }
 
-                for q in quizzes:
-                    nota = fila.get(q) or 0   # 👈 convierte None → 0
+            resultado[alumno_id][quiz_id] = nota  
 
-                    fila[q] = nota
+        quizzes = [q[0] for q in todos_quizzes]
 
-                    if nota > 0:
-                        suma += nota
-                        count += 1
+        tabla = []
 
-                fila["promedio"] = round(suma / count, 2) if count > 0 else 0
+        for alumno_id, fila in resultado.items():
 
-                tabla.append(fila)
+            suma = 0
+            count = 0
 
-            # 🔹 ahora sí es seguro
-            notas = [fila["promedio"] for fila in tabla]
-            nombres = [fila["alumno"] for fila in tabla]
+            for q in quizzes:
+                nota = fila.get(q) or 0
+                fila[q] = nota
+
+                if nota > 0:
+                    suma += nota
+                    count += 1
+
+            fila["promedio"] = round(suma / count, 2) if count > 0 else 0
+            tabla.append(fila)
+
+        notas = [fila["promedio"] for fila in tabla]
+        nombres = [fila["alumno"] for fila in tabla]
 
     cur.close()
     conn.close()
@@ -2136,9 +2294,10 @@ def resultados_salon():
         quizzes=quizzes,
         resultado=tabla,
         salon_seleccionado=salon_id or "",
-        notas=notas,    
+        notas=notas,
         nombres=nombres
     )
+
     
 @app.route('/eliminar_respuestas', methods=['POST'])
 def eliminar_respuestas():
@@ -2228,6 +2387,7 @@ def ver_resultados(quiz_id):
     # 🔹 RESULTADOS GENERALES
     cur.execute("""
         SELECT 
+            a.id,
             a.dni,
             a.nombre,
             a.apellido,
@@ -2242,7 +2402,7 @@ def ver_resultados(quiz_id):
 
         WHERE p.quiz_id = %s
 
-        GROUP BY a.dni,a.nombre, a.apellido
+        GROUP BY a.id,a.dni,a.nombre, a.apellido
         ORDER BY nota DESC
     """, (quiz_id,))
 
@@ -2333,6 +2493,7 @@ def ver_resultados(quiz_id):
     return render_template(
         "resultados.html",
         resultados=resultados,
+        quiz_id=quiz_id,
 
         top_nombres=top_nombres,
         top_puntajes=top_puntajes,
@@ -2349,6 +2510,91 @@ def ver_resultados(quiz_id):
         titulo_quiz=titulo_quiz
     )
     
+    
+@app.route('/ver_quiz_alumno/<int:quiz_id>/<int:alumno_id>')
+def ver_quiz_alumno(quiz_id, alumno_id):
+
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # 🔹 Obtener preguntas + opciones + respuesta del alumno
+    cur.execute("""
+        SELECT 
+            p.texto AS pregunta,
+            o.texto AS opcion,
+            o.es_correcta,
+            o.id AS opcion_id,
+            ra.opcion_id AS respuesta_alumno
+        FROM preguntas p
+        JOIN opciones o ON o.pregunta_id = p.id
+        LEFT JOIN respuestas_alumno ra 
+            ON ra.pregunta_id = p.id 
+            AND ra.alumno_id = %s
+        WHERE p.quiz_id = %s
+        ORDER BY p.id, o.id
+    """, (alumno_id, quiz_id))
+
+    data = cur.fetchall()
+
+    # 🔥 AGRUPAR POR PREGUNTA
+    preguntas = {}
+
+    for row in data:
+        pregunta = row[0]
+
+        if pregunta not in preguntas:
+            preguntas[pregunta] = []
+
+        preguntas[pregunta].append({
+            "opcion": row[1],
+            "es_correcta": row[2],
+            "opcion_id": row[3],
+            "respuesta_alumno": row[4]
+        })
+        
+    # 🔥 calcular nota
+    cur.execute("""
+        SELECT 
+            ROUND(
+                (
+                    COUNT(CASE WHEN o.es_correcta THEN 1 END)::decimal
+                    / COUNT(*)
+                ) * 20, 2
+            )
+        FROM respuestas_alumno ra
+        JOIN opciones o ON o.id = ra.opcion_id
+        WHERE ra.alumno_id = %s AND ra.quiz_id = %s
+    """, (alumno_id, quiz_id))
+
+    resultado_nota = cur.fetchone()
+    nota = resultado_nota[0] if resultado_nota and resultado_nota[0] else 0
+
+    cur.execute("""
+        SELECT nombre, apellido
+        FROM alumnos
+        WHERE id = %s
+    """, (alumno_id,))
+
+    alumno = cur.fetchone()
+
+    alumno_nombre = f"{alumno[0]} {alumno[1]}" if alumno else "Alumno"
+    
+    cur.close()
+    conn.close()
+
+    return render_template(
+        "ver_quiz_alumno.html",
+        preguntas=preguntas,
+        alumno_nombre=alumno_nombre,
+        fecha=datetime.now().strftime("%d/%m/%Y"),
+        nota=nota
+    )
+
+    
+
 from flask import session, redirect
 
 @app.route('/salon/<codigo>', methods=['GET', 'POST'])
@@ -2600,6 +2846,191 @@ Tu nota final es: {nota}
         print("✅ correo enviado en background")
     else:
         print("ℹ️ solucionario no enviado (configuración del quiz)")
+        
+#=======================================================
+#
+# PROFESOR
+#
+#=======================================================
+@app.route('/crear_profesor', methods=['POST'])
+def crear_profesor():
+
+    if not require_admin():
+        return redirect(url_for('login'))
+
+    usuario = request.form['usuario']
+    password = request.form['password']
+    dni = request.form['dni']
+    nombre = request.form['nombre']
+    apellido = request.form['apellido']
+    correo = request.form['correo']
+    cempre = session['cempre']
+    
+    if not usuario or not password or not dni or not nombre or not apellido:
+        return "Campos obligatorios vacíos", 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # 🔍 validar usuario único
+    cur.execute("""
+        SELECT id FROM usuarios WHERE usuario = %s
+    """, (usuario,))
+    if cur.fetchone():
+        return "Usuario ya existe", 400
+
+    # 🔍 validar dni único
+    cur.execute("""
+        SELECT id FROM usuarios WHERE dni = %s
+    """, (dni,))
+    if cur.fetchone():
+        return "DNI ya existe", 400
+
+    # 🔐 insertar profesor
+    cur.execute("""
+        INSERT INTO usuarios 
+        (usuario, password, rol, dni, nombre, apellido, correo, cempre)
+        VALUES (%s, %s, 'profesor', %s, %s, %s, %s, %s)
+    """, (usuario, password, dni, nombre, apellido, correo, cempre))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return "OK", 200
+
+@app.route('/editar_profesor', methods=['POST'])
+def editar_profesor():
+
+    if not require_admin():
+        return redirect(url_for('login'))
+
+    profesor_id = request.form['id']
+    nombre = request.form['nombre']
+    apellido = request.form['apellido']
+    correo = request.form['correo']
+    dni = request.form['dni']
+    cempre = session['cempre']
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # 🔒 validar pertenencia a empresa
+    cur.execute("""
+        SELECT id FROM usuarios 
+        WHERE id = %s AND cempre = %s AND rol = 'profesor'
+    """, (profesor_id, cempre))
+
+    if not cur.fetchone():
+        return "No autorizado", 403
+
+    # 🔍 validar dni único (excluyendo actual)
+    cur.execute("""
+        SELECT id FROM usuarios 
+        WHERE dni = %s AND id != %s
+    """, (dni, profesor_id))
+
+    if cur.fetchone():
+        return "DNI duplicado", 400
+
+    cur.execute("""
+        UPDATE usuarios
+        SET nombre = %s,
+            apellido = %s,
+            correo = %s,
+            dni = %s
+        WHERE id = %s AND cempre = %s
+    """, (nombre, apellido, correo, dni, profesor_id, cempre))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return "OK", 200
+
+@app.route('/eliminar_profesor', methods=['POST'])
+def eliminar_profesor():
+
+    if not require_admin():
+        return redirect(url_for('login'))
+
+    profesor_id = request.form['id']
+    cempre = session['cempre']
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # 🔍 verificar quizzes asociados
+    cur.execute("""
+        SELECT id FROM quiz 
+        WHERE usuario_id = %s AND cempre = %s
+    """, (profesor_id, cempre))
+
+    if cur.fetchone():
+        return "Profesor tiene quizzes asociados", 400
+
+    # 🔒 eliminar solo si pertenece a empresa
+    cur.execute("""
+        DELETE FROM usuarios
+        WHERE id = %s AND cempre = %s AND rol = 'profesor'
+    """, (profesor_id, cempre))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return "OK", 200
+
+@app.route('/importar_profesores', methods=['POST'])
+def importar_profesores():
+
+    if not require_admin():
+        return redirect(url_for('login'))
+
+    archivo = request.files['archivo']
+    cempre = session['cempre']
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    lineas = archivo.read().decode('utf-8').splitlines()
+
+    insertados = 0
+    ignorados = 0
+
+    for linea in lineas:
+        try:
+            usuario, password, dni, nombre, apellido, correo = linea.split(',')
+
+            # validar duplicados
+            cur.execute("""
+                SELECT id FROM usuarios 
+                WHERE usuario = %s OR dni = %s
+            """, (usuario, dni))
+
+            if cur.fetchone():
+                ignorados += 1
+                continue
+
+            cur.execute("""
+                INSERT INTO usuarios
+                (usuario, password, rol, dni, nombre, apellido, correo, cempre)
+                VALUES (%s, %s, 'profesor', %s, %s, %s, %s, %s)
+            """, (usuario, password, dni, nombre, apellido, correo, cempre))
+
+            insertados += 1
+
+        except:
+            ignorados += 1
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return {
+        "insertados": insertados,
+        "ignorados": ignorados
+    }
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

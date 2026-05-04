@@ -228,6 +228,20 @@
             }
 
         }
+
+       
+        #btnVerQuiz:disabled {
+            background-color: #cfd8dc !important;
+            border-color: #cfd8dc !important;
+            color: #6c757d !important;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .table tbody tr.selected td {
+            background-color: #c9dff3 !important;
+        }
+ 
          
     </style>
 </head>
@@ -243,6 +257,13 @@
             📊 QUIZ {{ titulo_quiz }}
         </h4>
         <div>
+            <button id="btnVerQuiz" 
+                    class="btn btn-sm btn-primary me-2" 
+                    disabled
+                    onclick="verQuizAlumno()">
+                👁 Ver Quiz
+            </button>
+            
             <button onclick="generarPDF()" class="btn btn-sm btn-outline-primary me-2">
                 📄 PDF
             </button>
@@ -275,19 +296,19 @@
                     </thead>
                     <tbody>
                         {% for r in resultados %}
-                        <tr>
+                        <tr class="fila-alumno" data-alumno-id="{{ r[0] }}">
                             <td>{{ loop.index }}</td>
-                            <td>{{ r[0] }}</td>
-                            <td>{{ r[1] }} {{ r[2] }}</td>
-                            <td>{{ r[3] }}</td>
+                            <td>{{ r[1] }}</td>
+                            <td>{{ r[2] }} {{ r[3] }}</td>
                             <td>{{ r[4] }}</td>
+                            <td>{{ r[5] }}</td>
                             <td>
-                                {% if r[5] >= 16 %}
-                                    <span class="badge nota-alta">{{ r[5] }}</span>
-                                {% elif r[5] >= 11 %}
-                                    <span class="badge nota-media">{{ r[5] }}</span>
+                                {% if r[6] >= 16 %}
+                                    <span class="badge nota-alta">{{ r[6] }}</span>
+                                {% elif r[6] >= 11 %}
+                                    <span class="badge nota-media">{{ r[6] }}</span>
                                 {% else %}
-                                    <span class="badge nota-baja">{{ r[5] }}</span>
+                                    <span class="badge nota-baja">{{ r[6] }}</span>
                                 {% endif %}
                             </td>
                         </tr>
@@ -475,6 +496,47 @@
     </div>
 
 </div>
+<script>
+
+function verQuizAlumno() {
+
+    if (!alumnoSeleccionado) return;
+
+    const quizId = "{{ quiz_id }}";
+
+    window.open(`/ver_quiz_alumno/${quizId}/${alumnoSeleccionado}`, '_blank');
+}
+
+</script>
+<script>
+
+let filaSeleccionada = null;
+let alumnoSeleccionado = null;
+
+document.querySelectorAll('.fila-alumno').forEach(fila => {
+
+    fila.addEventListener('click', function () {
+
+        // quitar selección anterior
+        if (filaSeleccionada) {
+            filaSeleccionada.classList.remove('selected');
+        }
+
+        // marcar nueva fila
+        this.classList.add('selected');
+        filaSeleccionada = this;
+
+        // guardar alumno_id
+        alumnoSeleccionado = this.dataset.alumnoId;
+
+        // activar botón
+        document.getElementById('btnVerQuiz').disabled = false;
+
+    });
+
+});
+
+</script>
 <script>
     const topLabels = {{ top_nombres | tojson }};
     const topData = {{ top_puntajes | tojson }};

@@ -63,9 +63,17 @@
             background-color: #f3f3f3;
         }
 
+       
+        .table tbody tr {
+            transition: all 0.15s ease;
+        }
+
         .table tbody tr:hover {
-            background-color: #f0f8ff;
-            cursor: pointer;
+            background-color: #6e8ba5;
+        }
+        
+       .table tbody tr.selected td {
+            background-color: #a5c8e9 !important;
         }
     </style>
 </head>
@@ -98,35 +106,72 @@
 
         <div class="card p-3">
 
-            <h5>Registrar / Editar Profesor</h5>
+            <h5 class="mb-3">Registrar / Editar Profesor</h5>
 
-            <form>
+            <form id="formProfesor">
 
-                <input type="text" class="form-control mb-2" placeholder="DNI">
+                <input type="hidden" name="id" id="profesor_id">
 
-                <input type="text" class="form-control mb-2" placeholder="Nombre">
+                <!-- DNI -->
+                <div class="mb-2">
+                    <label class="form-label small text-muted mb-1">DNI</label>
+                    <input type="text" name="dni" id="dni" class="form-control" placeholder="Ej: 12345678">
+                </div>
 
-                <input type="text" class="form-control mb-2" placeholder="Apellido">
+                <!-- Nombre -->
+                <div class="mb-2">
+                    <label class="form-label small text-muted mb-1">Nombre</label>
+                    <input type="text" name="nombre" id="nombre" class="form-control" placeholder="Ej: Juan">
+                </div>
 
-                <input type="text" class="form-control mb-2" placeholder="Usuario">
+                <!-- Apellido -->
+                <div class="mb-2">
+                    <label class="form-label small text-muted mb-1">Apellido</label>
+                    <input type="text" name="apellido" id="apellido" class="form-control" placeholder="Ej: Pérez">
+                </div>
 
-                <input type="password" class="form-control mb-2" placeholder="Password">
+                <!-- Usuario -->
+                <div class="mb-2">
+                    <label class="form-label small text-muted mb-1">Usuario</label>
+                    <input type="text" name="usuario" id="usuario" class="form-control" placeholder="Ej: jperez">
+                </div>
 
-                <div class="d-flex gap-2 mt-2">
+                <!-- Password -->
+                <div class="mb-2">
+                    <label class="form-label small text-muted mb-1">Password</label>
+                    <input type="password" name="password" id="password" class="form-control" placeholder="********">
+                </div>
 
-                <button class="btn btn-primary btn-sm flex-fill">
-                    Guardar
-                </button>
+                <!-- Correo -->
+                <div class="mb-3">
+                    <label class="form-label small text-muted mb-1">Correo electrónico</label>
+                    <input type="email" name="correo" id="correo" class="form-control" placeholder="correo@empresa.com">
+                </div>
 
-                <button class="btn btn-outline-secondary btn-sm flex-fill">
-                    Editar
-                </button>
+                <!-- Botones -->
+                <div class="d-flex gap-2">
 
-                <button class="btn btn-outline-danger btn-sm flex-fill">
-                    Eliminar
-                </button>
+                    <button type="button" onclick="limpiarFormulario()" 
+                            class="btn btn-outline-dark btn-sm flex-fill">
+                        Nuevo
+                    </button>
 
-            </div>
+                    <button type="button" onclick="crearProfesor()" 
+                            class="btn btn-primary btn-sm flex-fill">
+                        Guardar
+                    </button>
+
+                    <button type="button" onclick="editarProfesor()" 
+                            class="btn btn-outline-secondary btn-sm flex-fill">
+                        Editar
+                    </button>
+
+                    <button type="button" onclick="eliminarProfesor()" 
+                            class="btn btn-outline-danger btn-sm flex-fill">
+                        Eliminar
+                    </button>
+
+                </div>
 
             </form>
 
@@ -141,12 +186,13 @@
 
             <div class="d-flex justify-content-between align-items-center">
 
-                <h5 class="mb-0">Lista de Profesores</h5>
+                <h5 class="mb-0">Lista de Profesores</h5>               
 
-                <button class="btn btn-outline-secondary btn-sm  ">
-                    <!--class="btn btn-outline-secondary btn-sm flex-fill"-->
+                <button class="btn btn-outline-secondary btn-sm" onclick="abrirModalImportacion()">
                     Importar TXT
                 </button>
+
+                <input type="file" id="fileInput" hidden onchange="importarTXT()">
 
             </div>
 
@@ -166,7 +212,15 @@
 
                 <tbody>
                     {% for p in profesores %}
-                    <tr>
+                   <tr class="fila-profesor"
+                        data-id="{{ p[0] }}"
+                        data-dni="{{ p[1] }}"
+                        data-nombre="{{ p[2] }}"
+                        data-apellido="{{ p[3] }}"
+                        data-usuario="{{ p[4] }}"
+                        data-password="{{ p[5] }}"
+                        data-correo="{{ p[6] }}">
+                        
                         <td>{{ p[1] }}</td>
                         <td>{{ p[2] }}</td>
                         <td>{{ p[3] }}</td>
@@ -186,10 +240,262 @@
 
 </div>
 
+<script>
+
  
 
+let filaSeleccionada = null;
 
+document.addEventListener('DOMContentLoaded', function () {
 
+    document.querySelectorAll('.fila-profesor').forEach(fila => {
+
+        fila.addEventListener('click', function () {
+
+            // quitar selección anterior
+            if (filaSeleccionada) {
+                filaSeleccionada.classList.remove('selected');
+            }
+
+            // marcar nueva
+            this.classList.add('selected');
+            filaSeleccionada = this;
+
+            // llenar formulario
+            document.getElementById('profesor_id').value = this.dataset.id;
+            document.getElementById('dni').value = this.dataset.dni;
+            document.getElementById('nombre').value = this.dataset.nombre;
+            document.getElementById('apellido').value = this.dataset.apellido;
+            document.getElementById('usuario').value = this.dataset.usuario;
+            document.getElementById('password').value = this.dataset.password;
+            document.getElementById('correo').value = this.dataset.correo;
+
+        });
+
+    });
+
+});
+ 
+
+function limpiarFormulario() {
+
+    // Limpiar inputs
+    document.getElementById('formProfesor').reset();
+
+    // Limpiar ID oculto
+    document.getElementById('profesor_id').value = '';
+
+    // Quitar selección visual
+    if (filaSeleccionada) {
+        filaSeleccionada.classList.remove('selected');
+        filaSeleccionada = null;
+    }
+}
+
+function importarTXT() {
+
+    const file = document.getElementById('fileInput').files[0];
+
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('archivo', file);
+
+    fetch('/importar_profesores', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(`Insertados: ${data.insertados} | Ignorados: ${data.ignorados}`);
+        location.reload();
+    })
+    .catch(err => alert("Error importando"));
+}
+
+function crearProfesor() {
+
+    const dni = document.getElementById('dni').value.trim();
+    const nombre = document.getElementById('nombre').value.trim();
+    const apellido = document.getElementById('apellido').value.trim();
+    const usuario = document.getElementById('usuario').value.trim();
+    const password = document.getElementById('password').value.trim();
+
+    if (!dni || !nombre || !apellido || !usuario || !password) {
+        alert("Completa todos los campos obligatorios");
+        return;
+    }
+
+    const form = document.getElementById('formProfesor');
+
+    fetch('/crear_profesor', {
+        method: 'POST',
+        body: new FormData(form)
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Error al crear");
+        return res.text();
+    })
+    .then(() => {
+        alert("Profesor creado");
+        location.reload();
+    })
+    .catch(err => alert(err));
+}
+
+function editarProfesor() {
+
+    const form = document.getElementById('formProfesor');
+
+    fetch('/editar_profesor', {
+        method: 'POST',
+        body: new FormData(form)
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Error al editar");
+        return res.text();
+    })
+    .then(() => {
+        alert("Profesor actualizado");
+        location.reload();
+    })
+    .catch(err => alert(err));
+}
+
+function eliminarProfesor() {
+
+    const id = document.getElementById('profesor_id').value;
+
+    if (!id) {
+        alert("Selecciona un profesor");
+        return;
+    }
+
+    if (!confirm("¿Seguro que deseas eliminar?")) return;
+
+    const formData = new FormData();
+    formData.append('id', id);
+
+    fetch('/eliminar_profesor', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Error al eliminar");
+        return res.text();
+    })
+    .then(() => {
+        alert("Profesor eliminado");
+        location.reload();
+    })
+    .catch(err => alert(err));
+}
+
+function eliminarProfesor() {
+
+    const id = document.getElementById('profesor_id').value;
+
+    if (!id) {
+        alert("Selecciona un profesor en la tabla");
+        return;
+    }
+
+    if (!confirm("¿Eliminar este profesor?")) return;
+
+    const formData = new FormData();
+    formData.append('id', id);
+
+    fetch('/eliminar_profesor', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Error al eliminar");
+        return res.text();
+    })
+    .then(() => {
+        alert("Eliminado correctamente");
+        location.reload();
+    })
+    .catch(err => alert(err));
+}
+
+function limpiarFormulario() {
+    document.getElementById('formProfesor').reset();
+    document.getElementById('profesor_id').value = '';
+
+    if (filaSeleccionada) {
+        filaSeleccionada.classList.remove('selected');
+        filaSeleccionada = null;
+    }
+}
+
+</script> 
+
+<!--MODAL: Ventana para mostrar el ejemplo del formato que debe ser enviado al importsar texto-->
+<div class="modal fade" id="modalImportacion" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header bg-warning-subtle">
+        <h5 class="modal-title">⚠️ Formato requerido para importar</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <p class="mb-2">
+            El archivo debe ser un <b>.txt</b> con los datos separados por comas, en el siguiente orden:
+        </p>
+
+        <div class="bg-light p-2 rounded mb-3" style="font-size:13px;">
+            usuario,password,dni,nombre,apellido,correo
+        </div>
+
+        <p class="mb-1"><b>Ejemplo:</b></p>
+
+        <div class="bg-dark text-white p-2 rounded" style="font-size:13px;">
+            jperez,123456,12345678,Juan,Perez,juan@empresa.com<br>
+            mlopez,abc123,87654321,María,Lopez,maria@empresa.com
+        </div>
+
+        <hr>
+
+        <ul style="font-size:13px;">
+            <li>No dejar campos vacíos</li>
+            <li>No repetir usuario ni DNI</li>
+            <li>Una línea por profesor</li>
+        </ul>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+            Cancelar
+        </button>
+
+        <button class="btn btn-primary btn-sm" onclick="continuarImportacion()">
+            Entendido, seleccionar archivo
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+
+function abrirModalImportacion() {
+    const modal = new bootstrap.Modal(document.getElementById('modalImportacion'));
+    modal.show();
+}
+
+function continuarImportacion() {
+    document.getElementById('fileInput').click();
+}
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>
