@@ -144,15 +144,16 @@
 
             {% for op in opciones %}
                 <li style="margin-bottom:4px;
-                    {% if op.es_correcta %} color:#2e7d32; font-weight:600;{% endif %}
-                    {% if op.opcion_id == op.respuesta_alumno and not op.es_correcta %}color:#c62828; font-weight:600;{% endif %}
+                    {% if op.es_correcta %}color:#2e7d32; font-weight:600;{% endif %}
+                    {% if op.respuesta_alumno and op.opcion_id == op.respuesta_alumno and not op.es_correcta %}color:#c62828; font-weight:600;{% endif %}
                 ">
 
                     {{ op.opcion }}
 
                     {% if op.es_correcta %}
                         <span style="margin-left:8px;">✔</span>
-                    {% elif op.opcion_id == op.respuesta_alumno %}
+
+                    {% elif op.respuesta_alumno and op.opcion_id == op.respuesta_alumno %}
                         <span style="margin-left:8px;">✖</span>
                     {% endif %}
 

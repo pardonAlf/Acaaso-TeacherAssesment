@@ -292,6 +292,7 @@
                             <th>✔</th>
                             <th>Total</th>
                             <th>Nota</th>
+                            <th>Intentos</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -310,6 +311,11 @@
                                 {% else %}
                                     <span class="badge nota-baja">{{ r[6] }}</span>
                                 {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">
+                                    {{ intentos.get(r[0], 1) }}
+                                </span>
                             </td>
                         </tr>
                         {% endfor %}
@@ -512,6 +518,8 @@ function verQuizAlumno() {
 
 let filaSeleccionada = null;
 let alumnoSeleccionado = null;
+let intentoSeleccionado = 1;
+const intentosAlumno = {{ intentos | tojson }};
 
 document.querySelectorAll('.fila-alumno').forEach(fila => {
 
@@ -528,6 +536,23 @@ document.querySelectorAll('.fila-alumno').forEach(fila => {
 
         // guardar alumno_id
         alumnoSeleccionado = this.dataset.alumnoId;
+
+        // 🔥 NUEVO BLOQUE
+        let totalIntentos = intentosAlumno[alumnoSeleccionado] || 1;
+
+        if (totalIntentos > 1) {
+
+            let opcion = prompt(`Este alumno tiene ${totalIntentos} intentos.\n¿Qué intento deseas ver? (1 - ${totalIntentos})`);
+
+            if (!opcion || opcion < 1 || opcion > totalIntentos) {
+                return;
+            }
+
+            intentoSeleccionado = opcion;
+
+        } else {
+            intentoSeleccionado = 1;
+        }
 
         // activar botón
         document.getElementById('btnVerQuiz').disabled = false;

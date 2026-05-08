@@ -188,7 +188,8 @@ document.getElementById("btnSiguiente").addEventListener("click", () => {
             },
             body: JSON.stringify({
                 alumno_id: alumno_id,
-                salon_quiz_id: salon_quiz_id,  // 🔥 ESTE ES EL CLAVE
+                salon_quiz_id: salon_quiz_id,
+                intento_id: {{ intento_id }},
                 respuestas: respuestas
             })
         })

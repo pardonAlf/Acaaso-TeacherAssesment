@@ -558,6 +558,23 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
 
     conn = get_db_connection()
     cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT COALESCE(MAX(intento_numero), 0)
+        FROM intentos_quiz
+        WHERE alumno_id = %s AND quiz_id = %s
+    """, (alumno_id, quiz_id))
+
+    ultimo = cur.fetchone()[0]
+    nuevo_intento = ultimo + 1
+
+    cur.execute("""
+        INSERT INTO intentos_quiz (alumno_id, quiz_id, intento_numero)
+        VALUES (%s, %s, %s)
+        RETURNING id
+    """, (alumno_id, quiz_id, nuevo_intento))
+
+    intento_id = cur.fetchone()[0]
 
     # 🔍 obtener quiz_id desde salon_quiz
     cur.execute("""
@@ -618,7 +635,8 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
         preguntas=data,
         quiz_id=quiz_id,
         alumno_id=alumno_id,
-        salon_quiz_id=salon_quiz_id  # 🔥 clave
+        salon_quiz_id=salon_quiz_id , # 🔥 clave
+        intento_id=intento_id
     )
 
 @app.route('/obtener_asignaciones/<int:salon_id>')
@@ -1345,6 +1363,23 @@ def resolver_quiz(quiz_id, alumno_id):
 
     conn = get_db_connection()
     cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT COALESCE(MAX(intento_numero), 0)
+        FROM intentos_quiz
+        WHERE alumno_id = %s AND quiz_id = %s
+    """, (alumno_id, quiz_id))
+
+    ultimo = cur.fetchone()[0]
+    nuevo_intento = ultimo + 1
+
+    cur.execute("""
+        INSERT INTO intentos_quiz (alumno_id, quiz_id, intento_numero)
+        VALUES (%s, %s, %s)
+        RETURNING id
+    """, (alumno_id, quiz_id, nuevo_intento))
+
+    intento_id = cur.fetchone()[0]
 
     # obtener preguntas
     cur.execute("""
@@ -1389,7 +1424,8 @@ def resolver_quiz(quiz_id, alumno_id):
         preguntas=data,
         quiz_id=quiz_id,
         alumno_id=alumno_id,
-        salon_quiz_id = salon_quiz_id  # 🔥 SIEMPRE DEFINIDO
+        salon_quiz_id = salon_quiz_id,  # 🔥 SIEMPRE DEFINIDO
+        intento_id=intento_id
     )
     
 @app.route('/guardar_respuestas', methods=['POST'])
@@ -1400,6 +1436,7 @@ def guardar_respuestas():
     alumno_id = data['alumno_id']
     respuestas = data['respuestas']
     salon_quiz_id = data.get('salon_quiz_id')
+    intento_id = data.get('intento_id')
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -1470,10 +1507,10 @@ def guardar_respuestas():
         })
 
         cur.execute("""
-            INSERT INTO respuestas_alumno (alumno_id, pregunta_id, opcion_id, salon_quiz_id, quiz_id)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (alumno_id, pregunta_id, opcion_id, salon_quiz_id, quiz_id))
-
+            INSERT INTO respuestas_alumno 
+            (alumno_id, pregunta_id, opcion_id, salon_quiz_id, quiz_id, intento_id)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (alumno_id, pregunta_id, opcion_id, salon_quiz_id, quiz_id, intento_id))
         if puntaje > 0:
             correctas += 1
 
@@ -2486,6 +2523,17 @@ def ver_resultados(quiz_id):
         titulo_quiz = resultado[0]
     else:
         titulo_quiz = "Quiz no encontrado"
+        
+    cur.execute("""
+    SELECT alumno_id, COUNT(*) as total_intentos
+        FROM intentos_quiz
+        WHERE quiz_id = %s
+        GROUP BY alumno_id
+    """, (quiz_id,))
+
+    intentos_por_alumno = cur.fetchall()
+
+    intentos_dict = {row[0]: row[1] for row in intentos_por_alumno}
 
     cur.close()
     conn.close()
@@ -2506,7 +2554,7 @@ def ver_resultados(quiz_id):
         preguntas_labels=preguntas_labels,
         preguntas_fallos=preguntas_fallos,
         preguntas_tooltips=preguntas_tooltips,
-
+        intentos=intentos_dict,
         titulo_quiz=titulo_quiz
     )
     
@@ -2519,23 +2567,44 @@ def ver_quiz_alumno(quiz_id, alumno_id):
 
     conn = get_db_connection()
     cur = conn.cursor()
+    
+    intento = request.args.get('intento', 1)
+    
+    cur.execute("""
+    SELECT id
+        FROM intentos_quiz
+        WHERE alumno_id = %s AND quiz_id = %s AND intento_numero = %s
+    """, (alumno_id, quiz_id, intento))
+
+    row = cur.fetchone()
+    intento_id = row[0] if row else None
 
     # 🔹 Obtener preguntas + opciones + respuesta del alumno
     cur.execute("""
-        SELECT 
-            p.texto AS pregunta,
-            o.texto AS opcion,
-            o.es_correcta,
-            o.id AS opcion_id,
-            ra.opcion_id AS respuesta_alumno
-        FROM preguntas p
-        JOIN opciones o ON o.pregunta_id = p.id
-        LEFT JOIN respuestas_alumno ra 
-            ON ra.pregunta_id = p.id 
+    SELECT 
+        p.texto AS pregunta,
+        o.texto AS opcion,
+        o.es_correcta,
+        o.id AS opcion_id,
+
+        (
+            SELECT ra.opcion_id
+            FROM respuestas_alumno ra
+            WHERE ra.pregunta_id = p.id
             AND ra.alumno_id = %s
-        WHERE p.quiz_id = %s
-        ORDER BY p.id, o.id
-    """, (alumno_id, quiz_id))
+            AND (
+                ra.intento_id = %s
+                OR ra.intento_id IS NULL
+            )
+            ORDER BY ra.id DESC
+            LIMIT 1
+        ) AS respuesta_alumno
+
+    FROM preguntas p
+    JOIN opciones o ON o.pregunta_id = p.id
+    WHERE p.quiz_id = %s
+    ORDER BY p.id, o.id
+    """, (alumno_id, intento_id, quiz_id))
 
     data = cur.fetchall()
 
@@ -2560,15 +2629,29 @@ def ver_quiz_alumno(quiz_id, alumno_id):
         SELECT 
             ROUND(
                 (
-                    COUNT(CASE WHEN o.es_correcta THEN 1 END)::decimal
-                    / COUNT(*)
-                ) * 20, 2
+                    COUNT(CASE WHEN r.opcion_id = oc.id THEN 1 END)::decimal
+                    / COUNT(p.id)
+                ) * 20, 0
             )
-        FROM respuestas_alumno ra
-        JOIN opciones o ON o.id = ra.opcion_id
-        WHERE ra.alumno_id = %s AND ra.quiz_id = %s
-    """, (alumno_id, quiz_id))
+        FROM preguntas p
 
+        LEFT JOIN LATERAL (
+            SELECT ra.opcion_id
+            FROM respuestas_alumno ra
+            WHERE ra.pregunta_id = p.id
+            AND ra.alumno_id = %s
+            AND (
+                ra.intento_id = %s OR ra.intento_id IS NULL
+            )
+            ORDER BY ra.id DESC
+            LIMIT 1
+        ) r ON true
+
+        LEFT JOIN opciones oc 
+            ON oc.pregunta_id = p.id AND oc.es_correcta = true
+
+        WHERE p.quiz_id = %s
+    """, (alumno_id, intento_id, quiz_id))
     resultado_nota = cur.fetchone()
     nota = resultado_nota[0] if resultado_nota and resultado_nota[0] else 0
 
@@ -2584,6 +2667,8 @@ def ver_quiz_alumno(quiz_id, alumno_id):
     
     cur.close()
     conn.close()
+    
+    
 
     return render_template(
         "ver_quiz_alumno.html",
