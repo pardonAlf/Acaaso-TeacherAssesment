@@ -140,24 +140,33 @@ body {
 
 .brand-overlay {
     position: absolute;
-    top: 80px; /* debajo del navbar */
+    top: 20px; /* debajo del navbar */
     width: 100%;
     text-align: center;
 
-    font-size: 3rem;
+    font-size: 1.5rem;
     font-weight: bold;
     letter-spacing: 2px;
 
-    color: rgba(255, 255, 255, 0.2); /* gris apagado */
-
+    color: rgba(255, 255, 255, 0.548); /* gris apagado */
+    opacity: 0.3;
     transition: 0.3s;
     cursor: default;
 }
 
 /* Hover efecto elegante */
 .brand-overlay:hover {
-    color: rgba(255, 255, 255, 0.8);
+    color: white;
     transform: scale(1.05);
+    opacity: 1.0;
+}
+
+
+/* mobile */
+@media (max-width: 768px) {
+    .brand-overlay {
+        font-size: 1rem;
+    }
 }
 
 /* =========================
@@ -174,12 +183,44 @@ body {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-
+    position: relative;
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
+}
+
+.hero-content {
+    max-width: 700px;
+    padding: 20px;
+    position: relative;
+    z-index: 2;
+}
+
+/* overlay oscuro */
+.hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+
+    .hero {
+        height: 60vh;
+    }
+
+    .hero h1 {
+        font-size: 1.6rem;
+    }
+
+    .hero p {
+        font-size: 0.9rem;
+    }
+
 }
 
 /* =========================
