@@ -505,7 +505,7 @@ def ingresar_dni():
             return redirect(f"/registro_alumno?dni={dni}")
 
         # 🔥 obtener quiz
-        codigo = session.get('codigo_quiz')
+        codigo = session.get('codigo_quiz', '').strip().upper()
 
         # 🔍 primero buscar en salon_quiz
         cur.execute("""
