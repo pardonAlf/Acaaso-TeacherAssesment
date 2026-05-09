@@ -559,6 +559,29 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
     conn = get_db_connection()
     cur = conn.cursor()
     
+    # 🔍 obtener quiz_id (robusto)
+    quiz_id = None
+
+    if salon_quiz_id:
+        cur.execute("""
+            SELECT quiz_id
+            FROM salon_quiz
+            WHERE id = %s
+        """, (salon_quiz_id,))
+        
+        row = cur.fetchone()
+        
+        if row:
+            quiz_id = row[0]
+
+    # 🔥 fallback (por si no viene de salón)
+    if not quiz_id:
+        quiz_id = request.args.get("quiz_id")
+
+    # 🔥 última defensa
+    if not quiz_id:
+        return "No se pudo determinar el quiz", 400
+
     cur.execute("""
         SELECT COALESCE(MAX(intento_numero), 0)
         FROM intentos_quiz
@@ -2631,7 +2654,7 @@ def ver_quiz_alumno(quiz_id, alumno_id):
                 (
                     COUNT(CASE WHEN r.opcion_id = oc.id THEN 1 END)::decimal
                     / COUNT(p.id)
-                ) * 20, 0
+                ) * 20, 2
             )
         FROM preguntas p
 
