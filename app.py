@@ -511,7 +511,7 @@ def ingresar_dni():
         cur.execute("""
             SELECT id, quiz_id
             FROM salon_quiz
-            WHERE codigo = %s
+            WHERE UPPER(TRIM(codigo)) = %s
         """, (codigo,))
 
         row = cur.fetchone()
