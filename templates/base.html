@@ -35,6 +35,16 @@
             Mantenimientos
           </a>
           <ul class="dropdown-menu dropdown-menu-dark shadow">
+            {% if session['rol'] == 'root' %}
+                <li><a class="dropdown-item" href="/metricas_db" >
+                    Metricas de Base de datos
+                </a></li>
+            {% endif %}
+            {% if session['rol'] == 'root' %}
+                <li><a class="dropdown-item" href="/mantenimiento_planes" >
+                    Gestionar Planes
+                </a></li>
+            {% endif %}
             {% if session['rol'] == 'admin' %}
                 <li><a class="dropdown-item" href="/profesores" >
                     Gestionar Profesores

@@ -46,7 +46,14 @@
                     <td>{{ fila.dni }}</td>
                     <td>{{ fila.alumno }}</td>
                     {% for q in quizzes %}
-                        <td>{{ fila[q] }}</td>
+                        <td>{% if fila[q].nota > 0 %}
+                            {{ fila[q].nota }}
+                            <span style="color:#0d6efd; font-size: 0.7em;">
+                                ({{ fila[q].intento }})
+                            </span>
+                        {% else %}
+                            0
+                        {% endif %}</td>
                     {% endfor %}
                     <td><strong>{{ fila.promedio }}</strong></td>
                     <td>

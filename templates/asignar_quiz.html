@@ -131,11 +131,13 @@ function cargarAsignados(salon_id) {
                     <tr>
                         <td>${q.id}</td>
                         <td>${q.titulo}</td>
-                        <td id="codigo_${q.id}">
-                            ${q.codigo ? `<span class="badge-ok">${q.codigo}</span>` : '<span class="badge-off">—</span>'}
+                        <td>
+                            ${q.codigo 
+                                ? `<span class="badge-ok">${q.codigo}</span>` 
+                                : '<span class="badge-off">—</span>'
+                            }
                         </td>
                         <td style="text-align:right;">
-                            <button class="btn btn-sm btn-secondary" onclick="generarCodigo(${q.id})">⚡</button>
                             <button class="btn btn-sm btn-danger" onclick="eliminarAsignacion(${q.id})">✕</button>
                         </td>
                     </tr>
@@ -146,20 +148,6 @@ function cargarAsignados(salon_id) {
         });
 }
 
-function generarCodigo(id) {
-
-    fetch(`/generar_codigo_asignacion/${id}`, {
-        method: "POST"
-    })
-    .then(res => res.json())
-    .then(() => {
-
-        // 🔥 recargar toda la tabla
-        let salon_id = document.getElementById("salon_id").value;
-        cargarAsignados(salon_id);
-
-    });
-}
 
 function eliminarAsignacion(id) {
 

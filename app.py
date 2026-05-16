@@ -53,7 +53,36 @@ def get_version():
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # 🔹 individuales
+    cur.execute("""
+        SELECT id, nombre, precio, admins, profesores, alumnos, quizzes,orden
+        FROM planes
+        WHERE tipo = 'individual' AND activo = TRUE
+        ORDER BY orden
+    """)
+    planes_individual = cur.fetchall()
+
+    # 🔹 empresariales
+    cur.execute("""
+        SELECT id, nombre, precio, admins, profesores, alumnos, quizzes,orden
+        FROM planes
+        WHERE tipo = 'empresarial' AND activo = TRUE
+        ORDER BY orden
+    """)
+    planes_empresarial = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return render_template(
+        'index.html',
+        planes_individual=planes_individual,
+        planes_empresarial=planes_empresarial
+    )
 
 def es_admin():
     return session.get('rol') == 'admin'
@@ -661,6 +690,7 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
         salon_quiz_id=salon_quiz_id , # 🔥 clave
         intento_id=intento_id
     )
+ 
 
 @app.route('/obtener_asignaciones/<int:salon_id>')
 def obtener_asignaciones(salon_id):
@@ -674,7 +704,7 @@ def obtener_asignaciones(salon_id):
    
 
     cur.execute("""
-        SELECT sq.id, q.titulo, sq.codigo
+        SELECT sq.id, q.titulo, q.codigo
         FROM salon_quiz sq
         JOIN quiz q ON q.id = sq.quiz_id
         WHERE sq.salon_id = %s
@@ -2268,36 +2298,59 @@ def resultados_salon():
 
         # 🔹 RESULTADOS
         cur.execute("""
+            WITH ultimo_intento AS (
+                SELECT 
+                    alumno_id,
+                    quiz_id,
+                    MAX(intento_id) AS intento_id
+                FROM respuestas_alumno
+                GROUP BY alumno_id, quiz_id
+            )
+
             SELECT 
                 a.dni,
                 a.id AS alumno_id,
                 a.nombre,
                 a.apellido,
-                sq.id AS quiz_id,
+                q.id AS quiz_id,
                 q.titulo,
+                iq.intento_numero,
                 ROUND(
                     (
-                        COUNT(DISTINCT CASE WHEN o.es_correcta THEN ra.pregunta_id END)::decimal
-                        / NULLIF(COUNT(DISTINCT ra.pregunta_id), 0)
+                        COUNT(CASE WHEN o.es_correcta THEN 1 END)::decimal
+                        / NULLIF(COUNT(*), 0)
                     ) * 20,
                 2) AS nota
+
             FROM respuestas_alumno ra
+
+            JOIN ultimo_intento ui 
+                ON ui.alumno_id = ra.alumno_id
+                AND ui.quiz_id = ra.quiz_id
+                AND ui.intento_id = ra.intento_id
+
             JOIN alumnos a ON a.id = ra.alumno_id
             JOIN opciones o ON o.id = ra.opcion_id
-            JOIN salon_quiz sq ON sq.id = ra.salon_quiz_id
-            JOIN quiz q ON q.id = sq.quiz_id
+            JOIN quiz q ON q.id = ra.quiz_id
+            JOIN salon_quiz sq ON sq.quiz_id = q.id
             JOIN salon s ON s.id = sq.salon_id
+            LEFT JOIN intentos_quiz iq ON iq.id = ra.intento_id
+
             WHERE sq.salon_id = %s
-              AND s.cempre = %s
-            GROUP BY a.id, a.dni, a.nombre, a.apellido, sq.id, q.titulo
+            AND s.cempre = %s
+
+            GROUP BY 
+            a.id, a.dni, a.nombre, a.apellido, 
+            q.id, q.titulo, iq.intento_numero
+
             ORDER BY a.nombre
-        """, (salon_id, cempre))
+        """, (salon_id, cempre ))
 
         data = cur.fetchall()
 
         # 🔹 QUIZZES DEL SALON
         cur.execute("""
-            SELECT sq.id, q.titulo
+            SELECT q.id, q.titulo
             FROM salon_quiz sq
             JOIN quiz q ON q.id = sq.quiz_id
             JOIN salon s ON s.id = sq.salon_id
@@ -2311,7 +2364,9 @@ def resultados_salon():
         resultado = {}
 
         for row in data:
-            dni, alumno_id, nombre, apellido, quiz_id, quiz, nota = row
+            print(row)  # 🔥 DEBUG
+    
+            dni, alumno_id, nombre, apellido, quiz_id, quiz, intento, nota = row
 
             if alumno_id not in resultado:
                 resultado[alumno_id] = {
@@ -2320,7 +2375,10 @@ def resultados_salon():
                     "alumno": f"{nombre} {apellido}"
                 }
 
-            resultado[alumno_id][quiz_id] = nota  
+            resultado[alumno_id][quiz_id] = {
+                "nota": nota,
+                "intento": intento
+            }
 
         quizzes = [q[0] for q in todos_quizzes]
 
@@ -2332,8 +2390,15 @@ def resultados_salon():
             count = 0
 
             for q in quizzes:
-                nota = fila.get(q) or 0
-                fila[q] = nota
+                data = fila.get(q)
+
+                if isinstance(data, dict):
+                    fila[q] = data
+                    if data["nota"] > 0:
+                        suma += data["nota"]
+                        count += 1
+                else:
+                    fila[q] = {"nota": 0, "intento": 0}
 
                 if nota > 0:
                     suma += nota
@@ -3139,6 +3204,183 @@ def importar_profesores():
         "insertados": insertados,
         "ignorados": ignorados
     }
+ 
+@app.route('/crear_plan', methods=['GET', 'POST'])
+def crear_plan():
+
+    if session.get('rol') != 'root':
+        return "Acceso denegado", 403
+
+    if request.method == 'POST':
+
+        tipo = request.form['tipo']
+        nombre = request.form['nombre']
+        precio = request.form['precio']
+        admins = request.form['admins']
+        profesores = request.form['profesores']
+        alumnos = request.form['alumnos']
+        quizzes = request.form['quizzes']
+        orden = request.form['orden']
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+           INSERT INTO planes (tipo, nombre, precio, admins, profesores, alumnos, quizzes, orden)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (tipo, nombre, precio, admins, profesores, alumnos, quizzes,orden))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return redirect('/mantenimiento_planes')
+
+    return render_template('crear_plan.html')   
+    
+@app.route('/mantenimiento_planes')
+def mantenimiento_planes():
+
+    if session.get('rol') != 'root':
+        return "Acceso denegado", 403
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id, tipo, nombre, precio, admins, profesores, alumnos, quizzes,orden, activo
+        FROM planes
+        ORDER BY orden
+    """)
+
+    planes = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return render_template('mantenimiento_planes.html', planes=planes)
+
+@app.route('/actualizar_plan', methods=['POST'])
+def actualizar_plan():
+
+    if session.get('rol') != 'root':
+        return {"ok": False}
+
+    data = request.get_json()
+
+    id = data['id']
+    campo = data['campo']
+    valor = data['valor']
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    query = f"UPDATE planes SET {campo} = %s WHERE id = %s"
+    cur.execute(query, (valor, id))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return {"ok": True}
+
+@app.route('/toggle_plan', methods=['POST'])
+def toggle_plan():
+
+    if session.get('rol') != 'root':
+        return {"ok": False}
+
+    data = request.get_json()
+
+    id = data['id']
+    activo = data['activo']
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("UPDATE planes SET activo = %s WHERE id = %s", (activo, id))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return {"ok": True}
+
+@app.route('/eliminar_plan', methods=['POST'])
+def eliminar_plan():
+
+    if session.get('rol') != 'root':
+        return {"ok": False}
+
+    data = request.get_json()
+    id = data['id']
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("DELETE FROM planes WHERE id = %s", (id,))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return {"ok": True}
+
+@app.route('/metricas_db')
+def metricas_db():
+
+    if session.get('rol') != 'root':
+        return "Acceso denegado", 403
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT 
+            c.relname AS tabla,
+            s.n_live_tup AS filas,
+            pg_total_relation_size(c.oid) / 1024 AS size_kb
+        FROM pg_class c
+        JOIN pg_stat_user_tables s ON c.oid = s.relid
+        ORDER BY size_kb DESC;
+    """)
+
+    datos = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    # calcular total
+    total = sum([fila[1] for fila in datos])
+    # 🔹 tabla más pesada
+    tabla_mas_pesada = max(datos, key=lambda x: x[2])
+
+    # 🔹 tabla con más filas
+    tabla_mas_filas = max(datos, key=lambda x: x[1])
+
+    # 🔹 promedio tamaño por tabla
+    promedio_kb = total / len(datos) if datos else 0
+    
+    limite_kb = 250000  # ejemplo: 500 MB (ajústalo a tu plan real)
+    porcentaje = (total / limite_kb) * 100 if limite_kb > 0 else 0
+    if porcentaje < 60:
+        estado = "ok"
+    elif porcentaje < 85:
+        estado = "warning"
+    else:
+        estado = "danger"
+
+    return render_template(
+        'metricas_db.html',
+        datos=datos,
+        total=total,
+        tabla_mas_pesada=tabla_mas_pesada,
+        tabla_mas_filas=tabla_mas_filas,
+        promedio_kb=promedio_kb,
+        porcentaje=porcentaje,
+        estado=estado,
+        limite_kb=limite_kb
+    )
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

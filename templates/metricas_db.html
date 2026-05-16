@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="db-metrics">
+    <div class="card p-3 mb-3 text-center">
+
+        <h6>Uso del plan</h6>
+
+        <h2>
+            {{ "{:,.0f}".format(total) }} / {{ "{:,.0f}".format(limite_kb) }} KB
+        </h2>
+
+        <div style="font-weight:600; color:
+            {% if estado == 'ok' %}#22c55e
+            {% elif estado == 'warning' %}#f59e0b
+            {% else %}#ef4444
+            {% endif %}
+        ">
+            {{ "{:.1f}".format(porcentaje) }} %
+        </div>
+
+        <!-- barra -->
+        <div style="background:#e5e7eb; border-radius:10px; height:8px; margin-top:10px;">
+            <div style="
+                width: {{ porcentaje }}%;
+                height:8px;
+                border-radius:10px;
+                background:
+                {% if estado == 'ok' %}#22c55e
+                {% elif estado == 'warning' %}#f59e0b
+                {% else %}#ef4444
+                {% endif %}
+            "></div>
+        </div>
+
+    </div>
+
+    <div class="row mb-3">
+
+        <div class="col-md-4">
+            <div class="card p-2 text-center">
+                <h6>Tabla más pesada</h6>
+                <strong>{{ tabla_mas_pesada[0] }}</strong>
+                <div>{{ tabla_mas_pesada[2] }} KB</div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card p-2 text-center">
+                <h6>Más registros</h6>
+                <strong>{{ tabla_mas_filas[0] }}</strong>
+                <div>{{ tabla_mas_filas[1] }}</div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card p-2 text-center">
+                <h6>Promedio por tabla</h6>
+                <strong>{{ "{:,.0f}".format(promedio_kb) }} KB</strong>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="container mt-4">
+
+        <h3 class="mb-4">Uso de Base de Datos</h3>
+
+        <div class="card p-3 mb-4 shadow-sm text-center">
+            <h6>Total usado en disco</h6>
+            <h2>{{ "{:,.0f}".format(total) }} KB</h2>
+        </div>
+
+        <div class="row">
+
+            <!-- 🔹 GRAFICO REGISTROS -->
+            <div class="col-md-6">
+                <div class="card p-3 shadow-sm">
+                    <h6 class="text-center">Cantidad de Registros</h6>
+                    <canvas id="graficoFilas"></canvas>
+                </div>
+            </div>
+
+            <!-- 🔹 GRAFICO TAMAÑO -->
+            <div class="col-md-6">
+                <div class="card p-3 shadow-sm">
+                    <h6 class="text-center">Uso en KB</h6>
+                    <canvas id="graficoDB"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+<script>
+    const labels = {{ datos | map(attribute=0) | list | tojson }};
+    const filas = {{ datos | map(attribute=1) | list | tojson }};
+    const tamanos = {{ datos | map(attribute=2) | list | tojson }};
+
+    // 🔹 GRAFICO FILAS
+    new Chart(document.getElementById('graficoFilas'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: filas
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'top',
+                    formatter: value => value
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+
+    // 🔹 GRAFICO TAMAÑO
+    new Chart(document.getElementById('graficoDB'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: tamanos
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'top',
+                    formatter: value => value  
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+</script>
+{% endblock %}

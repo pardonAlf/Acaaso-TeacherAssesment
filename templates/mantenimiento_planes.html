@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Mantenimiento de Planes</h3>
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalPlan">
+            + Crear Plan
+        </button>
+    </div>
+
+    <table class="table table-bordered mt-3">
+        <thead class="table-dark">
+            <tr>
+                <th>id</th>
+               
+                <th>Tipo</th>
+                <th>Nombre</th>
+                <th>Precio</th>
+                <th>Admins</th>
+                <th>Profesores</th>
+                <th>Alumnos</th>
+                <th>Quizzes</th>
+                <th>Orden</th>
+                <th>Activo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for p in planes %}
+            <tr>
+                <td>{{ p[0] }}</td>
+                 
+                <td class="{% if p[1] == 'individual' %}tipo-individual{% else %}tipo-empresarial{% endif %}">
+                    {{ p[1] }}
+                </td>
+                <td contenteditable="true" onblur="guardarCampo(this, {{ p[0] }}, 'nombre')">
+                    {{ p[2] }}
+                </td>
+
+                <td contenteditable="true" onblur="guardarCampo(this, {{ p[0] }}, 'precio')">
+                    {{ p[3] }}
+                </td>
+
+                <td contenteditable="true" onblur="guardarCampo(this, {{ p[0] }}, 'admins')">
+                    {{ p[4] }}
+                </td>
+
+                <td contenteditable="true" onblur="guardarCampo(this, {{ p[0] }}, 'profesores')">
+                    {{ p[5] }}
+                </td>
+
+                <td contenteditable="true" onblur="guardarCampo(this, {{ p[0] }}, 'alumnos')">
+                    {{ p[6] }}
+                </td>
+
+                <td contenteditable="true" onblur="guardarCampo(this, {{ p[0] }}, 'quizzes')">
+                    {{ p[7] }}
+                </td>
+
+                <td contenteditable="true" onblur="guardarCampo(this, {{ p[0] }}, 'orden')">
+                    {{ p[8] if p|length > 9 else '' }}
+                </td>
+                <td class="text-center">
+                    <input type="checkbox"
+                        {% if p[9] %}checked{% endif %}
+                        onchange="toggleActivo(this, {{ p[0] }})">
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-danger"
+                            onclick="eliminarPlan({{ p[0] }}, this)">
+                        🗑
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="modal fade" id="modalPlan" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+
+                <form method="POST" action="/crear_plan">
+
+                    <div class="modal-header">
+                    <h5 class="modal-title">Crear Plan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+
+                        <div class="row g-2">
+
+                            <!-- IZQUIERDA -->
+                            <div class="col-6">
+
+                            <label>Tipo</label>
+                            <select name="tipo" class="form-control">
+                                <option value="individual">Individual</option>
+                                <option value="empresarial">Empresarial</option>
+                            </select>
+
+                            <label class="mt-2">Nombre</label>
+                            <input type="text" name="nombre" class="form-control" placeholder="Ej: BASICO" required>
+
+                            <label class="mt-2">Precio</label>
+                            <input type="number" name="precio" class="form-control" placeholder="S/. mensual" required>
+
+                            <label class="mt-2">Orden</label>
+                            <input type="number" name="orden" class="form-control" placeholder="Ej: 1">
+                            </div>
+
+                            <!-- DERECHA -->
+                            <div class="col-6">
+
+                            <label>Admins</label>
+                            <input type="number" name="admins" class="form-control" placeholder="Cantidad">
+
+                            <label class="mt-2">Profesores</label>
+                            <input type="number" name="profesores" class="form-control" placeholder="Cantidad">
+
+                            <label class="mt-2">Alumnos</label>
+                            <input type="number" name="alumnos" class="form-control" placeholder="Cantidad">
+
+                            <label class="mt-2">Quizzes</label>
+                            <input type="number" name="quizzes" class="form-control" placeholder="Cantidad">
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function guardarCampo(td, id, campo) {
+
+        let valor = td.innerText.trim();
+
+        fetch('/actualizar_plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, campo, valor })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.ok) {
+                td.style.background = "#d1fae5";
+                setTimeout(() => td.style.background = "", 500);
+            } else {
+                td.style.background = "#fecaca";
+            }
+        });
+    }
+
+    /* 🔥 CONTROL ENTER */
+    document.addEventListener("keydown", function(e) {
+
+        if (e.key === "Enter") {
+
+            let td = document.activeElement;
+
+            if (td && td.hasAttribute("contenteditable")) {
+
+                e.preventDefault(); // ❌ evita salto de línea
+
+                let fila = td.parentElement;
+                let siguienteFila = fila.nextElementSibling;
+
+                // 🔹 guardar
+                td.blur();
+
+                // 🔹 moverse al mismo campo abajo
+                if (siguienteFila) {
+
+                    let index = Array.from(td.parentElement.children).indexOf(td);
+                    let siguienteTd = siguienteFila.children[index];
+
+                    if (siguienteTd && siguienteTd.hasAttribute("contenteditable")) {
+                        siguienteTd.focus();
+                    }
+                }
+            }
+        }
+
+    });
+</script>
+<script>
+function eliminarPlan(id, btn) {
+
+    if (!confirm("¿Eliminar este plan?")) return;
+
+    fetch('/eliminar_plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.ok) {
+            // eliminar fila visualmente
+            let fila = btn.closest("tr");
+            fila.remove();
+        } else {
+            alert("Error al eliminar");
+        }
+
+    });
+
+}
+</script>
+<script>
+function toggleActivo(el, id) {
+
+    let valor = el.checked;
+
+    fetch('/toggle_plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, activo: valor })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.ok) {
+            alert("Error al actualizar");
+            el.checked = !valor;
+        }
+    });
+
+}
+</script>
+
+{% endblock %}

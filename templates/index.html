@@ -45,7 +45,7 @@
                         {{ session['usuario'] }} ({{ session['rol'] }})
                     </span>
 
-                    {% if session['rol'] in ['admin', 'profesor'] %}
+                    {% if session['rol'] in ['admin', 'profesor','root'] %}
                         <a href="/dashboard_profesor" class="btn btn-success btn-sm">Procesos</a>
                     {% endif %}
 
@@ -93,115 +93,92 @@
 
 <section class="planes-section">
 
-    <div class="overlay"></div>
-
     <div class="container text-center">
         <h2 class="titulo-planes">Planes</h2>
-        <p class="subtitulo">Elige el plan que mejor se adapte a tu enseñanza</p>
+        <p class="subtitulo">Elige el plan que mejor se adapte</p>
 
-        <div class="row justify-content-center mt-4">
+        <!-- 🔹 TABS -->
+        <ul class="nav nav-pills justify-content-center mb-4" id="tabsPlanes">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#individual">
+                    Individual
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#empresarial">
+                    Empresarial
+                </button>
+            </li>
+        </ul>
 
-            <!-- PLAN 1 -->
-            <div class="col-12 col-md-3">
-                <div class="plan-card">
-                    <div class="plan-overlay"></div>
+        <!-- 🔹 CONTENIDO -->
+        <div class="tab-content">
 
-                    <h4>1 mes </h4>
-                    <div class="precioplan">
-                        <h6>S/.</h6>
-                        <h2>30 </h2>
-                        <h6>&nbsppor mes</h6>
-                    </div>                    
-                    <p>incluye</p>
+            <!-- INDIVIDUAL -->
+            <div class="tab-pane fade show active" id="individual">
+                <div class="row justify-content-center">
 
-                    <hr>
+                    {% for p in planes_individual %}
+                    <div class="col-12 col-md-4 mb-4">
+                        <div class="plan-card">
 
-                    <ul>
-                        <li>✔ 30 quizzes</li>
-                        <li>✔ Hasta 40 alumnos</li>
-                        <li>✔ Gráficos estándar</li>
-                    </ul>
+                            <h4>{{ p[1] }}</h4>
 
-                    <button class="btn-plan">Elegir</button>
+                            <div class="precioplan">
+                                <h6>S/.</h6>
+                                <h2>{{ p[2] }}</h2>
+                                <h6>por mes</h6>
+                            </div>
+
+                            <ul>
+                                <li>✔ {{ p[3] }} admin</li>
+                                <li>✔ {{ p[4] }} profesores</li>
+                                <li>✔ {{ p[5] }} alumnos</li>
+                                <li>✔ {{ p[6] }} quizzes</li>
+                            </ul>
+
+                            <button class="btn-plan">Elegir</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+
                 </div>
             </div>
 
-            <!-- PLAN 2 -->
-            <div class="col-12 col-md-3">
-                <div class="plan-card">
-                    <div class="plan-overlay"></div>
+            <!-- EMPRESARIAL -->
+            <div class="tab-pane fade" id="empresarial">
+                <div class="row justify-content-center">
 
-                     <h4>3 meses </h4>
-                        <div class="precioplan">
-                            <h6>S/.</h6>
-                            <h2>25 </h2>
-                            <h6>&nbsppor mes</h6>
-                        </div>                    
-                        <p>incluye</p>
+                    {% for p in planes_empresarial %}
+                    <div class="col-12 col-md-4 mb-4">
+                        <div class="plan-card">
 
-                    <hr>
+                            <h4>{{ p[1] }}</h4>
 
-                    <ul>
-                        <li>✔ 30 quizzes</li>
-                        <li>✔ Hasta 40 alumnos</li>
-                        <li>✔ Gráficos estándar</li>
-                    </ul>
+                            <div class="precioplan">
+                                <h6>S/.</h6>
+                                <h2>{{ p[2] }}</h2>
+                                <h6>por mes</h6>
+                            </div>
 
-                    <button class="btn-plan">Elegir</button>
+                            <ul>
+                                <li>✔ {{ p[3] }} admin</li>
+                                <li>✔ Profesores ilimitados</li>
+                                <li>✔ Alumnos ilimitados</li>
+                                <li>✔ Quizzes ilimitados</li>
+                            </ul>
+
+                            <button class="btn-plan">Contactar</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+
                 </div>
             </div>
 
-            <!-- PLAN 3 -->
-            <div class="col-12 col-md-3">
-                <div class="plan-card">
-                    <div class="plan-overlay"></div>
-
-                    <h4>6 meses  </h4>
-                        <div class="precioplan">
-                            <h6>S/.</h6>
-                            <h2>20 </h2>
-                            <h6>&nbsppor mes</h6>
-                        </div>                    
-                        <p>incluye</p>
-
-                    <hr>
-
-                    <ul>
-                        <li>✔ 30 quizzes</li>
-                        <li>✔ Hasta 40 alumnos</li>
-                        <li>✔ Gráficos estándar</li>
-                    </ul>
-
-                    <button class="btn-plan">Elegir</button>
-                </div>
-            </div>
-
-            <!-- PLAN 4 -->
-            <div class="col-12 col-md-3">
-                <div class="plan-card">
-                    <div class="plan-overlay"></div>
-
-                        <h4>1 año </h4>
-                        <div class="precioplan">
-                            <h6>S/.</h6>
-                            <h2>18 </h2>
-                            <h6>&nbsppor mes</h6>
-                        </div>                    
-                        <p>incluye</p>
-
-                        <hr>
-                        <ul>
-                            <li>✔ 30 quizzes</li>
-                            <li>✔ Hasta 40 alumnos</li>
-                            <li>✔ Gráficos estándar</li>
-                        </ul>
-                        <button class="btn-plan">Elegir</button>
-                </div>
-            </div>
         </div>
     </div>
-
-</section>
+</section>   
 
 <section class="steps container">
     <h2 class="text-center mb-5" id="comofunciona">¿Cómo funciona?</h2>
@@ -286,8 +263,9 @@
     <!-- Columna 3 -->
     <div style="flex:1; min-width:200px; margin:10px;">
       <h4>Contacto</h4>
-      <p>Email: soporte@teacherassessment.com</p>
-      <p>Tel: +56 9 1234 5678</p>
+      <p>Email: pardoalf@gmail.com</p>
+      <p>Alfredo Pardón La Rosa - ACAASO </p>
+      <p>Tel: +51 9 5360 5116</p>
 
       <div style="margin-top:10px;">
         <a href="#" style="margin-right:10px; color:white;"><i class="fab fa-linkedin"></i></a>
