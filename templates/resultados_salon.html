@@ -23,6 +23,16 @@
 
             <input type="hidden" id="salon_id">
         </div>
+        <div  style="  text-align:right;">
+
+            <button id="btnVerQuiz"
+                    class="btn btn-sm btn-secondary"
+                    disabled
+                    onclick="verQuizSalon()">
+                👁 Ver examen
+            </button>
+
+        </div>
     </div>
 
     <!-- 📋 TABLA -->
@@ -33,7 +43,19 @@
                     <th>DNI</th>
                     <th>Alumno</th>
                     {% for q in quizzes %}
-                        <th>Quiz {{ loop.index }}</th>
+                        <th style="text-align:center; vertical-align:middle;">
+                            
+                            <!-- código arriba -->
+                            <div style="font-weight:bold; color:white; line-height:1;">
+                                {{ q.codigo or '---' }}
+                            </div>
+                            
+                            <!-- nombre abajo -->
+                            <div title="{{ q.titulo }}" style="font-size:0.75em; color:white;">
+                                Quiz {{ loop.index }}
+                            </div>
+
+                        </th>
                     {% endfor %}
                     <th>Promedio</th>
                     <th>Acción</th>
@@ -46,16 +68,30 @@
                     <td>{{ fila.dni }}</td>
                     <td>{{ fila.alumno }}</td>
                     {% for q in quizzes %}
-                        <td>{% if fila[q].nota > 0 %}
-                            {{ fila[q].nota }}
-                            <span style="color:#0d6efd; font-size: 0.7em;">
-                                ({{ fila[q].intento }})
-                            </span>
-                        {% else %}
-                            0
-                        {% endif %}</td>
+                        {% set celda = fila[q.id] %}
+
+                        <td class="nota-celda"
+                            data-alumno-id="{{ fila.alumno_id }}"
+                            data-quiz-id="{{ q.id }}"
+                            data-intento="{{ fila[q.id].intento }}" 
+                            data-alumno="{{ fila.alumno }}"
+                            data-quiz="{{ q.titulo }}"
+                            data-nota="{{ fila[q.id].nota }}"
+                            title="Ver examen (Intento {{ fila[q.id].intento }})" 
+                            data-correo="{{ fila.correo }}"
+                            data-fecha="{{ fila[q.id].fecha if fila[q.id].fecha else '' }}"
+                            data-salon="{{ salon_seleccionado }}"> 
+                            {% if celda.nota > 0 %}
+                                {{ celda.nota }}
+                                <span style="color:#0d6efd; font-size:0.7em;">
+                                    ({{ celda.intento }})
+                                </span>
+                            {% else %}
+                                0
+                            {% endif %}
+                        </td>
                     {% endfor %}
-                    <td><strong>{{ fila.promedio }}</strong></td>
+                    <td style="text-align:center; vertical-align:middle;"><strong>{{ fila.promedio }}</strong></td>
                     <td>
                         <button 
                             class="btn btn-danger btn-sm"
@@ -106,7 +142,327 @@
 
     </div>
 
-</div>
+    <div id="panelResumen" style="
+        display: flex;
+        flex-direction: column;
+        height: 60%;
+        position: fixed;
+        right: -360px;
+        top: 70px;
+        width: 340px;
+        background: #ffffff;
+        border-left: 1px solid #e5e7eb;
+        box-shadow: -8px 0 25px rgba(0,0,0,0.08);
+        padding: 18px;
+        transition: right 0.3s ease;
+        z-index: 999;
+        font-family: system-ui;
+    ">
+
+        <!-- HEADER -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="font-weight:600; color:#1f2937;">📄 Resultado</div>
+            <div style="font-size:12px; color:#6b7280;" id="resFecha"></div>
+        
+            <button onclick="cerrarPanel()" style="
+                border:none;
+                background:none;
+                font-size:18px;
+                cursor:pointer;
+                color:#6b7280;
+            ">
+                ✕
+            </button>
+        </div>
+        
+        <div style="display:flex; flex-direction:column;">
+            <!-- BLOQUES -->
+            <!-- TABS -->
+            <div style="display:flex; border-bottom:1px solid #e5e7eb; margin-bottom:10px; ">
+                
+                <div class="tab-btn active" onclick="cambiarTab('resumen')" style="
+                    padding:6px 10px;
+                    cursor:pointer;
+                    font-size:13px;
+                    border-bottom:2px solid #2563eb;
+                    color:#2563eb;
+                ">Resumen</div>
+
+                <div class="tab-btn" onclick="cambiarTab('acciones')" style="
+                    padding:6px 10px;
+                    cursor:pointer;
+                    font-size:13px;
+                    color:#6b7280;
+                ">Acciones</div>
+
+            </div>
+
+            <!-- TAB RESUMEN -->
+            <div id="tab-resumen" class="tab-content-tabs active" style="flex:1;">
+
+                <!-- BLOQUES -->
+                <div style="display:flex; flex-direction:column; gap:10px; font-size:13px;">
+
+                    <div>
+                        <div style="font-size:11px; color:#9ca3af;">ALUMNO</div>
+                        <div id="resAlumno" style="font-weight:500;"></div>
+                    </div>
+
+                    <div>
+                        <div style="font-size:11px; color:#9ca3af;">QUIZ</div>
+                        <div id="resQuiz"></div>
+                    </div>
+
+                    <div>
+                        <div style="font-size:11px; color:#9ca3af;">SALÓN</div>
+                        <div id="resSalon"></div>
+                    </div>
+
+                    <!-- 🔥 CAJAS BONITAS DE NUEVO -->
+                    <div style="display:flex; gap:10px; margin-top:5px;">
+
+                        <div style="
+                            flex:1;
+                            background:#f3f4f6;
+                            padding:8px;
+                            border-radius:6px;
+                            text-align:center;
+                        ">
+                            <div style="font-size:10px; color:#6b7280;">INTENTO</div>
+                            <div id="resIntento" style="font-weight:600;"></div>
+                        </div>
+
+                        <div style="
+                            flex:1;
+                            background:#eef2ff;
+                            padding:8px;
+                            border-radius:6px;
+                            text-align:center;
+                        ">
+                            <div style="font-size:10px; color:#6b7280;">NOTA</div>
+                            <div id="resNota" style="font-weight:700; color:#2563eb;"></div>
+                        </div>
+
+                    </div>
+
+                    <!-- fecha abajo compacta -->
+                    <div style="font-size:11px; color:#6b7280; margin-top:5px;">
+                        <span id="resFecha"></span>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- TAB ACCIONES -->
+           <div id="tab-acciones" class="tab-content-tabs">
+
+                <div style="
+                    display:flex;
+                    flex-direction:column;
+                    gap:6px;
+                     
+                ">
+
+                    <button class="btn btn-sm btn-primary" onclick="verQuizSalon()">
+                        👁 Ver examen
+                    </button>
+
+                    <button class="btn btn-sm btn-outline-secondary" onclick="descargarPDF()">
+                        📄 Descargar PDF
+                    </button>
+
+                    <button class="btn btn-sm btn-outline-secondary" onclick="confirmarEnvio()">
+                        ✉ Enviar al alumno
+                    </button>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+   <div id="overlayCarga" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    ">
+
+        <div style="
+            width: 320px;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            text-align: center;
+            font-family: system-ui;
+        ">
+
+            <div style="font-size:14px; color:#374151; margin-bottom:12px;">
+                Procesando envío...
+            </div>
+
+            <div style="
+                width:100%;
+                height:8px;
+                background:#e5e7eb;
+                border-radius:8px;
+                overflow:hidden;
+            ">
+                <div id="barraProgreso" style="
+                    width:0%;
+                    height:100%;
+                    background:#2563eb;
+                    transition: width 0.4s ease;
+                "></div>
+            </div>
+
+        </div>
+
+    </div>
+
+<script>
+
+function descargarPDF() {
+
+    if (!alumnoSeleccionado || !quizSeleccionado) return;
+
+    window.open(
+        `/descargar_reporte/${quizSeleccionado}/${alumnoSeleccionado}?intento=${intentoSeleccionado}`,
+        '_blank'
+    );
+
+}
+
+
+function confirmarEnvio() {
+
+    if (!alumnoSeleccionado || !quizSeleccionado) return;
+
+    const correo = celdaSeleccionada.dataset.correo || 'correo no disponible';
+
+    const ok = confirm(
+        `Está a punto de enviar el quiz al correo:\n\n${correo}\n\n¿Desea continuar?`
+    );
+
+    if (!ok) return;
+
+    // 🔥 overlay centrado
+    const overlay = document.getElementById("overlayCarga");
+    const barra = document.getElementById("barraProgreso");
+
+    overlay.style.display = "flex";
+    barra.style.width = "10%";
+
+    // 🔥 animación progresiva
+    let avance = 10;
+    const intervalo = setInterval(() => {
+        if (avance < 90) {
+            avance += Math.random() * 10;
+            barra.style.width = avance + "%";
+        }
+    }, 400);
+
+    fetch('/enviar_reporte_manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            alumno_id: alumnoSeleccionado,
+            quiz_id: quizSeleccionado,
+            intento_id: intentoSeleccionado
+        })
+    })
+    .then(r => r.json())
+    .then(() => {
+
+        clearInterval(intervalo);
+        barra.style.width = "100%";
+
+        setTimeout(() => {
+            overlay.style.display = "none";
+            barra.style.width = "0%";
+            alert("✔ Correo enviado correctamente");
+        }, 600);
+
+    })
+    .catch(() => {
+
+        clearInterval(intervalo);
+        overlay.style.display = "none";
+        barra.style.width = "0%";
+
+        alert("❌ Error al enviar el correo");
+
+    });
+
+}
+
+
+function cambiarTab(tab) {
+
+    // ocultar todos
+    document.querySelectorAll('.tab-content-tabs').forEach(el => {
+        el.classList.remove('active');
+    });
+
+    // reset tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.style.color = '#6b7280';
+        btn.style.borderBottom = 'none';
+    });
+
+    // activar contenido
+    const activo = document.getElementById('tab-' + tab);
+    activo.classList.add('active');
+
+    // activar tab visual
+    event.target.style.color = '#2563eb';
+    event.target.style.borderBottom = '2px solid #2563eb';
+
+}
+
+document.addEventListener('click', function (e) {
+
+    const panel = document.getElementById('panelResumen');
+
+    // si no hay panel visible, no hace nada
+    if (!panel) return;
+
+    const clickEnCelda = e.target.closest('.nota-celda');
+    const clickEnPanel = e.target.closest('#panelResumen');
+
+    // 👉 si NO hizo click en celda NI en panel → cerrar
+    if (!clickEnCelda && !clickEnPanel) {
+
+        panel.style.right = '-360px';
+
+        // limpiar selección visual
+        if (celdaSeleccionada) {
+            celdaSeleccionada.classList.remove('activa');
+            celdaSeleccionada = null;
+        }
+
+        // desactivar botón otra vez
+        const btn = document.getElementById('btnVerQuiz');
+        btn.disabled = true;
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-secondary');
+
+    }
+
+});
+
+function cerrarPanel() {
+    document.getElementById('panelResumen').style.right = '-360px';
+}
+</script>
 
 <!-- 📦 CHART -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -396,6 +752,100 @@ function eliminarDirecto(alumno_id, quiz_id, btn) {
         fila.remove();
     });
 }
+</script>
+<script id="h7s9kd">
+
+let celdaSeleccionada = null;
+let alumnoSeleccionado = null;
+let quizSeleccionado = null;
+let intentoSeleccionado = 1;
+
+document.querySelectorAll('.nota-celda').forEach(celda => {
+
+    celda.addEventListener('click', function () {
+
+        // quitar selección anterior
+        if (celdaSeleccionada) {
+            celdaSeleccionada.style.backgroundColor = '';
+        }
+
+        // pintar nueva celda
+        this.style.backgroundColor = '#93c5fd';
+        celdaSeleccionada = this;
+
+        // obtener datos
+        alumnoSeleccionado = this.dataset.alumnoId;
+        quizSeleccionado = this.dataset.quizId;
+        intentoSeleccionado = this.dataset.intento || 1;
+
+        // activar botón
+        document.getElementById('btnVerQuiz').disabled = false;
+
+        // 🔥 llenar panel
+        document.getElementById('resAlumno').innerText = this.dataset.alumno;
+        document.getElementById('resQuiz').innerText = this.dataset.quiz;
+        document.getElementById('resIntento').innerText = this.dataset.intento;
+        document.getElementById('resNota').innerText = this.dataset.nota;
+        document.getElementById('resFecha').innerText = this.dataset.fecha || '';
+        document.getElementById('resSalon').innerText = this.dataset.salon || '';
+
+        // 🔥 mostrar panel
+        document.getElementById('panelResumen').style.right = '0px';
+
+    });
+
+});
+
+</script>
+<script id="ver-examen-salon">
+
+function verQuizSalon() {
+
+    if (!alumnoSeleccionado || !quizSeleccionado) return;
+
+    window.open(
+        `/ver_quiz_alumno/${quizSeleccionado}/${alumnoSeleccionado}?intento=${intentoSeleccionado}`,
+        '_blank'
+    );
+
+}
+
+</script>
+<script>
+
+document.querySelectorAll('.nota-celda').forEach(celda => {
+
+    celda.addEventListener('click', function () {
+
+        // quitar selección anterior
+        if (celdaSeleccionada) {
+            celdaSeleccionada.classList.remove('activa');
+        }
+
+        // marcar nueva
+        this.classList.add('activa');
+        celdaSeleccionada = this;
+
+        // datos
+        alumnoSeleccionado = this.dataset.alumnoId;
+        quizSeleccionado = this.dataset.quizId;
+        intentoSeleccionado = this.dataset.intento || 1;
+
+        // 🔥 ACTIVAR BOTÓN (QUITAR disabled REAL)
+        const btn = document.getElementById('btnVerQuiz');
+
+        btn.disabled = false;  // 👈 ESTO ERA EL PROBLEMA
+
+        btn.classList.remove('btn-secondary');
+        btn.classList.add('btn-primary');
+
+        btn.style.cursor = 'pointer';
+        btn.style.opacity = '1';
+
+    });
+
+});
+
 </script>
 
 {% endblock %}

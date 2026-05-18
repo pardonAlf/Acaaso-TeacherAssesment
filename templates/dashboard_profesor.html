@@ -14,11 +14,12 @@
         <div class="acciones mb-2">
             <button onclick="crearQuiz()">Crear</button>
             <button onclick="entrarQuiz()">Entrar</button>
-            <button onclick="generarCodigo()">Código</button>
+            <button onclick="generarCodigo()" >Código</button>
             <button onclick="verResultados()">Resultados</button>
             <button class="danger" onclick="eliminarQuiz()">Eliminar</button>
             <button onclick="generarReporte()">Exportar Quiz</button>
             <button onclick="exportarExcelSeleccionado()">Exportar Excel</button>
+            <button onclick="irEnviarQuiz()" id="btnEnviarQuiz" disabled>Enviar Quiz</button>
             <button  onclick="activarFiltro()" >Filtrar</button>
 
             <input type="text" id="inputFiltro"
@@ -72,7 +73,7 @@
                             <td>{{ q[2] }}</td>
                             <td>{{ q[3] }}</td>
                                 
-                            <td>
+                            <td class="col-codigo">
                                 {% if q[4] %}
                                     <span class="badge-ok">{{ q[4] }}</span>
                                 {% else %}
@@ -89,6 +90,47 @@
 
     </div>
     <script>
+    function irEnviarQuiz() {
+
+        let seleccionado = document.querySelector('input[name="quiz_id"]:checked');
+
+        if (!seleccionado) {
+            alert("Selecciona un quiz");
+            return;
+        }
+
+        let id = seleccionado.value;
+        window.location.href = "/enviar_quiz/" + id;
+    }
+     
+    function actualizarBoton() {
+
+        let seleccionado = document.querySelector('input[name="quiz_id"]:checked');
+        let btn = document.getElementById("btnEnviarQuiz");
+
+        if (!seleccionado) {
+            btn.disabled = true;
+            return;
+        }
+
+        let tr = seleccionado.closest("tr");
+        let codigo = tr.querySelector(".col-codigo").innerText.trim();
+
+        if (codigo === "—" || codigo === "") {
+            btn.disabled = true;
+        } else {
+            btn.disabled = false;
+        }
+    }
+
+    // 🔹 cuando cambias selección
+    document.querySelectorAll('input[name="quiz_id"]').forEach(radio => {
+        radio.addEventListener('change', actualizarBoton);
+    });
+
+    // 🔥 cuando carga la página
+    window.addEventListener('load', actualizarBoton);
+    
     function exportarExcelSeleccionado() {
 
         let seleccionado = document.querySelector('input[name="quiz_id"]:checked');

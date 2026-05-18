@@ -1267,25 +1267,123 @@ def eliminar_asignacion(id):
 
     return jsonify({"status": "ok"})
 
-@app.route('/enviar_quiz/<int:quiz_id>')
-def enviar_quiz(quiz_id):
+@app.route('/buscar_alumnos_por_salon')
+def buscar_alumnos_por_salon():
+
+    texto = request.args.get('q')
 
     conn = get_db_connection()
-    cur = conn.cursor()
+    cursor = conn.cursor()
 
-    codigo = generar_codigo_unico(cur)
+    cursor.execute("""
+        SELECT DISTINCT a.id, a.dni, a.nombre, a.apellido, a.correo
+        FROM salon s
+        JOIN salon_quiz sq ON s.id = sq.salon_id
+        JOIN respuestas_alumno ra ON sq.quiz_id = ra.quiz_id
+        JOIN alumnos a ON a.id = ra.alumno_id
+        WHERE s.descripcion ILIKE %s
+    """, (f"%{texto}%",))
 
-    cur.execute(
-        "UPDATE quiz SET codigo=%s WHERE id=%s",
-        (codigo, quiz_id)
+    return jsonify(cursor.fetchall())
+
+@app.route('/buscar_salones')
+def buscar_salones():
+
+    q = request.args.get('q')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, descripcion
+        FROM salon
+        WHERE descripcion ILIKE %s
+        LIMIT 10
+    """, (f"%{q}%",))
+
+    return jsonify(cursor.fetchall())
+
+
+
+@app.route('/enviar_quiz/<int:quiz_id>')
+def vista_enviar_quiz(quiz_id):
+
+    salon_id = request.args.get('salon_id')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # 🔹 quiz
+    cursor.execute("""
+        SELECT titulo, codigo
+        FROM quiz
+        WHERE id = %s
+    """, (quiz_id,))
+    quiz = cursor.fetchone()
+
+    titulo_quiz, codigo_quiz = quiz
+
+    # 🔥 lógica con o sin filtro
+    if salon_id:
+
+        cursor.execute("""
+            SELECT DISTINCT a.id, a.nombre, a.apellido, a.dni, a.correo
+            FROM alumnos a
+            JOIN respuestas_alumno r ON r.alumno_id = a.id
+            JOIN salon_quiz sq ON sq.quiz_id = r.quiz_id
+            WHERE sq.salon_id = %s
+              AND r.quiz_id = %s
+            ORDER BY a.apellido, a.nombre
+        """, (salon_id, quiz_id))
+
+    else:
+        # sin filtro → como ya lo tienes
+        cursor.execute("""
+            SELECT DISTINCT a.id, a.nombre, a.apellido, a.dni, a.correo
+            FROM alumnos a
+            JOIN respuestas_alumno r ON r.alumno_id = a.id
+            WHERE r.quiz_id = %s
+            ORDER BY a.apellido, a.nombre
+        """, (quiz_id,))
+
+    alumnos = cursor.fetchall()
+
+    # 🔹 lista de salones (para combo)
+    cursor.execute("""
+        SELECT id, descripcion
+        FROM salon
+        ORDER BY descripcion
+    """)
+    salones = cursor.fetchall()
+
+    return render_template(
+        'enviar_quiz.html',
+        alumnos=alumnos,
+        quiz_id=quiz_id,
+        titulo_quiz=titulo_quiz,
+        codigo_quiz=codigo_quiz,
+        salones=salones,
+        salon_id_actual=salon_id
     )
+    
+@app.route('/buscar_alumnos_por_salon_id')
+def alumnos_por_salon_id():
 
-    conn.commit()
-    cur.close()
-    conn.close()
+    salon_id = request.args.get('id')
 
-    return redirect(url_for('dashboard_profesor'))
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
+    cursor.execute("""
+        SELECT DISTINCT a.id, a.dni, a.nombre, a.apellido, a.correo
+        FROM salon_quiz sq
+        INNER JOIN respuestas_alumno ra ON sq.quiz_id = ra.quiz_id
+        INNER JOIN alumnos a ON a.id = ra.alumno_id
+        WHERE sq.salon_id = %s
+    """, (salon_id,))
+
+    return jsonify(cursor.fetchall())
+    
 @app.route('/buscar_alumno/<dni>')
 def buscar_alumno(dni):
     conn = get_db_connection()
@@ -1626,6 +1724,33 @@ def guardar_respuestas():
         "nota": nota
     })
     
+@app.route('/enviar_reporte_manual', methods=['POST'])
+def enviar_reporte_manual():
+
+    data = request.get_json()
+
+    alumno_id = data['alumno_id']
+    quiz_id = data['quiz_id']
+    intento_id = data['intento_id']
+
+    examen = obtener_examen_alumno(alumno_id, quiz_id, intento_id)
+
+    fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+    generar_y_enviar_reporte(
+        examen["detalle"],
+        examen["nota"],
+        examen["correo"],
+        examen["nombre"],
+        alumno_id,
+        examen["titulo"],
+        examen["dni"],
+        fecha,
+        True
+    )
+
+    return jsonify({"status": "ok"})
+    
 @app.route('/exportar_quiz_excel/<int:quiz_id>')
 def exportar_quiz_excel(quiz_id):
 
@@ -1745,265 +1870,7 @@ def exportar_quiz_excel(quiz_id):
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )   
 
-#@app.route('/guardar_respuestas', methods=['POST'])
-def guardar_respuestas1():
 
-    data = request.get_json()
-
-    alumno_id = data['alumno_id']
-    respuestas = data['respuestas']
-    salon_quiz_id = data.get('salon_quiz_id')
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    correctas = 0
-    total = len(respuestas)
-
-    detalle = []
-    valor_por_pregunta = 20 / total
-    
-    # 🔍 obtener quiz_id real desde salon_quiz
-    cur.execute("""
-        SELECT quiz_id
-        FROM salon_quiz
-        WHERE id = %s
-    """, (salon_quiz_id,))
-
-    quiz_id = cur.fetchone()[0]
-
-    # 🔥 LOOP PRINCIPAL
-    for pregunta_id, opcion_id in respuestas.items():
-
-        # 🔹 pregunta
-        cur.execute("""
-            SELECT texto
-            FROM preguntas
-            WHERE id = %s
-        """, (pregunta_id,))
-        pregunta_texto = cur.fetchone()[0]
-
-        # 🔹 opciones
-        cur.execute("""
-            SELECT id, texto, es_correcta
-            FROM opciones
-            WHERE pregunta_id = %s
-        """, (pregunta_id,))
-        opciones = cur.fetchall()
-
-        opciones_detalle = []
-        puntaje = 0
-
-        for op in opciones:
-            marcada = (op[0] == int(opcion_id))
-
-            if op[2] and marcada:
-                puntaje = valor_por_pregunta
-
-            opciones_detalle.append({
-                "texto": op[1],
-                "correcta": op[2],
-                "marcada": marcada
-            })
-
-        # 🔥 ESTO VA FUERA DEL FOR DE OPCIONES
-        detalle.append({
-            "pregunta": pregunta_texto,
-            "opciones": opciones_detalle,
-            "puntaje": puntaje
-        })
-
-        # guardar respuesta
-        cur.execute("""
-            INSERT INTO respuestas_alumno (alumno_id, pregunta_id, opcion_id, salon_quiz_id, quiz_id)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (alumno_id, pregunta_id, opcion_id, salon_quiz_id, quiz_id))
-
-        # contar correctas
-        if puntaje > 0:
-            correctas += 1
-
-    # 🔥 TODO ESTO VA FUERA DEL FOR
-    conn.commit()
-    
-    # 🔹 datos alumno
-    cur.execute("""
-        SELECT nombre, apellido, dni, correo
-        FROM alumnos
-        WHERE id = %s
-    """, (alumno_id,))
-    alumno = cur.fetchone()
-
-    nombre_completo = f"{alumno[0]} {alumno[1]}"
-    dni = alumno[2]
-    correo = alumno[3]
-
-    # 🔹 título quiz
-    cur.execute("""
-        SELECT titulo
-        FROM quiz q
-        JOIN salon_quiz sq ON sq.quiz_id = q.id
-        WHERE sq.id = %s
-    """, (salon_quiz_id,))
-    quiz = cur.fetchone()
-
-    titulo_quiz = quiz[0] if quiz else "Quiz"
-
-    nota = round((correctas / total) * 20, 2)
-    fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M")
-
-    # 🧾 GENERAR PDF
-    #pdf_path = f"reporte_{alumno_id}.pdf"
-    #from reportlab.lib.pagesizes import letter
-    #doc = SimpleDocTemplate(pdf_path, pagesize=letter)
-    
-    from io import BytesIO
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
-    styles = getSampleStyleSheet()
-    elements = []
-    
-    logo = Image("static/img/logo.png", width=80, height=50)
-
-    # 🔹 BLOQUE DE TEXTO
-    info = [
-        [logo, Paragraph(f"""
-        <b>ACAASO</b><br/>
-        <b>Quiz:</b> {titulo_quiz}<br/>
-        <b>Alumno:</b> {nombre_completo}<br/>
-        <b>DNI:</b> {dni}<br/>
-        <b>Correo:</b> {correo}
-        <b>Fecha:</b> {fecha_hora}
-        """, styles['Normal'])]
-    ]
-
-    tabla_header = Table(info, colWidths=[100, 350])
-
-    tabla_header.setStyle(TableStyle([
-        # 🔲 borde exterior grueso
-        ('BOX', (0,0), (-1,-1), 1.5, colors.black),
-
-        # líneas internas suaves
-        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.grey),
-
-        # alineación vertical
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-
-        # padding (espaciado interno)
-        ('LEFTPADDING', (0,0), (-1,-1), 10),
-        ('RIGHTPADDING', (0,0), (-1,-1), 10),
-        ('TOPPADDING', (0,0), (-1,-1), 8),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
-
-        # fondo suave opcional
-        ('BACKGROUND', (0,0), (-1,-1), colors.whitesmoke),
-    ]))
-
-    elements.append(tabla_header)
-    elements.append(Spacer(1, 15))
-
-    elements.append(Paragraph("<b>📊 RESULTADO DEL QUIZ</b>", styles['Title']))
-    elements.append(Spacer(1, 10))
-
-    elements.append(Paragraph(f"<b>Nota final: {nota}</b>", styles['Heading2']))
-    elements.append(Spacer(1, 10))
-
-    for item in detalle:
-
-        elements.append(Paragraph(item["pregunta"], styles['Heading3']))
-        elements.append(Spacer(1, 5))
-
-        data_tabla = []
-        fila = []
-        count = 0
-
-        letras = ["a)", "b)", "c)", "d)", "e)", "f)"]
-        for i, op in enumerate(item["opciones"]):
-            
-            letra = letras[i] if i < len(letras) else ""
-
-            if op["marcada"] and op["correcta"]:
-                texto = f"<font color='green'><b>{letra} ✔ {op['texto']}</b></font>"
-
-            elif op["marcada"] and not op["correcta"]:
-                texto = f"<font color='red'><b>{letra} ✘ {op['texto']}</b></font>"
-
-            elif op["correcta"]:
-                texto = f"<font color='green'><b>{letra} ✔ {op['texto']} (correcta)</b></font>"
-
-            else:
-                texto = f"{letra} {op['texto']}"
-
-            fila.append(Paragraph(texto, styles['Normal']))
-            count += 1
-
-            if count == 3:
-                data_tabla.append(fila)
-                fila = []
-                count = 0
-
-        if fila:
-            data_tabla.append(fila)
-
-        tabla = Table(data_tabla)
-
-        tabla.setStyle(TableStyle([
-            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-            ('BACKGROUND', (0,0), (-1,-1), colors.white),
-            ('BOX', (0,0), (-1,-1), 1, colors.black),
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-        ]))
-
-        elements.append(tabla)
-        elements.append(Spacer(1, 10))
-
-    doc.build(elements)
-    buffer.seek(0)
-    
-    # 📩 ENVIAR CORREO
-    print("👉 INTENTANDO ENVIAR CORREO A:", correo)
-
-    msg = EmailMessage()
-    msg['Subject'] = 'Resultado de tu Quiz'
-    msg['From'] = "ACAASO <pardoalf@gmail.com>"
-    msg['To'] = correo
-
-    msg.set_content(f"""
-    Hola {nombre_completo},
-
-        Adjunto encontrarás el detalle de tu evaluación.
-
-        Nota final: {nota}
-
-        Saludos,
-        Sistema ACAASO
-        """)
-
-        # 📎 adjuntar PDF
-    #with open(pdf_path, 'rb') as f:
-    #    file_data = f.read()
-    #    file_name = pdf_path
-    file_data = buffer.getvalue()
-    file_name = f"reporte_{alumno_id}.pdf"
-
-    msg.add_attachment(file_data, maintype='application', subtype='pdf', filename=file_name)
-
-    # 📡 enviar
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login(EMAIL_REMITENTE, EMAIL_PASSWORD)
-        smtp.send_message(msg)
-
-    cur.close()
-    conn.close()
-    
-    print("✅ CORREO ENVIADO")
-
-    return jsonify({
-        "status": "ok",
-        "correctas": correctas,
-        "total": total,
-        "nota": nota
-    })
     
 @app.route('/salones')
 def ver_salones():
@@ -2312,6 +2179,7 @@ def resultados_salon():
                 a.id AS alumno_id,
                 a.nombre,
                 a.apellido,
+                a.correo,
                 q.id AS quiz_id,
                 q.titulo,
                 iq.intento_numero,
@@ -2320,7 +2188,8 @@ def resultados_salon():
                         COUNT(CASE WHEN o.es_correcta THEN 1 END)::decimal
                         / NULLIF(COUNT(*), 0)
                     ) * 20,
-                2) AS nota
+                2) AS nota,
+                MAX(sq.fecha_asignacion) as fecha
 
             FROM respuestas_alumno ra
 
@@ -2350,7 +2219,7 @@ def resultados_salon():
 
         # 🔹 QUIZZES DEL SALON
         cur.execute("""
-            SELECT q.id, q.titulo
+            SELECT q.id, q.titulo,q.codigo
             FROM salon_quiz sq
             JOIN quiz q ON q.id = sq.quiz_id
             JOIN salon s ON s.id = sq.salon_id
@@ -2364,23 +2233,31 @@ def resultados_salon():
         resultado = {}
 
         for row in data:
-            print(row)  # 🔥 DEBUG
     
-            dni, alumno_id, nombre, apellido, quiz_id, quiz, intento, nota = row
+            dni, alumno_id, nombre, apellido, correo, quiz_id, quiz, intento, nota,fecha = row
 
             if alumno_id not in resultado:
                 resultado[alumno_id] = {
                     "alumno_id": alumno_id,
                     "dni": dni,
-                    "alumno": f"{nombre} {apellido}"
+                    "alumno": f"{nombre} {apellido}",
+                    "correo": correo
                 }
 
             resultado[alumno_id][quiz_id] = {
                 "nota": nota,
-                "intento": intento
+                "intento": intento,
+                "fecha": fecha   # 👈 NUEVO
             }
 
-        quizzes = [q[0] for q in todos_quizzes]
+        quizzes = [
+            {
+                "id": q[0],
+                "titulo": q[1],
+                "codigo": q[2]
+            }
+            for q in todos_quizzes
+        ]
 
         tabla = []
 
@@ -2390,19 +2267,16 @@ def resultados_salon():
             count = 0
 
             for q in quizzes:
-                data = fila.get(q)
+                data = fila.get(q["id"])
 
                 if isinstance(data, dict):
-                    fila[q] = data
+                    fila[q["id"]] = data
                     if data["nota"] > 0:
                         suma += data["nota"]
                         count += 1
                 else:
-                    fila[q] = {"nota": 0, "intento": 0}
+                    fila[q["id"]] = {"nota": 0, "intento": 0}
 
-                if nota > 0:
-                    suma += nota
-                    count += 1
 
             fila["promedio"] = round(suma / count, 2) if count > 0 else 0
             tabla.append(fila)
@@ -2470,38 +2344,6 @@ def obtener_quizzes_alumno(alumno_id):
         {"quiz_id": r[0], "titulo": r[1]} for r in data
     ])
     
-@app.route('/resultados1/<int:quiz_id>')
-def resultados1(quiz_id):
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT 
-            a.nombre,
-            a.apellido,
-            COUNT(CASE WHEN o.es_correcta THEN 1 END) AS correctas,
-            COUNT(r.id) AS total,
-            ROUND((COUNT(CASE WHEN o.es_correcta THEN 1 END)::decimal / COUNT(r.id)) * 20, 2) AS nota
-
-        FROM respuestas_alumno r
-        JOIN alumnos a ON a.id = r.alumno_id
-        JOIN opciones o ON o.id = r.opcion_id
-        JOIN preguntas p ON p.id = r.pregunta_id
-
-        WHERE p.quiz_id = %s
-
-        GROUP BY a.nombre, a.apellido
-        ORDER BY nota DESC
-    """, (quiz_id,))
-
-    resultados = cur.fetchall()
-
-    cur.close()
-    conn.close()
-
-    return render_template('resultados.html', resultados=resultados)
-
 
 @app.route('/resultados/<int:quiz_id>')
 def ver_resultados(quiz_id):
@@ -2913,6 +2755,7 @@ def eliminar_quiz(quiz_id):
     return redirect(url_for('dashboard_profesor'))
 
 
+
 def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, titulo_quiz, dni, fecha_hora, enviar_solucionario):
     
     from io import BytesIO
@@ -2954,25 +2797,31 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
     elements.append(Spacer(1, 10))
     elements.append(Paragraph(f"<b>Nota final: {nota}</b>", styles['Heading2']))
     elements.append(Spacer(1, 10))
+    
+    letras = ['a', 'b', 'c', 'd', 'e']
 
-    for item in detalle:
-        elements.append(Paragraph(item["pregunta"], styles['Heading3']))
+    for i, item in enumerate(detalle, start=1):
+        elements.append(Paragraph(f"{i}. {item['pregunta']}", styles['Heading3']))
         elements.append(Spacer(1, 5))
 
         data_tabla = []
         fila = []
 
-        for op in item["opciones"]:
-            texto = op["texto"]
+        for j, op in enumerate(item["opciones"]):
+            letra = letras[j]
+            texto_base = op["texto"]
 
             if op["correcta"] and op["marcada"]:
-                texto = f'<font color="green">✅ {texto}</font>'
+                texto = f'<font color="green">({letra}) ✅ {texto_base}</font>'
+
+            elif not op["correcta"] and op["marcada"]:
+                texto = f'<font color="red">({letra}) ❌ {texto_base}</font>'
 
             elif op["correcta"]:
-                texto = f'<font color="green">✔ {texto}</font>'
+                texto = f'<font color="green">({letra}) ✔ {texto_base}</font>'
 
-            elif op["marcada"]:
-                texto = f'<font color="red">❌ {texto}</font>'
+            else:
+                texto = f'({letra}) {texto_base}'
 
             fila.append(Paragraph(texto, styles['Normal']))
 
@@ -3001,10 +2850,10 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
     msg['To'] = correo
 
     msg.set_content(f"""
-Hola {nombre_completo},
+    Hola {nombre_completo},
 
-Tu nota final es: {nota}
-""")
+    Tu nota final es: {nota}
+    """)
     if enviar_solucionario:
         msg.add_attachment(buffer.getvalue(),
                         maintype='application',
@@ -3020,6 +2869,100 @@ Tu nota final es: {nota}
     else:
         print("ℹ️ solucionario no enviado (configuración del quiz)")
         
+    return buffer
+
+from flask import request, jsonify
+
+
+@app.route('/enviar_codigo_quiz', methods=['POST'])
+def endpoint_enviar_codigo_quiz():
+
+    data = request.json
+
+    quiz_id = data.get('quiz_id')
+    alumnos = data.get('alumnos')  # lista de IDs
+
+    if not quiz_id or not alumnos:
+        return jsonify({"error": "Datos incompletos"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # 🔹 obtener info del quiz
+    cur.execute("""
+        SELECT titulo, codigo
+        FROM quiz
+        WHERE id = %s
+    """, (quiz_id,))
+    quiz = cur.fetchone()
+
+    if not quiz:
+        return jsonify({"error": "Quiz no encontrado"}), 404
+
+    titulo_quiz, codigo_quiz = quiz
+
+    # 🔹 obtener alumnos
+    cur.execute(f"""
+        SELECT id, nombre, apellido, correo
+        FROM alumnos
+        WHERE id = ANY(%s)
+    """, (alumnos,))
+
+    alumnos_data = cur.fetchall()
+
+    enviados = 0
+
+    for a in alumnos_data:
+        alumno_id, nombre, apellido, correo = a
+        nombre_completo = f"{nombre} {apellido}"
+
+        enviar_codigo_quiz(
+            correo,
+            nombre_completo,
+            titulo_quiz,
+            codigo_quiz
+        )
+
+        enviados += 1
+
+    return jsonify({
+        "ok": True,
+        "enviados": enviados
+    })    
+    
+def enviar_codigo_quiz(correo, nombre_completo, titulo_quiz, codigo_quiz):
+    
+    import smtplib
+    from email.message import EmailMessage
+
+    msg = EmailMessage()
+    msg['Subject'] = 'Acceso a evaluación – ACAASO Assessment'
+    msg['From'] = "ACAASO <pardoalf@gmail.com>"
+    msg['To'] = correo
+
+    msg.set_content(f"""
+Hola {nombre_completo},
+
+Te informamos que tienes una evaluación disponible en la plataforma ACAASO Assessment.
+
+Detalles del quiz:
+- Título: {titulo_quiz}
+- Código de acceso: {codigo_quiz}
+
+Instrucciones:
+1. Ingresa a la plataforma.
+2. Introduce el código.
+3. Resuelve el quiz.
+
+Atentamente,
+ACAASO Assessment
+""")
+
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+        smtp.login(EMAIL_REMITENTE, EMAIL_PASSWORD)
+        smtp.send_message(msg)
+
+    print(f"✅ Código enviado a {correo}")
 #=======================================================
 #
 # PROFESOR
@@ -3380,6 +3323,179 @@ def metricas_db():
         porcentaje=porcentaje,
         estado=estado,
         limite_kb=limite_kb
+    )
+    
+def obtener_examen_alumno(alumno_id, quiz_id, intento_id):
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    print("DEBUG intento_id:", intento_id)
+    
+    cur.execute("""
+        SELECT id, intento_numero, quiz_id
+        FROM intentos_quiz
+        WHERE alumno_id = %s AND quiz_id = %s
+    """, (alumno_id, quiz_id))
+
+    print("INTENTOS EN BD:", cur.fetchall())
+    # 🔥 convertir intento_numero → intento_id real
+    
+    cur.execute("""
+        SELECT id
+        FROM intentos_quiz
+        WHERE alumno_id = %s 
+        AND quiz_id = %s 
+        AND intento_numero = %s
+    """, (alumno_id, quiz_id, intento_id))
+
+    row = cur.fetchone()
+    intento_id = row[0] if row else None
+
+    print("INTENTO_ID REAL:", intento_id)
+    
+    # 🔹 obtener respuestas reales del alumno (CLAVE)
+    cur.execute("""
+        SELECT pregunta_id, opcion_id
+        FROM respuestas_alumno
+        WHERE alumno_id = %s
+        AND intento_id = %s
+    """, (alumno_id, intento_id))
+
+    respuestas = cur.fetchall()
+
+    # convertir a diccionario
+    map_respuestas = {r[0]: r[1] for r in respuestas}
+
+    # 🔹 preguntas + opciones + respuestas
+    cur.execute("""
+    SELECT 
+        p.id,
+        p.texto AS pregunta,
+        o.texto AS opcion,
+        o.es_correcta,
+        o.id AS opcion_id,
+
+        (
+            SELECT ra.opcion_id
+            FROM respuestas_alumno ra
+            WHERE ra.pregunta_id = p.id
+            AND ra.alumno_id = %s
+            AND ra.intento_id = %s
+            AND ra.quiz_id = %s
+            ORDER BY ra.id DESC
+            LIMIT 1
+        ) AS respuesta_alumno
+
+    FROM preguntas p
+    JOIN opciones o ON o.pregunta_id = p.id
+    WHERE p.quiz_id = %s
+    ORDER BY p.id, o.id
+    """, (alumno_id, intento_id, quiz_id, quiz_id))
+
+    rows = cur.fetchall()
+
+    detalle = []
+    pregunta_actual = None
+    correctas = 0
+    total = 0
+
+    for row in rows:
+        pid, ptexto, otexto, ocorrecta, oid, respuesta_alumno = row
+
+        if not pregunta_actual or pregunta_actual["pregunta"] != ptexto:
+            pregunta_actual = {
+                "pregunta": ptexto,
+                "opciones": [],
+                "puntaje": 0
+            }
+            detalle.append(pregunta_actual)
+            total += 1
+
+        marcada = (respuesta_alumno == oid)
+
+        if ocorrecta and marcada:
+            pregunta_actual["puntaje"] = 1
+            correctas += 1
+
+        pregunta_actual["opciones"].append({
+            "texto": otexto,
+            "correcta": ocorrecta,
+            "marcada": marcada,
+            "estado": (
+                "correcta" if ocorrecta and marcada else
+                "incorrecta" if not ocorrecta and marcada else
+                "neutral"
+            )
+        })
+
+    # 🔹 alumno
+    cur.execute("""
+        SELECT nombre, apellido, dni, correo
+        FROM alumnos
+        WHERE id = %s
+    """, (alumno_id,))
+    alumno = cur.fetchone()
+
+    nombre = f"{alumno[0]} {alumno[1]}"
+    dni = alumno[2]
+    correo = alumno[3]
+
+    # 🔹 quiz
+    cur.execute("""
+        SELECT titulo
+        FROM quiz
+        WHERE id = %s
+    """, (quiz_id,))
+    titulo = cur.fetchone()[0]
+
+    nota = round((correctas / total) * 20, 2) if total > 0 else 0
+
+    cur.close()
+    conn.close()
+
+    return {
+        "detalle": detalle,
+        "nota": nota,
+        "correo": correo,
+        "nombre": nombre,
+        "dni": dni,
+        "titulo": titulo
+    }
+    
+from flask import send_file
+from io import BytesIO
+
+@app.route('/descargar_reporte/<int:quiz_id>/<int:alumno_id>')
+def descargar_reporte(quiz_id, alumno_id):
+
+    intento = request.args.get('intento', 1)
+
+    # 🔹 obtener examen (YA FUNCIONA)
+    examen = obtener_examen_alumno(alumno_id, quiz_id, intento)
+
+    fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+    # 🔥 reutilizar tu función pero SIN enviar correo
+    buffer = generar_y_enviar_reporte(
+        examen["detalle"],
+        examen["nota"],
+        examen["correo"],
+        examen["nombre"],
+        alumno_id,
+        examen["titulo"],
+        examen["dni"],
+        fecha,
+        False   # 🔴 clave: no enviar email
+    )
+
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"reporte_{alumno_id}.pdf",
+        mimetype='application/pdf'
     )
 
 if __name__ == "__main__":

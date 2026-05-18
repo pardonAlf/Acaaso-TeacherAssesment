@@ -751,3 +751,104 @@ footer i:hover {
     text-align: center;
   }
 }
+
+/* =========================================
+Resultados Salon
+=============================*/
+ 
+.nota-celda {
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.nota-celda:hover {
+    background-color: #e0edff;
+}
+
+.nota-celda.activa {
+    background-color: #3b82f6 !important;
+    color: white !important;
+    font-weight: 600;
+}
+
+/* =========================================
+tabs resumen
+=============================*/
+.tab-content-tabs {
+    display: none;   /* 🔥 CLAVE */
+    opacity: 0;
+    transform: translateY(5px);
+    transition: all 0.2s ease;
+}
+
+.tab-content-tabs.active {
+    display: block;  /* 🔥 CLAVE */
+    opacity: 1;
+    transform: translateY(0);
+}
+ 
+/*=============================================
+tabla alumnos enviar quiz
+====================================*/
+#tablaAlumnos {
+    font-size: 12px;
+}
+
+#tablaAlumnos th {
+    padding: 4px 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+#tablaAlumnos td {
+    padding: 3px 6px;
+    vertical-align: middle;
+}
+
+/* 🔹 checkbox más alineado */
+#tablaAlumnos input[type="checkbox"] {
+    transform: scale(0.9);
+}
+
+/* 🔹 hover sutil (pro) */
+#tablaAlumnos tbody tr:hover {
+    background-color: #f7f7f7;
+}
+
+#listaSalones {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: white;
+    border: 1px solid #ccc;
+    z-index: 9999;
+    display: none;
+    max-height: 180px;
+    overflow-y: auto;
+    border-radius: 4px;
+}
+
+#listaSalones div {
+    padding: 6px 10px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+#listaSalones div:hover {
+    background: #f5f5f5;
+}
+
+ 
+
+/* 🔥 BOTÓN FINAL */
+.btn-primary {
+    padding: 6px 16px;
+}
+
+.header-mini {
+    font-size: 13px;
+    line-height: 1.2;
+}

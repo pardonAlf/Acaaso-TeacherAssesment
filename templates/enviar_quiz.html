@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}Enviar Quiz{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-2 header-mini">
+
+    <div class="d-flex align-items-center gap-2" style="font-size:14px;">
+
+        <!-- 🔙 VOLVER -->
+        <button class="btn btn-sm btn-outline-secondary"
+                onclick="window.location.href='/dashboard_profesor'">
+            ←
+        </button>
+
+        <span style="color:#0d6efd; font-weight:600; font-size:16px;"><b>Enviar Quiz</b> </span> 
+        
+
+        <span class="text-muted">|</span>
+
+        <span>{{ titulo_quiz }}</span>
+
+        <span class="text-muted">|</span>
+
+        <span style="color:tomato; font-weight:800;">
+            {{ codigo_quiz }}
+        </span>
+
+    </div>
+
+    <button class="btn btn-primary btn-sm" onclick="enviar()">
+        Enviar Código
+    </button>
+
+</div>
+
+<div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+
+    <!-- 🔹 SALÓN (más grande) -->
+    <div style="position:relative; min-width:520px;">
+        <input type="text" id="filtroSalon"
+            class="form-control form-control-sm"
+            placeholder="Salón...">
+
+        <div id="listaSalones"></div>
+    </div>
+
+    <!-- 🔹 DNI / NOMBRE -->
+    <input type="text" id="filtro"
+        class="form-control form-control-sm"
+        style="width:200px;"
+        placeholder="DNI o nombre...">
+
+    <!-- 🔹 BOTONES -->
+     
+
+    <button class="btn btn-sm btn-outline-primary" onclick="seleccionarVisibles()">Seleccionar</button>
+
+</div>
+
+<table class="table table-sm table-bordered" id="tablaAlumnos">
+    <thead>
+        <tr>
+            <th></th>
+            <th>DNI</th>
+            <th>Nombre</th>
+            <th>Correo</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for a in alumnos %}
+        <tr>
+            <td><input type="checkbox" value="{{ a[0] }}"></td>
+            <td>{{ a[3] }}</td>
+            <td>{{ a[1] }} {{ a[2] }}</td>
+            <td>{{ a[4] }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="mt-2">
+    <button class="btn btn-primary btn-sm  " onclick="enviar()">
+        Enviar Código
+    </button>
+</div>
+<script>
+ 
+ 
+ 
+ 
+function enviar() {
+
+    let seleccionados = [];
+
+    document.querySelectorAll('#tablaAlumnos input[type="checkbox"]:checked')
+        .forEach(cb => seleccionados.push(parseInt(cb.value)));
+
+    if (seleccionados.length === 0) {
+        alert("Selecciona al menos un alumno");
+        return;
+    }
+
+    // 🔥 confirmación antes de enviar
+    if (!confirm(`Se enviará el código a ${seleccionados.length} alumno(s). ¿Deseas continuar?`)) {
+        return;
+    }
+
+    fetch("/enviar_codigo_quiz", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            quiz_id: {{ quiz_id }},
+            alumnos: seleccionados
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert("Correos enviados: " + data.enviados);
+    });
+}
+ 
+</script>
+<script>
+document.getElementById("filtro").addEventListener("input", function() {
+
+    let texto = this.value.toLowerCase().trim();
+    let filas = document.querySelectorAll("#tablaAlumnos tbody tr");
+
+    // 🔥 menos de 3 caracteres → no filtra (pero mantiene estado actual)
+    if (texto.length < 3) {
+        return;
+    }
+
+    // 🔍 filtra sobre TODA la tabla (no solo los 100)
+    filas.forEach(fila => {
+
+        let contenido = fila.innerText.toLowerCase();
+
+        if (contenido.includes(texto)) {
+            fila.style.display = "";
+        } else {
+            fila.style.display = "none";
+        }
+
+    });
+
+});
+</script>
+<script>
+function seleccionarVisibles() {
+
+    let filas = document.querySelectorAll("#tablaAlumnos tbody tr");
+
+    filas.forEach(fila => {
+
+        // solo si está visible
+        if (fila.style.display !== "none") {
+            let checkbox = fila.querySelector('input[type="checkbox"]');
+            if (checkbox) checkbox.checked = true;
+        }
+
+    });
+
+}
+ 
+ 
+ 
+const inputSalon = document.getElementById("filtroSalon");
+const lista = document.getElementById("listaSalones");
+
+inputSalon.addEventListener("input", function() {
+
+    let texto = this.value.trim();
+
+    // 🔥 filtro de alumnos (LO QUE YA FUNCIONA)
+    if (texto.length >= 3) {
+
+        fetch(`/buscar_alumnos_por_salon?q=${texto}`)
+        .then(res => res.json())
+        .then(data => {
+
+            let tbody = document.querySelector("#tablaAlumnos tbody");
+            tbody.innerHTML = "";
+
+            data.forEach(a => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><input type="checkbox" value="${a[0]}"></td>
+                        <td>${a[1]}</td>
+                        <td>${a[2]} ${a[3]}</td>
+                        <td>${a[4]}</td>
+                    </tr>
+                `;
+            });
+
+        });
+
+    }
+
+    // 🔥 sugerencias de salón
+    if (texto.length < 3) {
+        lista.style.display = "none";
+        return;
+    }
+
+    fetch(`/buscar_salones?q=${texto}`)
+    .then(res => res.json())
+    .then(data => {
+
+        lista.innerHTML = "";
+
+        data.forEach(s => {
+
+            let item = document.createElement("div");
+            item.className = "list-group-item list-group-item-action";
+            item.innerText = s[1];
+
+            item.onclick = () => {
+
+                inputSalon.value = s[1];
+                lista.style.display = "none";
+
+                // 🔥 refinar por salón exacto
+                fetch(`/buscar_alumnos_por_salon_id?id=${s[0]}`)
+                .then(res => res.json())
+                .then(alumnos => {
+
+                    let tbody = document.querySelector("#tablaAlumnos tbody");
+                    tbody.innerHTML = "";
+
+                    alumnos.forEach(a => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td><input type="checkbox" value="${a[0]}"></td>
+                                <td>${a[1]}</td>
+                                <td>${a[2]} ${a[3]}</td>
+                                <td>${a[4]}</td>
+                            </tr>
+                        `;
+                    });
+
+                });
+
+            };
+
+            lista.appendChild(item);
+
+        });
+
+        lista.style.display = "block";
+
+    });
+
+});
+</script>
+ 
+ 
+ 
+
+{% endblock %}
