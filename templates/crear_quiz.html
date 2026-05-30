@@ -230,40 +230,144 @@ input.form-control {
 
             <!-- HEADER -->
             <div class="card p-3 mb-3 shadow-sm">
-                <div class="header-quiz">
-                    <input type="text" id="titulo" name="titulo" class="titulo-input w-50" placeholder="Título del Quiz">
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" name="multiple_intentos" id="multiple_intentos" checked>
-                        <label class="form-check-label" for="multiple_intentos">
-                            Permitir múltiples intentos
-                        </label>
-                        <label class="form-check-label" style="margin-left: 45px;">
-                            <input class="form-check-input" type="checkbox" id="enviar_solucionario" name="enviar_solucionario">
-                            Enviar solucionario al finalizar
-                        </label>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-success btn-sm-custom" onclick="crearPreguntaVF()">+ VF</button>
-                        <button type="button" class="btn btn-primary btn-sm-custom" onclick="crearPreguntaMultiple()">+ Múltiple</button>
-                        <input type="text" id="promptIA" class="form-control form-control-sm" placeholder="Ej: 5 preguntas VF de Naruto">
-                        <button type="button" class="btn btn-warning btn-sm-custom" onclick="generarIA()"">Generar IA</button>
-                        <input type="file" id="archivoExamen" class="form-control form-control-sm">
-                        <button type="button" class="btn btn-dark btn-sm-custom" onclick="subirExamen()">
-                            Subir examen
-                        </button>
-                        <div id="loaderIA" style="display:none;" class="mt-3">
+                <div class="header-quiz d-flex flex-column gap-2">
+                    <div class="d-flex justify-content-between align-items-start w-100">
 
-                            <div class="alert alert-info py-2 mb-2">
-                                Procesando examen con IA...
+                        <!-- 🔹 izquierda -->
+                        <input type="text" id="titulo" name="titulo"
+                            class="titulo-input"
+                            placeholder="Título del Quiz">
+
+                        <!-- 🔥 derecha: bloque profesional -->
+                        <div class="p-2 border rounded bg-light" style="font-size:11px; min-width:420px;">
+
+                            <div style="font-weight:600; color:#344054; margin-bottom:4px;">
+                                Configuración
                             </div>
 
-                            <div class="progress" style="height: 8px;">
-                                <div id="barraProgreso" 
-                                    class="progress-bar progress-bar-striped progress-bar-animated" 
-                                    style="width: 100%">
+                            <div class="row">
+
+                                <!-- 🔹 columna 1 -->
+                                <div class="col-6">
+
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input"
+                                            type="checkbox"
+                                            id="multiple_intentos"
+                                            name="multiple_intentos"
+                                            checked
+                                            onchange="togglePoliticaIntentos()">
+                                        <label class="form-check-label">
+                                            Múltiples intentos
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input"
+                                            type="checkbox"
+                                            id="enviar_solucionario"
+                                            name="enviar_solucionario">
+                                        <label class="form-check-label">
+                                            Enviar solucionario
+                                        </label>
+                                    </div>
                                 </div>
+
+                                <!-- 🔹 columna 2 -->
+                                <div class="col-6">
+                                    <div id="bloquePoliticaIntentos" class="ms-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input"
+                                                type="radio"
+                                                name="politica_intentos"
+                                                value="add"
+                                                checked>
+                                            <label class="form-check-label">
+                                                Adicionar Intentos
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input"
+                                                type="radio"
+                                                name="politica_intentos"
+                                                value="max" 
+                                                disabled 
+                                                data-bs-toggle="tooltip"
+                                                data-bs-title="Próximamente">
+                                            <label class="form-check-label text-muted" style="font-size:10px;">
+                                                Nota más alta <span style="font-size:9px; color:#53f708;">(próx.)</span>
+                                            </label>
+                                        </div>
+
+                                        <div class="form-check">
+                                            <input class="form-check-input"
+                                                type="radio"
+                                                name="politica_intentos"
+                                                value="ultimo" 
+                                                disabled 
+                                                data-bs-toggle="tooltip"
+                                                data-bs-title="Próximamente">
+                                            <label class="form-check-label text-muted">
+                                                Último intento<span style="font-size:9px; color:#53f708;">(próx.)</span>
+                                            </label>
+                                        </div>
+
+                                    </div>
+                                    
+                                    <!-- 🔥 espacio para escalar 
+                                    <div class="text-muted" style="font-size:10px;">
+                                        (Más opciones aquí…)
+                                    </div>-->
+
+                                </div>
+
                             </div>
 
+                        </div>
+
+                    </div>
+
+    
+                    <div class="d-flex gap-2">
+
+                        <button type="button"
+                            class="btn btn-vf btn-sm-custom"
+                            onclick="crearPreguntaVF()">
+                            + VF
+                        </button>
+
+                        <button type="button"
+                            class="btn btn-multi btn-sm-custom"
+                            onclick="crearPreguntaMultiple()">
+                            + Múltiple
+                        </button>
+
+                        <button type="button"
+                            class="btn btn-ia btn-sm-custom"
+                            onclick="abrirModalIA()">
+                            ⚡ IA
+                        </button>
+
+                    </div>
+
+                    <!-- 🔥 dejamos esto temporalmente comentado -->
+                    <!--
+                    <input type="text" id="promptIA" class="form-control form-control-sm" placeholder="Ej: 5 preguntas VF de Naruto">
+                    <button type="button" class="btn btn-warning btn-sm-custom" onclick="generarIA()">Generar IA</button>
+                    <input type="file" id="archivoExamen" class="form-control form-control-sm">
+                    <button type="button" class="btn btn-dark btn-sm-custom" onclick="subirExamen()">Subir examen</button>
+                    -->
+
+                    <!-- 🔥 loader lo dejamos fuera del flujo principal -->
+                    <div id="loaderIA" style="display:none;" class="mt-2">
+                        <div class="alert alert-info py-2 mb-2">
+                            Procesando con IA...
+                        </div>
+
+                        <div class="progress" style="height: 8px;">
+                            <div id="barraProgreso" 
+                                class="progress-bar progress-bar-striped progress-bar-animated" 
+                                style="width: 100%">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -318,12 +422,232 @@ input.form-control {
 
         </div>
     </div>
+</div>
+<div class="modal fade" id="modalIA" tabindex="-1">
+    <div class="modal-dialog modal-dialog-end" style="max-width:420px;">
+        <div class="modal-content" style="height:70vh; border-radius:0;">
+
+            <!-- header -->
+            <div class="modal-header">
+                <h5 class="modal-title">Generar con IA</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- body -->
+            <div class="modal-body">
+
+                <!-- 🔹 tipo de entrada -->
+                <label class="mb-1">Fuente</label>
+                <select id="tipoIA" class="form-control mb-3">
+                    <option value="generar_prompt">Generar desde prompt</option>
+                    <option value="generar_archivo">Generar desde archivo</option>
+                    <option value="importar">Importar quiz (leer archivo)</option>
+                </select>
+
+                <!-- 🔹 prompt -->
+                <div id="bloquePrompt">
+                    <label>Instrucción</label>
+                    <textarea id="promptIA_modal" class="form-control mb-3"
+                        placeholder="Ej: 5 preguntas VF de historia"></textarea>
+                </div>
+
+                <!-- 🔹 archivo -->
+                <div id="bloqueArchivo" style="display:none;">
+                    <label>Subir archivo</label>
+                    <input type="file" id="archivoIA_modal" class="form-control mb-3">
+                </div>
+
+                <!-- 🔹 configuración (SOLO para generación) -->
+                <div id="bloqueConfigIA">
+
+                    <label>Configuración</label>
+
+                    <div class="d-flex gap-2 mb-2">
+                        <input type="number" id="cantidadIA" class="form-control" placeholder="Cantidad">
+
+                        <select id="tipoPreguntasIA" class="form-control">
+                            <option value="vf">VF</option>
+                            <option value="multiple">Múltiple</option>
+                            <option value="mixto">Mixto</option>
+                        </select>
+                    </div>  
+                </div>
+            </div>
+
+            <!-- footer -->
+            <div class="modal-footer">
+                <button class="btn btn-secondary btn-sm-custom" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button class="btn btn-dark btn-sm-custom" onclick="ejecutarIA()">
+                    Generar
+                </button>
+            </div>
+
+        </div>
     </div>
+</div>
 
 <script>
-    let preguntas = [];
-    let contador = 1;
-    let preguntaEditando = null;
+function abrirModalIA() {
+    let modal = new bootstrap.Modal(document.getElementById('modalIA'));
+    modal.show();
+}
+document.getElementById("tipoIA").addEventListener("change", function () {
+
+    let tipo = this.value;
+
+    let bloquePrompt = document.getElementById("bloquePrompt");
+    let bloqueArchivo = document.getElementById("bloqueArchivo");
+    let bloqueConfig = document.getElementById("bloqueConfigIA");
+
+    if (tipo === "generar_prompt") {
+
+        bloquePrompt.style.display = "block";
+        bloqueArchivo.style.display = "none";
+        bloqueConfig.style.display = "block";
+
+    } else if (tipo === "generar_archivo") {
+
+        bloquePrompt.style.display = "none";
+        bloqueArchivo.style.display = "block";
+        bloqueConfig.style.display = "block";
+
+    } else if (tipo === "importar") {
+
+        bloquePrompt.style.display = "none";
+        bloqueArchivo.style.display = "block";
+        bloqueConfig.style.display = "none"; // 🔥 clave
+
+    }
+
+});
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("tipoIA").dispatchEvent(new Event("change"));
+});
+
+let preguntas = [];
+let contador = 1;
+let preguntaEditando = null;
+async function ejecutarIA() {
+
+    let tipo = document.getElementById("tipoIA").value;
+
+    // 🔥 cerrar modal
+    let modal = bootstrap.Modal.getInstance(document.getElementById('modalIA'));
+    if (modal) modal.hide();
+
+    // 🔥 mostrar overlay + iniciar barra
+    document.getElementById("overlayLoader").style.display = "flex";
+    iniciarLoader();
+
+    try {
+
+        // 🔹 GENERAR DESDE PROMPT
+        if (tipo === "generar_prompt") {
+
+            setLoaderText("Generando preguntas desde prompt...");
+
+            let cantidad = document.getElementById("cantidadIA").value;
+            let tipoPreg = document.getElementById("tipoPreguntasIA").value;
+            let prompt = document.getElementById("promptIA_modal").value;
+
+            if (!prompt) {
+                alert("Escribe un prompt");
+                detenerLoader();
+                return;
+            }
+
+            let response = await fetch("/generar_quiz_ia", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    cantidad: cantidad,
+                    tipo: tipoPreg
+                })
+            });
+
+            if (!response.ok) throw new Error("Error IA");
+
+            let data = await response.json();
+            cargarDesdeIA(data);
+        }
+
+        // 🔹 IMPORTAR QUIZ
+        else if (tipo === "importar") {
+
+            setLoaderText("Leyendo archivo y convirtiendo preguntas...");
+
+            let fileInput = document.getElementById("archivoIA_modal");
+
+            if (fileInput.files.length === 0) {
+                alert("Selecciona un archivo");
+                detenerLoader();
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("archivo", fileInput.files[0]);
+
+            let response = await fetch("/procesar_examen", {
+                method: "POST",
+                body: formData
+            });
+
+            if (!response.ok) throw new Error("Error procesando archivo");
+
+            let data = await response.json();
+            cargarDesdeIA(data);
+        }
+
+        // 🔹 GENERAR DESDE ARCHIVO
+        else if (tipo === "generar_archivo") {
+
+            setLoaderText("Analizando contenido y generando preguntas...");
+
+            let fileInput = document.getElementById("archivoIA_modal");
+            let cantidad = document.getElementById("cantidadIA").value;
+            let tipoPreg = document.getElementById("tipoPreguntasIA").value;
+
+            if (fileInput.files.length === 0) {
+                alert("Selecciona un archivo");
+                detenerLoader();
+                return;
+            }
+
+            if (!cantidad) {
+                alert("Ingresa cantidad");
+                detenerLoader();
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("archivo", fileInput.files[0]);
+            formData.append("cantidad", cantidad);
+            formData.append("tipo", tipoPreg);
+
+            let response = await fetch("/generar_quiz_desde_archivo", {
+                method: "POST",
+                body: formData
+            });
+
+            if (!response.ok) throw new Error("Error generando desde archivo");
+
+            let data = await response.json();
+            cargarDesdeIA(data);
+        }
+
+    } catch (error) {
+        console.error(error);
+        alert("Ocurrió un error con la IA");
+    }
+
+    // 🔥 SIEMPRE cerrar loader correctamente
+    detenerLoader();
+}
  
 function crearPreguntaVF() {
     preguntas.push({
@@ -336,6 +660,43 @@ function crearPreguntaVF() {
 
     renderTabla();
 }
+
+function togglePoliticaIntentos() {
+
+    let enabled = document.getElementById("multiple_intentos").checked;
+
+    // contenedor visual
+    let bloque = document.getElementById("bloquePoliticaIntentos");
+
+    // radios
+    let radios = bloque.querySelectorAll("input[type='radio']");
+
+    // visual (gris)
+    bloque.style.opacity = enabled ? "1" : "0.4";
+
+    // funcional (disable real)
+    radios.forEach(r => {
+        r.disabled = !enabled;
+    });
+}
+document.addEventListener("DOMContentLoaded", () => {
+    togglePoliticaIntentos();
+}); 
+document.addEventListener("DOMContentLoaded", function () {
+    let tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (el) {
+        return new bootstrap.Tooltip(el);
+    });
+}); 
+document.querySelectorAll('input[name="politica_intentos"]').forEach(radio => {
+    radio.addEventListener('click', function(e) {
+
+        // si no es "add", bloquear
+        if (this.value !== "add") {
+            e.preventDefault();
+        }
+    });
+});
 
 function crearPreguntaMultiple() {
     preguntas.push({
@@ -679,13 +1040,38 @@ async function subirExamen() {
         clearInterval(fakeProgress);
     }
 
+function setLoaderText(texto) {
+    document.getElementById("textoLoader").innerText = texto;
+}
 
+let intervaloLoader;
+
+function iniciarLoader() {
+    let barra = document.getElementById("barraReal");
+    barra.style.width = "10%";
+
+    intervaloLoader = setInterval(() => {
+        let actual = parseInt(barra.style.width);
+        if (actual < 90) {
+            barra.style.width = (actual + 10) + "%";
+        }
+    }, 300);
+}
+
+function detenerLoader() {
+    clearInterval(intervaloLoader);
+    document.getElementById("barraReal").style.width = "100%";
+
+    setTimeout(() => {
+        document.getElementById("overlayLoader").style.display = "none";
+    }, 300);
+}
  
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <div id="overlayLoader" style="display:none;">
         <div class="loader-box">
-            <div class="loader-text">Procesando examen...</div>
+            <div id="textoLoader" class="loader-text">Procesando...</div>
             <div class="progress">
                 <div id="barraReal" class="progress-bar"></div>
             </div>

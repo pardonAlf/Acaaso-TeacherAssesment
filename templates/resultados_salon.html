@@ -1,6 +1,6 @@
-{% extends "base.html" %}
-
-{% block content %}
+ {% extends "base.html" %}  
+ 
+ {% block content %} 
 
 <div class="container mt-4">
 
@@ -10,18 +10,17 @@
             Resultados por salón:
         </span>
 
-        <div style="width:420px;" class="position-relative">
+        <div style="width:420px; position:relative;">
 
             <input type="text" id="buscarSalon"
                 class="form-control form-control-sm"
                 style="height:28px; font-size:12px;"
                 placeholder="Buscar...">
 
-            <div id="listaSalones"
-                class="list-group position-absolute w-100"
-                style="z-index:1000; font-size:12px;"></div>
+            <div id="listaSalones" class="dropdown-salones"></div>
 
             <input type="hidden" id="salon_id">
+
         </div>
         <div  style="  text-align:right;">
 
@@ -108,17 +107,24 @@
     <!-- 📊 GRÁFICOS -->
     <div class="row">
 
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card-grafico">
                 <h6 class="titulo-grafico">Distribución de notas</h6>
                 <canvas id="graficoPastel"></canvas>
             </div>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card-grafico">
                 <h6 class="titulo-grafico">Frecuencia de notas</h6>
                 <canvas id="graficoBarras"></canvas>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card-grafico">
+                <h6 class="titulo-grafico">Preguntas mas Acertadas</h6>
+                <canvas id="topp5"></canvas>
             </div>
         </div>
 
@@ -126,14 +132,14 @@
 
     <div class="row mt-4">
 
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card-grafico">
                 <h6 class="titulo-grafico">Top alumnos</h6>
                 <canvas id="top5"></canvas>
             </div>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card-grafico">
                 <h6 class="titulo-grafico">Riesgo académico</h6>
                 <canvas id="extra"></canvas>
@@ -281,8 +287,7 @@
             </div>
         </div>
     </div>
-
-   <div id="overlayCarga" style="
+    <div id="overlayCarga" style="
         position: fixed;
         top: 0;
         left: 0;
@@ -329,7 +334,6 @@
     </div>
 
 <script>
-
 function descargarPDF() {
 
     if (!alumnoSeleccionado || !quizSeleccionado) return;
@@ -340,8 +344,6 @@ function descargarPDF() {
     );
 
 }
-
-
 function confirmarEnvio() {
 
     if (!alumnoSeleccionado || !quizSeleccionado) return;
@@ -404,7 +406,6 @@ function confirmarEnvio() {
 
 }
 
-
 function cambiarTab(tab) {
 
     // ocultar todos
@@ -458,52 +459,50 @@ document.addEventListener('click', function (e) {
     }
 
 });
-
 function cerrarPanel() {
     document.getElementById('panelResumen').style.right = '-360px';
 }
 </script>
-
 <!-- 📦 CHART -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
+
 let salones = {{ salones | tojson }};
 let salonSeleccionado = {{ salon_seleccionado | tojson }};
 let notas = {{ notas | tojson }};
 let nombres = {{ nombres | tojson }};
 let seleccionando = false;
 
-
-// 🔍 BUSCADOR
 document.getElementById("buscarSalon").addEventListener("input", function() {
-
-    if (seleccionando) {
-        seleccionando = false;
-        return;
-    }
 
     let texto = this.value.toLowerCase().trim();
     let lista = document.getElementById("listaSalones");
+
+    console.log("LISTA REAL:", lista);
+
+    if (!texto) {
+        lista.innerHTML = "";
+        return;
+    }
+
     lista.innerHTML = "";
+    lista.style.display = "block";
+    
 
-    if (texto.length < 2) return;
+    salones.forEach(s => {
 
-    salones
-        .filter(s => (s[2] || "").toLowerCase().includes(texto))
-        .forEach(s => {
+        let desc = (s[2] || "").toLowerCase();
 
-            let item = document.createElement("a");
-            item.className = "list-group-item list-group-item-action";
+        if (desc.indexOf(texto) !== -1) {
+
+            let item = document.createElement("div");
+            item.className = "dropdown-item-salon";
             item.innerText = s[2];
 
             item.onclick = function() {
-                seleccionando = true;
-
                 document.getElementById("buscarSalon").value = s[2];
                 document.getElementById("salon_id").value = s[0];
                 lista.innerHTML = "";
-
                 let form = document.createElement("form");
                 form.method = "POST";
                 form.action = "/resultados_salon";
@@ -519,7 +518,9 @@ document.getElementById("buscarSalon").addEventListener("input", function() {
             };
 
             lista.appendChild(item);
-        });
+        }
+    });
+
 });
 
 if (salonSeleccionado) {
@@ -528,10 +529,6 @@ if (salonSeleccionado) {
         document.getElementById("buscarSalon").value = salon[2];
     }
 }
-
-//////////////////////////////////////////////////
-// 📊 GRÁFICOS
-//////////////////////////////////////////////////
 
 if (notas.length > 0) {
 
@@ -634,7 +631,7 @@ if (notas.length > 0) {
         }
     });
 
-    //////////////////////////////////////////////////
+     //////////////////////////////////////////////////
     // 🏆 3. TOP 10 (CON ALUMNOS)
     //////////////////////////////////////////////////
     let combinado = nombres.map((n, i) => ({
@@ -708,6 +705,51 @@ if (notas.length > 0) {
         }
     });
 
+    //////////////////////////////////////////////////
+// 🧠 5. TOP PREGUNTAS MÁS ACERTADAS
+//////////////////////////////////////////////////
+
+let preguntasTop = {{ preguntas_top | tojson }};
+
+    if (preguntasTop.length > 0) {
+
+        console.log("DATOS preguntasTop:", preguntasTop);
+        const ctxTop = document.getElementById('topp5').getContext('2d');
+
+        new Chart(ctxTop, {
+            type: 'bar',
+            data: {
+                labels: preguntasTop.map(x => x.texto || x.pregunta || "Pregunta"),
+                datasets: [{
+                    data: preguntasTop.map(x => x.porcentaje)
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let i = context.dataIndex;
+                                let p = preguntasTop[i];
+
+                                let texto = p.pregunta || p.texto || "Pregunta";
+                                let valor = p.porcentaje || 0;
+
+                                return texto + " (" + valor + "%)";
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+
 }
 </script>
 <script>
@@ -753,6 +795,7 @@ function eliminarDirecto(alumno_id, quiz_id, btn) {
     });
 }
 </script>
+
 <script id="h7s9kd">
 
 let celdaSeleccionada = null;
@@ -763,6 +806,11 @@ let intentoSeleccionado = 1;
 document.querySelectorAll('.nota-celda').forEach(celda => {
 
     celda.addEventListener('click', function () {
+
+        // 🔥 limpiar todas
+        document.querySelectorAll(".nota-celda").forEach(c => {
+            c.classList.remove("activa");
+        });
 
         // quitar selección anterior
         if (celdaSeleccionada) {
@@ -848,4 +896,4 @@ document.querySelectorAll('.nota-celda').forEach(celda => {
 
 </script>
 
-{% endblock %}
+ {% endblock %} 

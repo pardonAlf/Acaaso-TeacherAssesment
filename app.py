@@ -974,9 +974,16 @@ def crear_quiz():
 def generar_quiz_ia():
     data = request.get_json()
     prompt_usuario = data.get('prompt')
+    cantidad = data.get('cantidad')
+    tipo = data.get('tipo')
+    print("Cantidad de preguntas: ",cantidad)
 
     prompt = f"""
     Genera un quiz basado en esto: {prompt_usuario}
+    
+    Genera un quiz con estas condiciones:
+    - Cantidad total de preguntas: {cantidad}
+    - Tipo de preguntas: {tipo}
 
     Devuelve SOLO JSON válido en este formato:
     [
@@ -995,10 +1002,10 @@ def generar_quiz_ia():
       }}
     ]
 
-    Genera EXACTAMENTE lo que el usuario pide (cantidad incluida).
+    Genera EXACTAMENTE lo que el usuario pide .
     la explicacion es un breve refuerzo de por que esa opcion es la verdadera
     No expliques nada mas. Solo JSON puro.
-    No olvidar cada respuesta debe estar precedida con las letras A - E (opcion multiple)
+     
     """
 
     response = client.chat.completions.create(
@@ -1013,6 +1020,12 @@ def generar_quiz_ia():
 
     import json
     preguntas = json.loads(contenido)
+        # 🔥 FORZAR cantidad exacta
+    try:
+        cantidad_int = int(cantidad)
+        preguntas = preguntas[:cantidad_int]
+    except:
+        pass    
 
     return jsonify(preguntas)
 
@@ -1052,6 +1065,7 @@ def procesar_examen():
     ]
 
     No expliques nada. Solo JSON válido.
+    No olvidar cada respuesta debe estar precedida con las letras A - E (opcion multiple)
     """
 
     response = client.chat.completions.create(
@@ -1080,6 +1094,87 @@ def procesar_examen():
             "error": "La IA no devolvió JSON válido",
             "raw": texto
         }), 500
+
+    return jsonify(preguntas)
+
+@app.route('/generar_quiz_desde_archivo', methods=['POST'])
+def generar_quiz_desde_archivo():
+
+    archivo = request.files.get('archivo')
+    cantidad = request.form.get('cantidad')
+    tipo = request.form.get('tipo')
+
+    if not archivo:
+        return jsonify({"error": "No se envió archivo"}), 400
+
+    try:
+        contenido = archivo.read().decode("utf-8")
+    except:
+        contenido = archivo.read().decode("latin-1")
+
+    prompt = f"""
+    Basado en el siguiente contenido:
+
+    {contenido}
+
+    Genera un quiz con estas condiciones:
+    - Cantidad total: {cantidad}
+    - Tipo: {tipo}
+
+    REGLAS OBLIGATORIAS:
+
+    1. Si tipo = "vf":
+    - TODAS las preguntas deben ser Verdadero/Falso
+    - Alternar respuestas: Verdadero, Falso, Verdadero, Falso...
+
+    2. Si tipo = "multiple":
+    - TODAS deben ser opción múltiple (5 opciones, A-E)
+    - La respuesta correctas deben ROTAR así:
+        A, B, C, D, E, A, B, C...
+
+    3. Si tipo = "mixto":
+    - Mezclar VF y múltiple
+    - Mantener reglas anteriores en cada tipo
+
+    4. Las respuestas NO deben ser todas iguales
+    5. No repetir patrones obvios
+    6. Generar preguntas coherentes con el contenido
+    7. Las opciones deben ser textos reales (ej: "Egipto", "Roma", etc.)
+   NO usar letras como contenido de opciones
+   Las letras A–E son solo referenciales para la respuesta correcta
+
+    FORMATO (SOLO JSON):
+    [
+    {{
+        "tipo": "vf",
+        "texto": "...",
+        "correcta": "Verdadero",
+        "explicacion": "..."
+    }},
+    {{
+        "tipo": "multiple",
+        "texto": "...",
+        "opciones": ["opcion 1", "opcion 2", "opcion 3", "opcion 4", "opcion 5"]
+        "correcta": "A",
+        "explicacion": "..."
+    }}
+    ]
+    La explicacion es una reseña breve de por que esa opcion es verdader o correcta
+    No expliques nada. Solo JSON válido.
+    """
+
+    response = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[{"role": "user", "content": prompt}]
+    )
+
+    texto = response.choices[0].message.content.strip()
+
+    if texto.startswith("```"):
+        texto = texto.replace("```json", "").replace("```", "").strip()
+
+    import json
+    preguntas = json.loads(texto)
 
     return jsonify(preguntas)
 
@@ -1219,39 +1314,23 @@ def generar_codigo_unico(cur):
         if not existe:
             return codigo
         
-@app.route('/generar_codigo_asignacion/<int:id>', methods=['POST'])
-def generar_codigo_asignacion(id):
+        
+@app.route('/generar_codigo_unico/<int:id>')
+def generar_codigo(id):
 
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # verificar si ya tiene código
-    cur.execute("SELECT codigo FROM salon_quiz WHERE id = %s", (id,))
-    row = cur.fetchone()
-
-    if not row:
-        return jsonify({"status": "error", "message": "Registro no encontrado"})
-
-    existente = row[0]
-
-    if existente:
-        return jsonify({"codigo": existente})  # 🔥 SIEMPRE retorna
-
-    # generar nuevo código
     codigo = generar_codigo_unico(cur)
 
-    cur.execute("""
-        UPDATE salon_quiz
-        SET codigo = %s
-        WHERE id = %s
-    """, (codigo, id))
-
+    cur.execute("UPDATE quiz SET codigo=%s WHERE id=%s", (codigo, id))
     conn.commit()
 
     cur.close()
     conn.close()
 
-    return jsonify({"codigo": codigo})  # 🔥 SIEMPRE retorna    
+    # 🔥 devolver JSON (NO redirect)
+    return jsonify({"codigo": codigo})
 
 @app.route('/eliminar_asignacion/<int:id>', methods=['DELETE'])
 def eliminar_asignacion(id):
@@ -1587,7 +1666,6 @@ def guardar_respuestas():
     alumno_id = data['alumno_id']
     respuestas = data['respuestas']
     salon_quiz_id = data.get('salon_quiz_id')
-    intento_id = data.get('intento_id')
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -1609,6 +1687,37 @@ def guardar_respuestas():
         quiz_id = row[0] if row else None
     else:
         quiz_id = data.get("quiz_id")
+        
+    if not quiz_id:
+        print("⚠️ reconstruyendo quiz_id desde preguntas")
+
+        primera_pregunta = list(respuestas.keys())[0]
+
+        cur.execute("""
+            SELECT quiz_id
+            FROM preguntas
+            WHERE id = %s
+        """, (int(primera_pregunta),))
+
+        row = cur.fetchone()
+        quiz_id = row[0] if row else None
+        
+    # 🔥 crear intento SIEMPRE en backend
+    cur.execute("""
+    SELECT COALESCE(MAX(intento_numero), 0) + 1
+        FROM intentos_quiz
+        WHERE quiz_id = %s AND alumno_id = %s
+    """, (quiz_id, alumno_id))
+
+    numero = cur.fetchone()[0]
+    
+    cur.execute("""
+        INSERT INTO intentos_quiz (quiz_id, alumno_id, intento_numero)
+        VALUES (%s, %s, %s)
+        RETURNING id
+    """, (quiz_id, alumno_id, numero))
+
+    intento_id = cur.fetchone()[0]
 
     # 🔥 fallback de seguridad (NO rompe nada)
     if not quiz_id:
@@ -1692,6 +1801,13 @@ def guardar_respuestas():
 
     nota = round((correctas / total) * 20, 2)
     fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M")
+    
+    cur.execute("""
+    UPDATE intentos_quiz
+        SET nota_final = %s,
+            fecha_fin = NOW()
+        WHERE id = %s
+    """, (nota, intento_id))
     
     cur.execute("""
         SELECT enviar_solucionario
@@ -2112,6 +2228,8 @@ def resultados_salon():
     user_id = session['user_id']
     rol = session['rol']
     cempre = session['cempre']
+    
+    print("DEBUG user_id:", user_id)
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -2135,11 +2253,14 @@ def resultados_salon():
         """, (cempre, user_id))
 
     salones = cur.fetchall()
+    
+    print("DEBUG salones:", salones)
 
     quizzes = []
     tabla = []
     notas = []
     nombres = []
+    preguntas_top = []
 
     # 🔐 VALIDAR SALON_ID (CLAVE)
     if salon_id:
@@ -2283,6 +2404,35 @@ def resultados_salon():
 
         notas = [fila["promedio"] for fila in tabla]
         nombres = [fila["alumno"] for fila in tabla]
+        
+        # ===============================
+        # 📊 TOP 5 PREGUNTAS MÁS ACERTADAS
+        # ===============================
+         
+        cur.execute("""
+            SELECT 
+                p.texto,
+                ROUND(
+                    (COUNT(CASE WHEN o.es_correcta THEN 1 END)::decimal 
+                    / NULLIF(COUNT(*),0)) * 100
+                ,1) as porcentaje
+            FROM respuestas_alumno ra
+            JOIN preguntas p ON p.id = ra.pregunta_id
+            JOIN opciones o ON o.id = ra.opcion_id
+            JOIN salon_quiz sq ON sq.quiz_id = ra.quiz_id
+            WHERE sq.salon_id = %s
+            GROUP BY p.id, p.texto
+            ORDER BY porcentaje DESC
+            LIMIT 5
+        """, (salon_id,))
+
+        preguntas_top = [
+            {
+                "pregunta": (row[0] or "Pregunta")[:40],  # corto para gráfico
+                "porcentaje": float(row[1])
+            }
+            for row in cur.fetchall()
+        ]
 
     cur.close()
     conn.close()
@@ -2294,7 +2444,8 @@ def resultados_salon():
         resultado=tabla,
         salon_seleccionado=salon_id or "",
         notas=notas,
-        nombres=nombres
+        nombres=nombres,
+        preguntas_top=preguntas_top
     )
 
     
@@ -2765,7 +2916,7 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
     from reportlab.lib.pagesizes import letter
     import smtplib
     from email.message import EmailMessage
-
+    print("🔥 entrando a generar_y_enviar_reporte")
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter)
     styles = getSampleStyleSheet()
@@ -2854,6 +3005,8 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
 
     Tu nota final es: {nota}
     """)
+    
+    print("VALOR enviar_solucionario:", enviar_solucionario)
     if enviar_solucionario:
         msg.add_attachment(buffer.getvalue(),
                         maintype='application',
@@ -3497,6 +3650,115 @@ def descargar_reporte(quiz_id, alumno_id):
         download_name=f"reporte_{alumno_id}.pdf",
         mimetype='application/pdf'
     )
+
+#=========================================================  
+# MEJORAS
+#=========================================================   
+@app.route('/mejoras')
+def mejoras():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT descripcion, usuario, fecha, estado, version, id
+        FROM mejoras
+        ORDER BY 
+            CASE 
+                WHEN estado = 'nuevo' THEN 1
+                WHEN estado = 'revisado' THEN 2
+                WHEN estado = 'realizado' THEN 3
+            END,
+            fecha DESC
+    """) 
+    mejoras = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return render_template('mejoras.html', mejoras=mejoras)
+
+@app.route('/mejoras/nueva')
+def nueva_mejora():
+    return render_template('nueva_mejora.html')
+
+from datetime import datetime
+
+@app.route('/mejoras/guardar', methods=['POST'])
+def guardar_mejora():
+    
+    if session.get('rol') not in ['admin', 'profesor', 'root']:
+        return "No autorizado", 403
+    
+    descripcion = request.form['descripcion']
+    usuario = session.get('usuario', 'anonimo')
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO mejoras (descripcion, usuario, fecha)
+        VALUES (%s, %s, %s)
+    """, (descripcion, usuario, datetime.now()))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect('/mejoras?ok=1')
+
+@app.route('/mejoras/actualizar', methods=['POST'])
+def actualizar_mejora():
+
+    usuario = session.get('usuario')
+    rol = session.get('rol')
+
+    if not usuario:
+        return "No autorizado", 403
+
+    id_mejora = request.form.get('id')
+    estado = request.form.get('estado')
+    version = request.form.get('version')
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Obtener datos actuales
+    cur.execute("SELECT usuario, estado FROM mejoras WHERE id = %s", (id_mejora,))
+    fila = cur.fetchone()
+
+    if not fila:
+        cur.close()
+        conn.close()
+        return "No existe", 404
+
+    usuario_creador, estado_actual = fila
+
+    # 🔒 Reglas de seguridad
+    puede_editar = False
+
+    if rol == 'root':
+        puede_editar = True
+    elif estado_actual == 'nuevo' and usuario_creador == usuario:
+        puede_editar = True
+
+    if not puede_editar:
+        cur.close()
+        conn.close()
+        return "No autorizado", 403
+
+    # Actualizar
+    cur.execute("""
+        UPDATE mejoras
+        SET estado = %s,
+            version = %s
+        WHERE id = %s
+    """, (estado, version, id_mejora))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return '', 204
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
