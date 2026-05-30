@@ -12,14 +12,17 @@
 </div>
 
 <!-- 🔍 BUSCAR SALON -->
-<div class="mb-2 d-flex align-items-center">
+<div class="mb-2 d-flex align-items-center" style="overflow:visible;">
 
     <!-- SALON -->
     <label style="width:60px; font-size:11px; color:#6b7280;">Salón</label>
 
-    <div class="position-relative" style="flex:1; max-width:400px;">
+    <div class="position-relative" style="flex:1; max-width:400px; overflow:visible;">
         <input type="text" id="buscarSalon" class="form-control form-control-sm" placeholder="Buscar salón...">
-        <div id="listaSalones" class="list-group position-absolute w-100" style="z-index:1000; font-size:12px;"></div>
+        <div id="listaSalones" 
+            class="list-group position-absolute w-100" 
+            style="top:100%; left:0; z-index:9999; font-size:12px; background:white; display:block;">
+        </div>
     </div>
 
 </div>
@@ -45,17 +48,19 @@
  
 
 <!-- 📋 TABLA DE QUIZZES ASIGNADOS -->
-<table class="tabla">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Quiz</th>
-            <th>Código</th>
-            <th style="width:80px;"></th>
-        </tr>
-    </thead>
-    <tbody id="tablaAsignados"></tbody>
-</table>
+<div style="position:relative; z-index:1;"> 
+    <table class="tabla">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Quiz</th>
+                <th>Código</th>
+                <th style="width:80px;"></th>
+            </tr>
+        </thead>
+        <tbody id="tablaAsignados"></tbody>
+    </table>
+</div>
 
 <script>
 let quizzes = {{ quizzes|tojson }};
@@ -78,18 +83,22 @@ document.getElementById("buscarQuiz").addEventListener("keyup", function() {
         item.className = "list-group-item list-group-item-action";
         item.innerText = `${q[0]} - ${q[1]}`;
 
+        item.style.display = "block";
+        item.style.background = "white";
+        item.style.color = "black";
         item.onclick = () => {
             document.getElementById("buscarQuiz").value = item.innerText;
             document.getElementById("quiz_id").value = q[0];
             lista.innerHTML = "";
         };
-
+        
         lista.appendChild(item);
     });
 });
 
 // 🔍 FILTRO SALON
 let salones = {{ salones|tojson }};
+console.log("SALONES:", salones);
 
 document.getElementById("buscarSalon").addEventListener("keyup", function() {
 
@@ -101,13 +110,14 @@ document.getElementById("buscarSalon").addEventListener("keyup", function() {
     if (texto.length < 2) return; // 🔥 mínimo 2 letras
 
     let filtrados = salones.filter(s => 
-        (s[1] + " " + s[2]).toLowerCase().includes(texto)
+        (s[1] || "").toLowerCase().includes(texto)
     );
+    console.log("FILTRADOS:", filtrados, "BUSCANDO:", texto);
 
     filtrados.forEach(s => {
         let item = document.createElement("a");
-        item.className = "list-group-item list-group-item-action";
-        item.innerText = `${s[1]} - ${s[2]}`;
+        item.className = "list-group-item";
+        item.innerText = s[1];
 
         item.onclick = () => {
             document.getElementById("buscarSalon").value = item.innerText;
@@ -208,6 +218,8 @@ function asignar() {
 
     });
 }
-</script>
 
+</script>
+ 
 {% endblock %}
+ 

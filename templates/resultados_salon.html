@@ -17,8 +17,8 @@
                 style="height:28px; font-size:12px;"
                 placeholder="Buscar...">
 
-            <div id="listaSalones" class="dropdown-salones"></div>
-
+            <div id="listaSalones" class="dropdown-salones"></div> 
+  
             <input type="hidden" id="salon_id">
 
         </div>
@@ -491,6 +491,7 @@ document.getElementById("buscarSalon").addEventListener("input", function() {
 
     salones.forEach(s => {
 
+        console.log("SALON ITEM:", s);
         let desc = (s[2] || "").toLowerCase();
 
         if (desc.indexOf(texto) !== -1) {
