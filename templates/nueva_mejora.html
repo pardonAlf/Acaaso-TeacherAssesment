@@ -16,6 +16,13 @@
             <label class="form-label">Descripción</label>
             <textarea name="descripcion" class="form-control" required></textarea>
         </div>
+        <div class="mb-2">
+            <label style="font-size:12px;">Tipo</label>
+            <select name="tipo" class="form-select form-select-sm">
+                <option value="M">Mejora</option>
+                <option value="E">Error</option>
+            </select>
+        </div>
 
         <button type="submit" class="btn btn-success">Guardar</button>
         <a href="/mejoras" class="btn btn-secondary">Volver</a>

@@ -3660,7 +3660,7 @@ def mejoras():
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT descripcion, usuario, fecha, estado, version, id
+        SELECT descripcion, usuario, fecha, estado, version, id, tipo
         FROM mejoras
         ORDER BY 
             CASE 
@@ -3674,8 +3674,14 @@ def mejoras():
 
     cur.close()
     conn.close()
+    
+    try:
+        with open("version.txt", "r") as f:
+            version_actual = f.read().strip()
+    except:
+        version_actual = "v?"
 
-    return render_template('mejoras.html', mejoras=mejoras)
+    return render_template('mejoras.html', mejoras=mejoras, version_actual=version_actual)
 
 @app.route('/mejoras/nueva')
 def nueva_mejora():
@@ -3686,25 +3692,64 @@ from datetime import datetime
 @app.route('/mejoras/guardar', methods=['POST'])
 def guardar_mejora():
     
+    print("SESSION:", session)
+    print("ROL:", session.get('rol'))
+    
     if session.get('rol') not in ['admin', 'profesor', 'root']:
         return "No autorizado", 403
     
     descripcion = request.form['descripcion']
     usuario = session.get('usuario', 'anonimo')
+    tipo = request.form.get('tipo', 'M')
+    id_mejora = request.form.get('id')
+    
+    print("ID RECIBIDO:", request.form.get('id'))
 
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("""
-        INSERT INTO mejoras (descripcion, usuario, fecha)
-        VALUES (%s, %s, %s)
-    """, (descripcion, usuario, datetime.now()))
+    if id_mejora and id_mejora.strip() != "":
 
-    conn.commit()
-    cur.close()
-    conn.close()
+         # 🔥 obtener estado actual
+        cur.execute("SELECT estado FROM mejoras WHERE id = %s", (id_mejora,))
+        estado_actual = cur.fetchone()[0]
 
-    return redirect('/mejoras?ok=1')
+        # 🔥 si estaba enviado → volver a nuevo
+        nuevo_estado = estado_actual
+        if estado_actual == 'enviado':
+            nuevo_estado = 'nuevo'
+
+        cur.execute("""
+            UPDATE mejoras
+            SET descripcion = %s,
+                tipo = %s,
+                estado = %s
+            WHERE id = %s
+        """, (descripcion, tipo, nuevo_estado, id_mejora))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({"id": id_mejora})
+
+    else:  # 🔥 NUEVO
+
+        cur.execute("""
+            INSERT INTO mejoras (descripcion, usuario, fecha, tipo)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id
+        """, (descripcion, usuario, datetime.now(), tipo))
+
+        nuevo_id = cur.fetchone()[0]
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({"id": nuevo_id})
+
+     
 
 @app.route('/mejoras/actualizar', methods=['POST'])
 def actualizar_mejora():
@@ -3753,6 +3798,53 @@ def actualizar_mejora():
             version = %s
         WHERE id = %s
     """, (estado, version, id_mejora))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return '', 204
+
+@app.route('/mejoras/eliminar', methods=['POST'])
+def eliminar_mejora():
+
+    usuario = session.get('usuario')
+    rol = session.get('rol')
+
+    if not usuario:
+        return "No autorizado", 403
+
+    id_mejora = request.form.get('id')
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # 🔍 obtener datos
+    cur.execute("SELECT usuario, estado FROM mejoras WHERE id = %s", (id_mejora,))
+    fila = cur.fetchone()
+
+    if not fila:
+        cur.close()
+        conn.close()
+        return "No existe", 404
+
+    usuario_creador, estado_actual = fila
+
+    # 🔒 reglas (igual que editar)
+    puede_eliminar = False
+
+    if rol == 'root':
+        puede_eliminar = True
+    elif estado_actual in ['nuevo', 'enviado'] and usuario_creador == usuario:
+        puede_eliminar = True
+
+    if not puede_eliminar:
+        cur.close()
+        conn.close()
+        return "No autorizado", 403
+
+    # 🗑 eliminar
+    cur.execute("DELETE FROM mejoras WHERE id = %s", (id_mejora,))
 
     conn.commit()
     cur.close()
