@@ -197,6 +197,23 @@ def init_db():
 
     return "DB inicializada"
 
+@app.route('/restore-db')
+def restore_db():
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    with open('backup.sql', 'r', encoding='utf-8') as f:
+        sql = f.read()
+
+    cur.execute(sql)
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return "DB restaurada"
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
