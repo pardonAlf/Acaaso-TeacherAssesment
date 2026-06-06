@@ -1,1 +1,1 @@
-Version Actual: 2.5
+Version Actual: 2.6

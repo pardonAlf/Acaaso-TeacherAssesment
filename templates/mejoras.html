@@ -47,23 +47,28 @@
                 font-size: 12px;
             }
 
-            .table th {
-                font-size: 12px;
-                font-weight: 600;
-            }
+        .table th {
+            font-size: 12px;
+            font-weight: 600;
+        }
+        table td {
+            padding-top: 4px !important;
+            padding-bottom: 4px !important;
+            vertical-align: middle;
+        }
 
-            /* Inputs más compactos */
-            .form-control-sm, .form-select-sm {
-                padding: 2px 6px;
-                font-size: 12px;
-                height: 26px;
-            }
+        /* Inputs más compactos */
+        .form-control-sm, .form-select-sm {
+            padding: 2px 6px;
+            font-size: 12px;
+            height: 26px;
+        }
 
-            /* Botones más chicos */
-            .btn-sm {
-                padding: 3px 8px;
-                font-size: 12px;
-            }
+        /* Botones más chicos */
+        .btn-sm {
+            padding: 3px 8px;
+            font-size: 12px;
+        }
 
         .container {
             max-width: 1000px;
@@ -97,6 +102,26 @@
             background-color: #dcfce7; /* verde suave */
             transition: background-color 1s ease;
         }
+        td p {
+            margin: 0;
+            line-height: 1.2 !important;
+        }
+
+        td div {
+            line-height: 0.8 !important;
+        }
+        .contenido-colapsado {
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.2 !important;
+        }
+
+        .contenido-expandido {
+            -webkit-line-clamp: unset;
+            max-height: 400px; /* ~20 líneas */
+        }
     </style>
 </head>
 <body>
@@ -129,6 +154,23 @@
                 </div>
 
             </div>
+                <div style="display:flex;">
+                    <select class="form-select form-select-sm" style="display:flex; margin-bottom:10px; width:300px; gap:18px; align-items:center;" onchange="filtrarEstado(this.value)">
+                        <option value="todos">Todos</option>
+                        <option value="nuevo">Nuevo</option>
+                        <option value="enviado">Enviado</option>
+                        <option value="revisado">Revisado</option>
+                        <option value="realizado">Realizado</option>
+                    </select>
+
+                    <input type="text"
+                        class="form-control form-control-sm"
+                        style="width:400px; margin-left:10px;"
+                        placeholder="Buscar ticket..."
+                        onkeyup="buscarTexto(this.value)">
+
+ 
+                </div>
 
             <table class="table table-sm align-middle">
                 <thead class="table-light">
@@ -145,19 +187,30 @@
                 </thead>      
                 <tbody>
                     {% for m in mejoras %}
-                        <tr id="fila-{{ m[5] }}" class="
+                        <tr id="fila-{{ m[5] }}" data-estado="{{ m[3] }}" class="
                             {% if m[3] == 'nuevo' %}table-white fila-nuevo
                             {% elif m[3] == 'revisado' %}table-secondary fila-revisado
                             {% elif m[3] == 'realizado' %}table-success fila-realizado
                             {% endif %}
                         ">
-                        <td class="tipo-{{ m[6] }}">
+                        <td class="tipo-{{ m[6] }}" style="white-space:nowrap;">
+                            <span onclick="toggleExpand(this)" style="cursor:pointer; margin-right:4px;">
+                                ▶
+                            </span>
+
                             {{ m[6] }}
+
                         </td>
-                        <td>{{ m[0] | safe }}</td>
+                        <td>
+                            <div class="contenido-colapsado">
+                                {{ m[0] | safe }}
+                            </div>
+                        </td>
                         <td style="width:10%;font-weight:bold;font-size:10px;">ACAASO-{{ m[5] }}</td>
                         <td>{{ m[1] }}</td>
-                        <td>{{ m[2].strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td style="white-space:nowrap; width:160px; font-size:12px; color:#6b7280;">
+                            {{ m[2].strftime('%d/%m/%Y %H:%M') }}
+                        </td>
 
                         {% if session['rol'] == 'root' or (m[3] == 'nuevo' and m[1] == session['usuario']) %}
 
@@ -222,7 +275,7 @@
                                         border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.1);
                                         z-index:100; min-width:130px;">
 
-                                    <div onclick="editarMejora(this.closest('td').querySelector('button'), '{{ m[5] }}')"
+                                    <div onclick="editarMejora(this, '{{ m[5] }}')"
                                         data-descripcion="{{ m[0]|e }}"
                                         data-tipo="{{ m[6] }}"
                                         style="padding:6px 10px; cursor:pointer;">
@@ -255,6 +308,88 @@
     </div>  
 
 </div>
+<script>
+function buscarTexto(texto) {
+
+    texto = texto.toLowerCase();
+
+    const filas = document.querySelectorAll("tbody tr");
+
+    filas.forEach(fila => {
+
+        const contenido = fila.innerText.toLowerCase();
+
+        if (contenido.includes(texto)) {
+            fila.style.display = "";
+        } else {
+            fila.style.display = "none";
+        }
+
+    });
+}
+</script>
+<script>
+function toggleExpand(icono) {
+
+    const fila = icono.closest("tr");
+    const contenido = fila.querySelector(".contenido-colapsado");
+
+    if (contenido.classList.contains("contenido-expandido")) {
+        contenido.classList.remove("contenido-expandido");
+        icono.innerText = "▶";
+    } else {
+        contenido.classList.add("contenido-expandido");
+        icono.innerText = "▼";
+    }
+}
+</script>
+<script>
+let filtroEstadoActual = "todos";
+let textoBusquedaActual = "";
+
+// 🔥 motor principal
+function aplicarFiltros() {
+
+    const filas = document.querySelectorAll("tbody tr");
+
+    filas.forEach(fila => {
+
+        let estadoFila = fila.getAttribute("data-estado");
+        let textoFila = fila.innerText.toLowerCase();
+
+        if (estadoFila) {
+            estadoFila = estadoFila.trim().toLowerCase();
+        }
+
+        const cumpleEstado =
+            filtroEstadoActual === "todos" || estadoFila === filtroEstadoActual;
+
+        const cumpleTexto =
+            textoFila.includes(textoBusquedaActual);
+
+        if (cumpleEstado && cumpleTexto) {
+            fila.style.display = "";
+        } else {
+            fila.style.display = "none";
+        }
+
+    });
+}
+
+// 🔥 dropdown
+function filtrarEstado(estado) {
+    filtroEstadoActual = estado.toLowerCase();
+    aplicarFiltros();
+}
+
+// 🔥 buscador
+function buscarTexto(texto) {
+    textoBusquedaActual = texto.toLowerCase();
+    aplicarFiltros();
+}
+
+
+</script>
 <script>
 function toggleMenu(btn) {
 
@@ -397,12 +532,14 @@ function actualizarMejora(id, estado, version) {
 </div>
 <script>
 function nuevoTicket() {
-    ID_ACTUAL = ""; // 🔥 aquí sí limpiamos
+
+    ID_ACTUAL = "";
 
     document.getElementById("modalTitulo").innerText = "Nuevo Ticket";
 
     quill.root.innerHTML = "";
-    document.querySelector("select[name='tipo']").value = "M";
+
+    setTipo('M'); // 🔥 esto reemplaza todo
 
     abrirModal();
 }
