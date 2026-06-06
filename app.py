@@ -186,6 +186,10 @@ def init_db():
         orden INTEGER
     );
     """)
+    
+    # 🔥 agregar columnas faltantes
+    cur.execute("ALTER TABLE planes ADD COLUMN IF NOT EXISTS tipo TEXT;")
+    cur.execute("ALTER TABLE planes ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT TRUE;")
 
     conn.commit()
     cur.close()
