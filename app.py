@@ -19,15 +19,13 @@ from collections import defaultdict
 from io import BytesIO
 from flask import send_file
 from datetime import datetime
-from flask import session, redirect, url_for
- 
- 
+from flask import session, redirect, url_for 
 import threading
 from dotenv import load_dotenv
 import os
 from flask import make_response
 load_dotenv("llave.env")
-
+ 
 from openai import OpenAI
 client = OpenAI()
 
@@ -168,6 +166,32 @@ def get_db_connection():
         )
 
     return conn
+
+@app.route('/init-db')
+def init_db():
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # 🔥 crear tabla planes
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS planes (
+        id SERIAL PRIMARY KEY,
+        nombre TEXT,
+        precio INTEGER,
+        admins INTEGER,
+        profesores INTEGER,
+        alumnos INTEGER,
+        quizzes INTEGER,
+        orden INTEGER
+    );
+    """)
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return "DB inicializada"
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -3656,6 +3680,10 @@ def descargar_reporte(quiz_id, alumno_id):
 #=========================================================   
 @app.route('/mejoras')
 def mejoras():
+    
+    if not session.get('usuario'):
+        return redirect('/login')  # 🔥 redirige si no está logeado
+    
     conn = get_db_connection()
     cur = conn.cursor()
 
