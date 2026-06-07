@@ -206,13 +206,22 @@ def restore_db():
     with open('backup.sql', 'r', encoding='utf-8') as f:
         sql = f.read()
 
-    cur.execute(sql)
+    # 🔥 dividir en comandos simples
+    statements = sql.split(';')
+
+    for statement in statements:
+        statement = statement.strip()
+        if statement:
+            try:
+                cur.execute(statement)
+            except Exception as e:
+                print("Error en:", statement[:100], e)
 
     conn.commit()
     cur.close()
     conn.close()
 
-    return "DB restaurada"
+    return "DB restaurada (parcial si hubo errores)"
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
