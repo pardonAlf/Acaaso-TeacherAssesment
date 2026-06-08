@@ -152,20 +152,21 @@ def require_admin():
 def get_db_connection():
     database_url = os.getenv("DATABASE_URL")
 
+    print("DATABASE_URL =", database_url)
+
     if database_url:
-        # 👉 PRODUCCIÓN (Render)
-        conn = psycopg2.connect(database_url, sslmode='require')
+        print("👉 CONECTANDO A RENDER")
+        return psycopg2.connect(database_url, sslmode='require')
     else:
-        # 👉 LOCAL (tu PC)
-        conn = psycopg2.connect(
+        print("👉 CONECTANDO A LOCAL (SIN SSL)")
+        return psycopg2.connect(
             dbname="BDTeacherAssesment",
             user="postgres",
             password="1234",
             host="127.0.0.1",
-            port="5432"
+            port="5432",
+            sslmode='disable'   # 👈 🔥 FORZAR SIN SSL
         )
-
-    return conn
 
 @app.route('/init-db')
 def init_db():

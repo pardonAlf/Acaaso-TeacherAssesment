@@ -143,7 +143,7 @@ function cargarAsignados(salon_id) {
 
             data.forEach(q => {
                 let tr = `
-                    <tr>
+                    <tr id="fila_${q.id}">
                         <td>${q.id}</td>
                         <td>${q.titulo}</td>
                         <td>
@@ -171,8 +171,13 @@ function eliminarAsignacion(id) {
     fetch(`/eliminar_asignacion/${id}`, {
         method: "DELETE"
     })
-    .then(() => {
-        document.getElementById("fila_" + id).remove();
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "ok") {
+            document.getElementById("fila_" + id).remove();
+        } else {
+            alert("Error al eliminar");
+        }
     });
 }
 
