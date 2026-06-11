@@ -219,6 +219,21 @@ input.form-control {
     background: #2563eb;
     transition: width 0.3s ease;
 }
+
+.badge-dev {
+    background: hsl(142, 98%, 50%);
+    color: #fafcfa;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 6px;
+    font-weight: 500;
+}
+
+.form-check-input:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
     </style>
 </head>
 
@@ -239,90 +254,13 @@ input.form-control {
                             placeholder="Título del Quiz">
 
                         <!-- 🔥 derecha: bloque profesional -->
-                        <div class="p-2 border rounded bg-light" style="font-size:11px; min-width:420px;">
-
-                            <div style="font-weight:600; color:#344054; margin-bottom:4px;">
-                                Configuración
-                            </div>
-
-                            <div class="row">
-
-                                <!-- 🔹 columna 1 -->
-                                <div class="col-6">
-
-                                    <div class="form-check mb-1">
-                                        <input class="form-check-input"
-                                            type="checkbox"
-                                            id="multiple_intentos"
-                                            name="multiple_intentos"
-                                            checked
-                                            onchange="togglePoliticaIntentos()">
-                                        <label class="form-check-label">
-                                            Múltiples intentos
-                                        </label>
-                                    </div>
-                                    <div class="form-check mb-1">
-                                        <input class="form-check-input"
-                                            type="checkbox"
-                                            id="enviar_solucionario"
-                                            name="enviar_solucionario">
-                                        <label class="form-check-label">
-                                            Enviar solucionario
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <!-- 🔹 columna 2 -->
-                                <div class="col-6">
-                                    <div id="bloquePoliticaIntentos" class="ms-2">
-                                        <div class="form-check">
-                                            <input class="form-check-input"
-                                                type="radio"
-                                                name="politica_intentos"
-                                                value="add"
-                                                checked>
-                                            <label class="form-check-label">
-                                                Adicionar Intentos
-                                            </label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input"
-                                                type="radio"
-                                                name="politica_intentos"
-                                                value="max" 
-                                                disabled 
-                                                data-bs-toggle="tooltip"
-                                                data-bs-title="Próximamente">
-                                            <label class="form-check-label text-muted" style="font-size:10px;">
-                                                Nota más alta <span style="font-size:9px; color:#53f708;">(próx.)</span>
-                                            </label>
-                                        </div>
-
-                                        <div class="form-check">
-                                            <input class="form-check-input"
-                                                type="radio"
-                                                name="politica_intentos"
-                                                value="ultimo" 
-                                                disabled 
-                                                data-bs-toggle="tooltip"
-                                                data-bs-title="Próximamente">
-                                            <label class="form-check-label text-muted">
-                                                Último intento<span style="font-size:9px; color:#53f708;">(próx.)</span>
-                                            </label>
-                                        </div>
-
-                                    </div>
-                                    
-                                    <!-- 🔥 espacio para escalar 
-                                    <div class="text-muted" style="font-size:10px;">
-                                        (Más opciones aquí…)
-                                    </div>-->
-
-                                </div>
-
-                            </div>
-
-                        </div>
+                        <!-- 🔥 BOTÓN CONFIGURACIÓN -->
+                        <button type="button"
+                            class="btn btn-light btn-sm-custom border"
+                            onclick="abrirConfig()"
+                            style="font-size:11px;">
+                            ⚙️ Configuración
+                        </button>
 
                     </div>
 
@@ -493,37 +431,45 @@ function abrirModalIA() {
     let modal = new bootstrap.Modal(document.getElementById('modalIA'));
     modal.show();
 }
-document.getElementById("tipoIA").addEventListener("change", function () {
-
-    let tipo = this.value;
-
-    let bloquePrompt = document.getElementById("bloquePrompt");
-    let bloqueArchivo = document.getElementById("bloqueArchivo");
-    let bloqueConfig = document.getElementById("bloqueConfigIA");
-
-    if (tipo === "generar_prompt") {
-
-        bloquePrompt.style.display = "block";
-        bloqueArchivo.style.display = "none";
-        bloqueConfig.style.display = "block";
-
-    } else if (tipo === "generar_archivo") {
-
-        bloquePrompt.style.display = "none";
-        bloqueArchivo.style.display = "block";
-        bloqueConfig.style.display = "block";
-
-    } else if (tipo === "importar") {
-
-        bloquePrompt.style.display = "none";
-        bloqueArchivo.style.display = "block";
-        bloqueConfig.style.display = "none"; // 🔥 clave
-
-    }
-
-});
 document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("tipoIA").dispatchEvent(new Event("change"));
+
+    let tipoIA = document.getElementById("tipoIA");
+
+    if (!tipoIA) return; // 🔥 evita error
+
+    tipoIA.addEventListener("change", function () {
+
+        let tipo = this.value;
+
+        let bloquePrompt = document.getElementById("bloquePrompt");
+        let bloqueArchivo = document.getElementById("bloqueArchivo");
+        let bloqueConfig = document.getElementById("bloqueConfigIA");
+
+        if (tipo === "generar_prompt") {
+
+            bloquePrompt.style.display = "block";
+            bloqueArchivo.style.display = "none";
+            bloqueConfig.style.display = "block";
+
+        } else if (tipo === "generar_archivo") {
+
+            bloquePrompt.style.display = "none";
+            bloqueArchivo.style.display = "block";
+            bloqueConfig.style.display = "block";
+
+        } else if (tipo === "importar") {
+
+            bloquePrompt.style.display = "none";
+            bloqueArchivo.style.display = "block";
+            bloqueConfig.style.display = "none";
+
+        }
+
+    });
+
+    // 🔥 disparar cambio inicial
+    tipoIA.dispatchEvent(new Event("change"));
+
 });
 
 let preguntas = [];
@@ -663,18 +609,19 @@ function crearPreguntaVF() {
 
 function togglePoliticaIntentos() {
 
-    let enabled = document.getElementById("multiple_intentos").checked;
+    let checkbox = document.getElementById("multiple_intentos");
 
-    // contenedor visual
+    if (!checkbox) return; // 🔥 evita error
+
+    let enabled = checkbox.checked;
+
     let bloque = document.getElementById("bloquePoliticaIntentos");
+    if (!bloque) return;
 
-    // radios
     let radios = bloque.querySelectorAll("input[type='radio']");
 
-    // visual (gris)
     bloque.style.opacity = enabled ? "1" : "0.4";
 
-    // funcional (disable real)
     radios.forEach(r => {
         r.disabled = !enabled;
     });
@@ -912,6 +859,24 @@ function guardarQuiz() {
         }
     });
 
+
+    let multiple = document.getElementById("multiple_intentos_panel").checked;
+    let solucionario = document.getElementById("enviar_solucionario_panel").checked;
+
+    agregarInput(form, "multiple_intentos", multiple ? "true" : "false");
+    agregarInput(form, "enviar_solucionario", solucionario ? "true" : "false");
+
+
+
+    // 🔥 NUEVO
+    let config = {
+        tiempo: null,
+        comodin: false,
+        modo: "normal"
+    };
+
+    agregarInput(form, "config_json", JSON.stringify(config));
+
     form.submit();
 }
 
@@ -1068,6 +1033,47 @@ function detenerLoader() {
 }
  
 </script>
+<script>
+function abrirConfig() {
+    document.getElementById("panelConfig").style.right = "0";
+    document.getElementById("overlayConfig").style.display = "block";
+}
+
+function cerrarConfig() {
+    document.getElementById("panelConfig").style.right = "-400px";
+    document.getElementById("overlayConfig").style.display = "none";
+}
+
+// 🔥 AQUÍ EL FIX
+document.addEventListener("DOMContentLoaded", function () {
+
+    let overlay = document.getElementById("overlayConfig");
+
+    if (overlay) {
+        overlay.addEventListener("click", cerrarConfig);
+    }
+
+});
+
+function guardarConfig() {
+
+    let originalMultiple = document.getElementById("multiple_intentos");
+    let originalSolucionario = document.getElementById("enviar_solucionario");
+
+    if (originalMultiple) {
+        originalMultiple.checked =
+            document.getElementById("multiple_intentos_panel").checked;
+    }
+
+    if (originalSolucionario) {
+        originalSolucionario.checked =
+            document.getElementById("enviar_solucionario_panel").checked;
+    }
+
+    cerrarConfig();
+}
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <div id="overlayLoader" style="display:none;">
         <div class="loader-box">
@@ -1076,6 +1082,111 @@ function detenerLoader() {
                 <div id="barraReal" class="progress-bar"></div>
             </div>
         </div>
+    </div>
+    <div id="overlayConfig" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.4);
+        z-index: 1050;
+        display: none;
+    "></div>
+    <div id="panelConfig" style="
+        position: fixed;
+        top: 0;
+        right: -400px; /* oculto */
+        width: 400px;
+        height: 100%;
+        background: white;
+        border-left: 1px solid #e4e7ec;
+        box-shadow: -5px 0 15px rgba(0,0,0,0.05);
+        z-index: 1051;
+        transition: right 0.3s ease;
+        padding: 16px;
+    ">
+
+        <!-- header -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <b style="font-size:13px;">Configuración</b>
+            <button class="btn btn-sm btn-light" onclick="cerrarConfig()">✕</button>
+        </div>
+
+        <!-- contenido (temporal) -->
+        <div style="font-size:12px;">
+
+            <!-- 1 -->
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="multiple_intentos_panel" checked>
+                <label class="form-check-label">Múltiples intentos</label>
+            </div>
+
+            <!-- 2 -->
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="enviar_solucionario_panel" checked>
+                <label class="form-check-label">Enviar solucionario</label>
+            </div>
+
+            <hr>
+
+            <!-- 3 -->
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="tiempo_limitado" disabled>
+                <label class="form-check-label">
+                    Tiempo limitado <span class="badge-dev">por desarrollar</span>
+                </label>
+            </div>
+
+            <div class="mb-2">
+                <select id="tiempo_minutos" class="form-select form-select-sm">
+                    <option value="">Seleccionar minutos</option>
+                    <option>5</option>
+                    <option>10</option>
+                    <option>15</option>
+                    <option>20</option>
+                    <option>30</option>
+                    <option>45</option>
+                    <option>60</option>
+                </select>
+            </div>
+
+            <hr>
+
+            <!-- 4 -->
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="mantener_ultimo" disabled>
+                <label class="form-check-label">
+                    Mantener último intento <span class="badge-dev">por desarrollar</span>
+                </label>
+            </div>
+
+            <!-- 5 -->
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="mejor_nota" disabled>
+                <label class="form-check-label">
+                    Mantener mejor nota <span class="badge-dev">por desarrollar</span>
+                </label>
+            </div>
+
+            <hr>
+
+            <!-- 6 -->
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="comodin" disabled>
+                <label class="form-check-label">
+                    Activar comodines (3 ayudas) <span class="badge-dev">por desarrollar</span>
+                </label>
+            </div>
+
+            <!-- 🔥 BOTONES -->
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <button class="btn btn-light btn-sm" onclick="cerrarConfig()">Cancelar</button>
+                <button class="btn btn-primary btn-sm" onclick="guardarConfig()">OK</button>
+            </div>
+
+        </div>
+
     </div>
 
 </body>

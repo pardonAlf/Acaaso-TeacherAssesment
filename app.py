@@ -48,6 +48,10 @@ def get_version():
             return f.read().strip()
     except:
         return "v1.0"
+    
+@app.route('/splash')
+def splash():
+    return render_template('splash.html')
 
 @app.route('/')
 def home():
@@ -124,7 +128,7 @@ def login():
                 session['cempre'] = user[4]
 
                 cur.close(); conn.close()
-                return redirect('/')
+                return redirect(url_for('splash'))
 
         cur.close(); conn.close()
         return render_template("login.html", empresas=empresas, error="Credenciales incorrectas")
@@ -941,9 +945,11 @@ def quiz():
 def crear_quiz():
     if request.method == 'POST':
         titulo = request.form['titulo']
+        config_json = request.form.get("config_json")
+        print("CONFIG JSON RECIBIDO:", config_json)
         usuario = session.get('usuario')
-        multiple_intentos = request.form.get('multiple_intentos') == 'on'
-        enviar_solucionario = request.form.get("enviar_solucionario") == "on"
+        multiple_intentos = request.form.get('multiple_intentos') in ['true', 'on', '1']
+        enviar_solucionario = request.form.get("enviar_solucionario") in ['true', 'on', '1']
         
         if not usuario:
             return redirect('/login')
@@ -953,8 +959,8 @@ def crear_quiz():
 
         # crear quiz
         cur.execute(
-            "INSERT INTO quiz (titulo,cempre,usuario_id, usuario, estado, multiple_intentos,enviar_solucionario) VALUES (%s,%s,%s, %s, %s, %s, %s) RETURNING id",
-            (titulo,session['cempre'],session['user_id'], usuario, 'A', multiple_intentos,enviar_solucionario)
+            "INSERT INTO quiz (titulo,cempre,usuario_id, usuario, estado, multiple_intentos,enviar_solucionario, config_json) VALUES (%s,%s,%s, %s, %s, %s, %s, %s) RETURNING id",
+            (titulo,session['cempre'],session['user_id'], usuario, 'A', multiple_intentos,enviar_solucionario, config_json)
         )
         quiz_id = cur.fetchone()[0]
         

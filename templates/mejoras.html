@@ -147,7 +147,9 @@
 
                 <div class="d-flex gap-2">
                     
-                    <a href="/" class="btn btn-light btn-sm">← Volver</a>
+                    <button onclick="if (document.referrer) { history.back(); } else { window.location.href='/dashboard_profesor'; }">
+                        Volver
+                    </button>
                     <button class="btn btn-primary btn-sm" onclick="nuevoTicket()">
                         + Nueva
                     </button>

@@ -34,7 +34,7 @@
                 <li class="nav-item"><a class="nav-link px-3" href="#comofunciona">Cómo funciona</a></li>
                 <li class="nav-item"><a class="nav-link px-3" href="#">Consultas</a></li>
                 <li class="nav-item"><a class="nav-link px-3" href="#">Ayuda</a></li>
-                <li class="nav-item"><a class="nav-link px-3" href="/mejoras">Mejoras</a></li>
+                
             </ul>
 
             <!-- DERECHA -->
@@ -47,7 +47,7 @@
                     </span>
 
                     {% if session['rol'] in ['admin', 'profesor','root'] %}
-                        <a href="/dashboard_profesor" class="btn btn-success btn-sm">Procesos</a>
+                        <a href="/splash" class="btn btn-success btn-sm">Procesos</a>
                     {% endif %}
 
                     <a href="/logout" class="btn btn-outline-light btn-sm">Salir</a>
