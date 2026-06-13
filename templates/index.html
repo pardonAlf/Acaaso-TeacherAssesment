@@ -33,7 +33,7 @@
                 <li class="nav-item"><a class="nav-link px-3" href="#">Home</a></li>
                 <li class="nav-item"><a class="nav-link px-3" href="#comofunciona">Cómo funciona</a></li>
                 <li class="nav-item"><a class="nav-link px-3" href="#">Consultas</a></li>
-                <li class="nav-item"><a class="nav-link px-3" href="#">Ayuda</a></li>
+                <li class="nav-item"><a class="nav-link px-3" href="/ayuda">Ayuda</a></li>
                 
             </ul>
 
@@ -102,12 +102,12 @@
         <ul class="nav nav-pills justify-content-center mb-4" id="tabsPlanes">
             <li class="nav-item">
                 <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#individual">
-                    Individual
+                    Docente
                 </button>
             </li>
             <li class="nav-item">
                 <button class="nav-link" data-bs-toggle="pill" data-bs-target="#empresarial">
-                    Empresarial
+                    Institucional
                 </button>
             </li>
         </ul>
@@ -164,9 +164,33 @@
 
                             <ul>
                                 <li>✔ {{ p[3] }} admin</li>
-                                <li>✔ Profesores ilimitados</li>
-                                <li>✔ Alumnos ilimitados</li>
-                                <li>✔ Quizzes ilimitados</li>
+                                
+                                <li>
+                                    ✔ 
+                                    {% if p[4] %}
+                                        Hasta {{ p[4] }} profesores
+                                    {% else %}
+                                        Profesores ilimitados
+                                    {% endif %}
+                                </li>
+
+                                <li>
+                                    ✔ 
+                                    {% if p[5] %}
+                                        Hasta {{ p[5] }} alumnos
+                                    {% else %}
+                                        Alumnos ilimitados
+                                    {% endif %}
+                                </li>
+
+                                <li>
+                                    ✔ 
+                                    {% if p[6] %}
+                                        {{ p[6] }} quizzes
+                                    {% else %}
+                                        Quizzes ilimitados
+                                    {% endif %}
+                                </li>
                             </ul>
 
                             <button class="btn-plan">Contactar</button>
@@ -257,7 +281,7 @@
         <li><a href="#" style="color:#9ca3af; text-decoration:none;">Home</a></li>
         <li><a href="#como-funciona" style="color:#9ca3af; text-decoration:none;">Cómo funciona</a></li>
         <li><a href="#" style="color:#9ca3af; text-decoration:none;">Consultas</a></li>
-        <li><a href="#" style="color:#9ca3af; text-decoration:none;">Ayuda</a></li>
+        <li><a href="/ayuda" style="color:#9ca3af; text-decoration:none;">Ayuda</a></li>
       </ul>
     </div>
 

@@ -3917,5 +3917,11 @@ def eliminar_mejora():
 
     return '', 204
 
+@app.route('/ayuda')
+def ayuda():
+    return render_template('ayuda.html')
+
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
