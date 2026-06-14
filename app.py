@@ -3919,9 +3919,33 @@ def eliminar_mejora():
 
 @app.route('/ayuda')
 def ayuda():
-    return render_template('ayuda.html')
 
+    usuario_logeado = session.get('usuario')
 
+    plan = None
 
+    # 🔥 SOLO si está logeado consultamos plan
+    if usuario_logeado:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT nombre, precio, profesores, alumnos, quizzes
+            FROM planes
+            ORDER BY orden
+            LIMIT 1
+        """)
+
+        plan = cur.fetchone()
+
+        cur.close()
+        conn.close()
+
+    return render_template(
+        'ayuda.html',
+        plan=plan,
+        usuario_logeado=usuario_logeado
+    )
+ 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

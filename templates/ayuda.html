@@ -6,108 +6,566 @@
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+    body{
+        background:#111827;
+    }
+    .menu-item {
+        display: block;
+        padding: 10px;
+        margin-bottom: 5px;
+        color: #9ca3af;
+        text-decoration: none;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .menu-item:hover {
+        background-color: #1f2937;
+        color: white;
+    }
+
+    .menu-item.active {
+        background-color: #2563eb;
+        color: white;
+    }
+    
+        .licencia-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+        }
+
+        .licencia-box {
+            width: 500px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid #374151;
+            border-radius: 10px;
+            padding: 20px;
+            color: white;
+        }
+
+        .licencia-title {
+            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .licencia-title i {
+            color: #22c55e;
+        }
+
+        .licencia-form label {
+            width: 170px;
+            color: #9ca3af;
+            font-size: 13px;
+        }
+
+        .licencia-form input {
+            width: 250px;
+            background: #111827;
+            border: 1px solid #374151;
+            color: white;
+            font-size: 13px;
+            padding: 3px 6px;
+        }
+
+        .licencia-table {
+            margin-top: 15px;
+            font-size: 13px;
+        }
+
+        .licencia-table th {
+            background: #1f2937;
+            color: #9ca3af;
+            font-weight: normal;
+        }
+
+        .licencia-table td {
+            border-top: 1px solid #374151;
+        }
+        #fondo-dinamico.fondo-oscuro::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6); /* 🔥 opacidad */
+            z-index: 1;
+        }
+
+        #fondo-dinamico.fondo-oscuro > * {
+            position: relative;
+            z-index: 2;
+        }
+
+        /*crear*/
+        .card-full {
+            padding:20px;
+            border-radius:10px;
+            color:white;
+            transition:0.3s;
+        }
+
+        .card-full:hover {
+            transform: translateY(-5px);
+        }
+
+        /* COLORES */
+        .card-blue { background:#3b82f6; }
+        .card-orange { background:#f97316; }
+        .card-green { background:#22c55e; }
+        .card-yellow { background:#eab308; color:black; }
+
+        .card-full h5 {
+            margin-bottom:8px;
+        }
+
+        .card-full p {
+            font-size:14px;
+        }
+
+        .card-full span {
+            font-size:12px;
+        }
+         
+    </style>
+
 </head>
 
-<body>
-<div class="container mt-4">
+ 
+<body style="
+    background: url('/static/img/licencia.png') no-repeat center center fixed;
+    background-size: cover;
+">
 
-    <div style="background:#1f2937; padding:25px; border-radius:10px;">
+<div class="container-fluid p-0">
 
-        <h3>¿Qué es TeacherAssessment?</h3>
+    <!-- HEADER -->
+    <div style="background:#1f2937; padding:15px; display:flex;justify-content:space-between;">
+        <h4 style="color: #e5e7eb; font-size: 16px;
+            font-weight: 500;">
+            {% if usuario_logeado %}
+                Centro de Ayuda
+            {% else %}
+                Guía del Sistema
+            {% endif %}
+        </h4>
 
-        <p style="color:#9ca3af; margin-top:10px;">
-            TeacherAssessment es una plataforma diseñada para crear, aplicar y analizar evaluaciones de forma automática.
-            Permite a los profesores generar quizzes en minutos, compartirlos mediante un código y obtener resultados inmediatos
-            sin necesidad de corrección manual.
-        </p>
+        <div style="
+            padding:10px 20px;
+            background:#1f2937;
+            border-bottom:1px solid rgba(255,255,255,0.1);
+        ">
+            <a href="/" style="
+                color:#f70505;
+                text-decoration:none;
+                font-size:20px;
+                display:flex;
+                align-items:center;
+                gap:6px;
+            ">
+                ⎋ Salir
+            </a>
 
-        <p style="color:#9ca3af;">
-            El objetivo es reducir el tiempo de evaluación y mejorar la toma de decisiones mediante análisis de resultados en tiempo real.
-        </p>
+        </div>
+    </div>
+ 
+
+    <div class="row m-0 g-0">
+
+        <!-- MENÚ IZQUIERDA -->
+        <div class="col-md-2" style="background:#111827;  min-height:100vh; padding:15px; color:aliceblue">
+
+            <h5>Contenido</h5>
+
+            <ul style="list-style:none; padding-left:0; margin-top:20px;">
+
+                <li><a id="btn-intro" class="menu-item active" onclick="mostrar('intro', this)">Introducción</a></li>
+                <li><a class="menu-item" onclick="mostrar('crear', this)">Crear Quiz</a></li>
+                <li><a class="menu-item" onclick="mostrar('flujo', this)">Cómo funciona</a></li>
+                <li><a class="menu-item" onclick="mostrar('resultados', this)">Resultados</a></li>
+                {% if usuario_logeado %}
+                <li>
+                    <a href="#" class="menu-item" onclick="mostrar('licencia', this)">
+                        Licencia
+                    </a>
+                </li>
+                {% endif %}
+                 
+
+            </ul>
+
+        </div>
+
+        <!-- CONTENIDO DERECHA -->
+        <div class="col-md-10 p-0">
+
+            <div id="fondo-dinamico" style="
+                min-height:100vh;
+                background-size: cover;
+                background-position: center;
+                padding:40px 30px 30px 30px;
+            ">
+
+                <div id="intro" class="contenido">
+
+                    <style>
+                   .intro-overlay {
+                        background: rgba(0, 0, 0, 0.55);
+                        backdrop-filter: blur(4px);
+                        padding: 40px;
+                        border-radius: 12px;
+                        max-width: 700px;
+                        margin: auto;
+                    }
+
+                    .intro-title {
+                        font-size: 22px;
+                        margin-bottom: 15px;
+                    }
+
+                    .intro-text {
+                        color: #d1d5db;
+                        font-size: 14px;
+                        line-height: 1.6;
+                    }
+
+                    .intro-features {
+                        margin-top: 25px;
+                        display: flex;
+                        justify-content: space-between;
+                        gap: 20px;
+                    }
+
+                    .intro-box {
+                        flex: 1;
+                        text-align: center;
+                    }
+
+                    .intro-box i {
+                        font-size: 24px;
+                        margin-bottom: 10px;
+                        color: #3b82f6;
+                    }
+
+                    .intro-box h6 {
+                        margin-bottom: 5px;
+                    }
+
+                    .intro-box p {
+                        font-size: 12px;
+                        color: #9ca3af;
+                    }
+
+                    
+                    </style>
+
+
+                    <div style="display:flex; justify-content:center; align-items:center; min-height:80vh;">
+
+                        <div class="intro-overlay">
+
+                            <div class="intro-title"  style="color:white;">
+                                📘 Introducción
+                            </div>
+
+                            <div class="intro-text">
+                                TeacherAssessment es una plataforma diseñada para crear, aplicar y analizar evaluaciones de forma automática.
+                                Permite a los profesores generar quizzes en minutos, compartirlos mediante un código y obtener resultados inmediatos sin corrección manual.
+                                <br><br>
+                                El objetivo es optimizar el tiempo de evaluación y mejorar la toma de decisiones con datos en tiempo real.
+                            </div>
+
+                            <!-- FEATURES -->
+                            <div class="intro-features">
+
+                                <div class="intro-box" style="color:white;">
+                                    <div>📝</div>
+                                    <h6>Crear</h6>
+                                    <p>Diseña quizzes fácilmente o usa IA</p>
+                                </div>
+
+                                <div class="intro-box" style="color:white;">
+                                    <div>⚡</div>
+                                    <h6>Evaluar</h6>
+                                    <p>Resultados inmediatos sin esfuerzo</p>
+                                </div>
+
+                                <div class="intro-box" style="color:white;">
+                                    <div>📊</div>
+                                    <h6>Analizar</h6>
+                                    <p>Visualiza métricas y mejora</p>
+                                </div>
+
+                            </div>
+
+                        </div>
+                        
+
+                    </div>
+
+                </div>
+
+                <div id="crear" class="contenido" style="display:none; color:white;">
+
+                    <!-- 🔝 TEXTO SOBRE EL FONDO DINÁMICO -->
+                    <div style="
+                        width:100%;
+                        padding:60px;
+                    ">
+
+                        <h2>Crear Quiz</h2>
+
+                        <p style="color:#e5e7eb;">
+                            Desde el menú Procesos puedes crear un nuevo quiz fácilmente.
+                        </p>
+
+                    </div>
+
+                    <!-- 🔽 BLOQUE INFERIOR REAL (NO USA top, NO USA margin gigante) -->
+                    <div style="
+                        background: rgba(15, 23, 42, 0.1);
+                        backdrop-filter: blur(6px);
+                        -webkit-backdrop-filter: blur(8px);
+                        padding:50px 60px;
+                    ">
+
+                        <div style="
+                            max-width:1200px;
+                            margin:auto;
+                            display:grid;
+                            grid-template-columns:1fr 1fr;
+                            gap:20px;
+                        ">
+
+                            <div class="card-full card-blue">
+                                <h5>1. Creación manual</h5>
+                                <p>Diseña preguntas de opción múltiple o verdadero/falso.</p>
+                                <span>✔ Control total &nbsp;&nbsp; ✔ Información exacta al requerimiento &nbsp;&nbsp;✖ Más tiempo</span>
+                            </div>
+
+                            <div class="card-full card-orange">
+                                <h5>2. IA desde prompt</h5>
+                                <p>Genera preguntas automáticamente según un tema.</p>
+                                <span>✔ Rápido &nbsp;&nbsp; ✖ Menos control &nbsp;&nbsp; ✖ Contenido depende de la IA</span>
+                            </div>
+
+                            <div class="card-full card-green">
+                                <h5>3. Importar quiz</h5>
+                                <p>Convierte un quiz existente al formato del sistema.</p>
+                                <span>✔ Reutilizable &nbsp;&nbsp; ✖ Formato requerido</span>
+                            </div>
+
+                            <div class="card-full card-yellow">
+                                <h5>4. Desde archivo</h5>
+                                <p>La IA genera preguntas usando un archivo cargado.</p>
+                                <span>✔ Preciso &nbsp;&nbsp;✔ Información exacta en el Quiz &nbsp;&nbsp; ✖ Depende del archivo</span>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div> 
+
+                <div id="flujo"  class="contenido" style="display:none;">
+                   
+                </div>
+
+                <div id="resultados"  class="contenido" style="display:none;">
+                     
+                </div>
+
+                <div id="licencia" class="contenido" style="display:none;"> 
+
+                    {% if usuario_logeado %}
+                        <div class="licencia-container">
+
+                            <div class="licencia-box">
+
+                                <!-- 🔑 TÍTULO -->
+                                <div class="licencia-title">
+                                    🔑 Licencia
+                                </div>
+
+                                <!-- 🔹 FORMULARIO -->
+                                <div class="licencia-form">
+
+                                    <div class="mb-2 d-flex align-items-center">
+                                        <label>Número de serie:</label>
+                                        <input type="text" value="{{ plan[0] }}-001" readonly>
+                                    </div>
+
+                                    <div class="mb-2 d-flex align-items-center">
+                                        <label>Licenciado a:</label>
+                                        <input type="text" value="{{ session['usuario'] }}" readonly>
+                                    </div>
+
+                                    <div class="mb-2 d-flex align-items-center">
+                                        <label>Tipo de licencia:</label>
+                                        <input type="text" value="{{ plan[0] }}" readonly>
+                                    </div>
+
+                                    <div class="mb-2 d-flex align-items-center">
+                                        <label>Fecha de expiración:</label>
+                                        <input type="text" value="31/12/2026" readonly>
+                                    </div>
+
+                                </div>
+
+                                <!-- 🔹 TABLA -->
+                                <table class="table table-sm licencia-table">
+
+                                    <thead>
+                                        <tr>
+                                            <th>Módulo</th>
+                                            <th>Valor</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+
+                                        <tr>
+                                            <td>Profesores</td>
+                                            <td>
+                                                {% if plan[2] %}
+                                                    {{ plan[2] }}
+                                                {% else %}
+                                                    Ilimitado
+                                                {% endif %}
+                                            </td>
+                                            <td style="color:#22c55e;">Activo</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Alumnos</td>
+                                            <td>
+                                                {% if plan[3] %}
+                                                    {{ plan[3] }}
+                                                {% else %}
+                                                    Ilimitado
+                                                {% endif %}
+                                            </td>
+                                            <td style="color:#22c55e;">Activo</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Quizzes</td>
+                                            <td>
+                                                {% if plan[4] %}
+                                                    {{ plan[4] }}
+                                                {% else %}
+                                                    Ilimitado
+                                                {% endif %}
+                                            </td>
+                                            <td style="color:#22c55e;">Activo</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>Intentos</td>
+                                            <td>Ilimitado</td>
+                                            <td style="color:#22c55e;">Activo</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>IA</td>
+                                            <td>Habilitado</td>
+                                            <td style="color:#22c55e;">Activo</td>
+                                        </tr>
+
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+
+                        </div>
+                    {% else %}
+
+                        <div style="padding:40px; color:#9ca3af;">
+                            Debes iniciar sesión para ver esta información.
+                        </div>
+
+                    {% endif %}   
+                </div >
+            </div>   
+        </div>
 
     </div>
 
 </div>
-<div class="container mt-5">
 
-    <h2>¿Cómo crear un Quiz?</h2>
+<script>
+ 
+window.onload = function() {
+    let btn = document.getElementById('btn-intro');
+    mostrar('intro', btn);
+}
+ 
+ 
+function mostrar(seccion, elemento=null) {
 
-    <div style="margin-top:20px;">
+    // ocultar contenido
+    document.querySelectorAll('.contenido').forEach(div => {
+        div.style.display = 'none';
+    });
 
-        <h4>1. Crear un nuevo Quiz</h4>
-        <p style="color:#9ca3af;">
-            Accede al módulo de creación y define el nombre del quiz, número de preguntas y tipo de evaluación.
-        </p>
+    document.getElementById(seccion).style.display = 'block';
 
-        <h4>2. Elegir la forma de creación</h4>
-        <p style="color:#9ca3af;">
-            Puedes crear preguntas de diferentes formas:
-        </p>
+    // menú activo
+    document.querySelectorAll('.menu-item').forEach(el => {
+        el.classList.remove('active');
+    });
 
-        <ul style="color:#9ca3af;">
-            <li>✔ Manual: escribiendo cada pregunta</li>
-            <li>✔ Con IA: el sistema genera preguntas automáticamente</li>
-            <li>✔ Desde archivo: subiendo un documento</li>
-            <li>✔ Desde texto: pegando contenido para generar preguntas</li>
-        </ul>
+    if (elemento) {
+        elemento.classList.add('active');
+    }
 
-        <h4>3. Configurar el Quiz</h4>
-        <p style="color:#9ca3af;">
-            Define si el alumno puede ver respuestas, número de intentos y otras opciones disponibles.
-        </p>
+    // fondo dinámico
+    let fondo = document.getElementById('fondo-dinamico');
 
-        <h4>4. Guardar y activar</h4>
-        <p style="color:#9ca3af;">
-            Una vez configurado, guarda el quiz para que esté disponible para los alumnos.
-        </p>
+    let fondos = {
+        "intro": "url('/static/img/introduccion_bg.png')",
+        "crear": "url('/static/img/crear_bg.png')",
+        "flujo": "url('/static/img/flujo_bg.png')",
+        "resultados": "url('/static/img/resultados_bg.png')",
+        "licencia": "url('/static/img/licencia_bg.png')"
+    };
 
-    </div>
+    fondo.style.backgroundImage = fondos[seccion] || "none";
 
-</div>
+    // 🔥 SOLO flujo se mueve
+    if (seccion === "flujo") {
+        fondo.style.backgroundPosition = "center 20px";
+    } else {
+        fondo.style.backgroundPosition = "center";
+    }
 
-<div class="container mt-5">
+    // detectar tamaño pantalla
+    let esLaptop = window.innerWidth <= 1400;
 
-    <div class="row text-center">
-
-        <div class="col-md-3 mb-4">
-            <div style="background:#1f2937; padding:20px; border-radius:10px;">
-                <h4>1. Crear Quiz</h4>
-                <p style="color:#9ca3af;">
-                    Diseña preguntas fácilmente o usa inteligencia artificial.
-                </p>
-            </div>
-        </div>
-
-        <div class="col-md-3 mb-4">
-            <div style="background:#1f2937; padding:20px; border-radius:10px;">
-                <h4>2. Compartir código</h4>
-                <p style="color:#9ca3af;">
-                    Los alumnos ingresan con un código único.
-                </p>
-            </div>
-        </div>
-
-        <div class="col-md-3 mb-4">
-            <div style="background:#1f2937; padding:20px; border-radius:10px;">
-                <h4>3. Resolver</h4>
-                <p style="color:#9ca3af;">
-                    Responden el quiz y reciben su nota al instante.
-                </p>
-            </div>
-        </div>
-
-        <div class="col-md-3 mb-4">
-            <div style="background:#1f2937; padding:20px; border-radius:10px;">
-                <h4>4. Analizar</h4>
-                <p style="color:#9ca3af;">
-                    Visualiza resultados y mejora el aprendizaje.
-                </p>
-            </div>
-        </div>
-
-    </div>
-
-</div>
+    if (seccion === "crear") {
+        if (esLaptop) {
+            fondo.style.backgroundPosition = "center 10px"; // baja la imagen
+        } else {
+            fondo.style.backgroundPosition = "center";
+        }
+    }
+    if (seccion === "licencia") {
+        fondo.style.backgroundImage = 
+            "linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), " + fondos[seccion];
+    } else {
+        fondo.style.backgroundImage = fondos[seccion];
+    }
+}
+</script>
 
 </body>
+
+ 
 </html>
