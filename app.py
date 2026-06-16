@@ -2986,8 +2986,8 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
     import smtplib
     from email.message import EmailMessage
     print("🔥 entrando a generar_y_enviar_reporte")
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    ruta_pdf = f"/tmp/reporte_{alumno_id}.pdf"
+    doc = SimpleDocTemplate(ruta_pdf, pagesize=letter)
     styles = getSampleStyleSheet()
     elements = []
 
@@ -3062,7 +3062,6 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
         elements.append(Spacer(1, 10))
 
     doc.build(elements)
-    buffer.seek(0)
 
     msg = EmailMessage()
     msg['Subject'] = 'Resultado de tu Quiz'
@@ -3077,10 +3076,11 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
     
     print("VALOR enviar_solucionario:", enviar_solucionario)
     if enviar_solucionario:
-        msg.add_attachment(buffer.getvalue(),
-                        maintype='application',
-                        subtype='pdf',
-                        filename=f"reporte_{alumno_id}.pdf")
+        with open(ruta_pdf, "rb") as f:
+            msg.add_attachment(f.read(),
+                maintype='application',
+                subtype='pdf',
+                filename=f"reporte_{alumno_id}.pdf")
 
     if enviar_solucionario:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
@@ -3091,7 +3091,7 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
     else:
         print("ℹ️ solucionario no enviado (configuración del quiz)")
         
-    return buffer
+    return None
 
 from flask import request, jsonify
 
