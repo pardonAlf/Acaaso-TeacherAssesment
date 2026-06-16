@@ -3083,11 +3083,14 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
                 filename=f"reporte_{alumno_id}.pdf")
 
     if enviar_solucionario:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(EMAIL_REMITENTE, EMAIL_PASSWORD)
-            smtp.send_message(msg)
+        try:
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=10) as smtp:
+                smtp.login(EMAIL_REMITENTE, EMAIL_PASSWORD)
+                smtp.send_message(msg)
 
-        print("✅ correo enviado en background")
+            print("✅ correo enviado en background")
+        except Exception as e:
+            print("❌ ERROR SMTP:", str(e))    
     else:
         print("ℹ️ solucionario no enviado (configuración del quiz)")
         
