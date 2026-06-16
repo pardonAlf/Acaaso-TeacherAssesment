@@ -1901,32 +1901,42 @@ def guardar_respuestas():
         "nota": nota
     })
     
+    
 @app.route('/enviar_reporte_manual', methods=['POST'])
 def enviar_reporte_manual():
 
-    data = request.get_json()
+    try:
+        data = request.get_json()
 
-    alumno_id = data['alumno_id']
-    quiz_id = data['quiz_id']
-    intento_id = data['intento_id']
+        alumno_id = data['alumno_id']
+        quiz_id = data['quiz_id']
+        intento_id = data['intento_id']
 
-    examen = obtener_examen_alumno(alumno_id, quiz_id, intento_id)
+        print("📩 Enviando reporte:", alumno_id, quiz_id, intento_id)
 
-    fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+        examen = obtener_examen_alumno(alumno_id, quiz_id, intento_id)
 
-    generar_y_enviar_reporte(
-        examen["detalle"],
-        examen["nota"],
-        examen["correo"],
-        examen["nombre"],
-        alumno_id,
-        examen["titulo"],
-        examen["dni"],
-        fecha,
-        True
-    )
+        print("📊 EXAMEN:", examen)
 
-    return jsonify({"status": "ok"})
+        fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+        generar_y_enviar_reporte(
+            examen["detalle"],
+            examen["nota"],
+            examen["correo"],
+            examen["nombre"],
+            alumno_id,
+            examen["titulo"],
+            examen["dni"],
+            fecha,
+            True
+        )
+
+        return jsonify({"status": "ok"})
+
+    except Exception as e:
+        print("❌ ERROR REAL:", str(e))
+        return jsonify({"error": str(e)}), 500
     
 @app.route('/exportar_quiz_excel/<int:quiz_id>')
 def exportar_quiz_excel(quiz_id):
