@@ -1905,18 +1905,14 @@ def guardar_respuestas():
 @app.route('/enviar_reporte_manual', methods=['POST'])
 def enviar_reporte_manual():
 
+    data = request.get_json()
+
+    alumno_id = data['alumno_id']
+    quiz_id = data['quiz_id']
+    intento_id = data['intento_id']
+
     try:
-        data = request.get_json()
-
-        alumno_id = data['alumno_id']
-        quiz_id = data['quiz_id']
-        intento_id = data['intento_id']
-
-        print("📩 Enviando reporte:", alumno_id, quiz_id, intento_id)
-
         examen = obtener_examen_alumno(alumno_id, quiz_id, intento_id)
-
-        print("📊 EXAMEN:", examen)
 
         fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
 
@@ -1935,8 +1931,10 @@ def enviar_reporte_manual():
         return jsonify({"status": "ok"})
 
     except Exception as e:
-        print("❌ ERROR REAL:", str(e))
-        return jsonify({"error": str(e)}), 500
+        print("❌ ERROR INTERNO:", str(e))
+
+        # 👇 ESTO ES CLAVE
+        return jsonify({"status": "error", "mensaje": str(e)})
     
 @app.route('/exportar_quiz_excel/<int:quiz_id>')
 def exportar_quiz_excel(quiz_id):
