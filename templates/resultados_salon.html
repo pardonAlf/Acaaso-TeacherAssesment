@@ -381,9 +381,16 @@ function confirmarEnvio() {
             intento_id: intentoSeleccionado
         })
     })
-    .then(r => r.json())
-    .then(() => {
+    .then(async r => {
+        console.log("STATUS:", r.status);   // 👈 agregar
+        const data = await r.json().catch(()=>null);
+        console.log("RESPONSE:", data);     // 👈 agregar
 
+        if (!r.ok) throw new Error("Error backend");
+
+        return data;
+    })
+    .then(() => {
         clearInterval(intervalo);
         barra.style.width = "100%";
 
@@ -392,16 +399,15 @@ function confirmarEnvio() {
             barra.style.width = "0%";
             alert("✔ Correo enviado correctamente");
         }, 600);
-
     })
-    .catch(() => {
+    .catch((e) => {
+        console.error("ERROR FETCH:", e);  // 👈 agregar
 
         clearInterval(intervalo);
         overlay.style.display = "none";
         barra.style.width = "0%";
 
         alert("❌ Error al enviar el correo");
-
     });
 
 }
