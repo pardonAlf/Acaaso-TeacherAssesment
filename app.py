@@ -3102,11 +3102,11 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
                         <!-- HEADER -->
                         <div style="text-align:center; padding:20px; background:#0d47a1;">
                             <span style="
-                                font-size:38px;
+                                font-size:42px;
                                 font-weight:900;
-                                color:#4fc3f7;
-                                letter-spacing:3px;
-                                font-family: Arial, Helvetica, sans-serif;
+                                color:#29b6f6;
+                                letter-spacing:4px;
+                                font-family: Arial Black, Arial, sans-serif;
                             ">
                                 ACAASO
                             </span>
