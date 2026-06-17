@@ -5,7 +5,7 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Image
 from datetime import datetime
-import smtplib
+ 
 from email.message import EmailMessage
 import psycopg2
 from flask import send_file
@@ -25,6 +25,9 @@ from dotenv import load_dotenv
 import os
 from flask import make_response
 load_dotenv("llave.env")
+import resend
+
+resend.api_key = "re_Ldk95Lwd_CjWmmK3PcUzbioT4wUfiTz2R"
  
 from openai import OpenAI
 client = OpenAI()
@@ -2974,24 +2977,34 @@ def eliminar_quiz(quiz_id):
 
     return redirect(url_for('dashboard_profesor'))
 
-
-
 def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, titulo_quiz, dni, fecha_hora, enviar_solucionario):
     
-    from io import BytesIO
+    import os
+    import base64
+    import resend
+
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import letter
-    import smtplib
-    from email.message import EmailMessage
+
     print("🔥 entrando a generar_y_enviar_reporte")
-    ruta_pdf = f"/tmp/reporte_{alumno_id}.pdf"
+
+    # 📁 Ruta compatible local + Render
+    if os.name == "nt":
+        ruta_pdf = f"reporte_{alumno_id}.pdf"
+    else:
+        ruta_pdf = f"/tmp/reporte_{alumno_id}.pdf"
+
     doc = SimpleDocTemplate(ruta_pdf, pagesize=letter)
     styles = getSampleStyleSheet()
     elements = []
 
-    logo = Image("static/img/logo.png", width=80, height=50)
+    # 🔹 Logo (por si falla en Render)
+    try:
+        logo = Image("static/img/logo.png", width=80, height=50)
+    except:
+        logo = Paragraph("ACAASO", styles['Normal'])
 
     info = [[logo, Paragraph(f"""
     <b>ACAASO</b><br/>
@@ -3017,7 +3030,7 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
     elements.append(Spacer(1, 10))
     elements.append(Paragraph(f"<b>Nota final: {nota}</b>", styles['Heading2']))
     elements.append(Spacer(1, 10))
-    
+
     letras = ['a', 'b', 'c', 'd', 'e']
 
     for i, item in enumerate(detalle, start=1):
@@ -3033,13 +3046,10 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
 
             if op["correcta"] and op["marcada"]:
                 texto = f'<font color="green">({letra}) ✅ {texto_base}</font>'
-
             elif not op["correcta"] and op["marcada"]:
                 texto = f'<font color="red">({letra}) ❌ {texto_base}</font>'
-
             elif op["correcta"]:
                 texto = f'<font color="green">({letra}) ✔ {texto_base}</font>'
-
             else:
                 texto = f'({letra}) {texto_base}'
 
@@ -3061,42 +3071,112 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
         elements.append(tabla)
         elements.append(Spacer(1, 10))
 
-    doc.build(elements)
+    # 🔥 Generar PDF
+    try:
+        doc.build(elements)
+        print("✅ PDF generado")
+    except Exception as e:
+        print("❌ ERROR GENERANDO PDF:", str(e))
+        return
 
-    msg = EmailMessage()
-    msg['Subject'] = 'Resultado de tu Quiz'
-    msg['From'] = "ACAASO <pardoalf@gmail.com>"
-    msg['To'] = correo
-
-    msg.set_content(f"""
-    Hola {nombre_completo},
-
-    Tu nota final es: {nota}
-    """)
-    
     print("VALOR enviar_solucionario:", enviar_solucionario)
-    if enviar_solucionario:
-        with open(ruta_pdf, "rb") as f:
-            msg.add_attachment(f.read(),
-                maintype='application',
-                subtype='pdf',
-                filename=f"reporte_{alumno_id}.pdf")
 
     if enviar_solucionario:
         try:
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=10) as smtp:
-                smtp.login(EMAIL_REMITENTE, EMAIL_PASSWORD)
-                smtp.send_message(msg)
+            # 📎 Leer PDF y convertir a base64
+            with open(ruta_pdf, "rb") as f:
+                pdf_bytes = f.read()
 
-            print("✅ correo enviado en background")
+            pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
+
+            # 📧 Enviar con Resend
+            resend.Emails.send({
+                "from": "ACAASO <pardoalf@acaaso.com>",
+                "to": correo,
+                "subject": "Resultado de tu Quiz",
+                "html": f"""
+                <div style="font-family: Arial, sans-serif; background-color:#f4f6f8; padding:20px;">
+                    
+                    <div style="max-width:600px; margin:auto; background:white; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                        
+                        <!-- HEADER -->
+                        <div style="text-align:center; padding:20px; background:#0d47a1;">
+                            <span style="
+                                font-size:38px;
+                                font-weight:900;
+                                color:#4fc3f7;
+                                letter-spacing:3px;
+                                font-family: Arial, Helvetica, sans-serif;
+                            ">
+                                ACAASO
+                            </span>
+                        </div>
+
+                        <!-- BODY -->
+                        <div style="padding:25px; color:#333;">
+                            
+                            <p style="font-size:16px;">
+                                Estimado(a) <b>{nombre_completo}</b>,
+                            </p>
+
+                            <p>
+                                ACAASO Assessment le informa que ya se encuentra disponible el resultado de su evaluación.
+                            </p>
+
+                            <div style="background:#f1f5fb; padding:15px; border-radius:6px; margin:20px 0;">
+                                <p style="margin:5px 0;"><b>Quiz:</b> {titulo_quiz}</p>
+                                <p style="margin:5px 0;"><b>Fecha:</b> {fecha_hora}</p>
+                            </div>
+
+                            <div style="text-align:center; margin:25px 0;">
+                                <p style="margin-bottom:5px;">Su nota final es:</p>
+                                <span style="font-size:28px; font-weight:bold; color:#0d47a1;">
+                                    {nota}
+                                </span>
+                            </div>
+
+                            <p>
+                                A continuación, se adjunta el reporte detallado de su evaluación para su revisión.
+                            </p>
+
+                            <p style="margin-top:30px;">
+                                Cordial saludo,<br>
+                                <b>ACAASO Assessment</b>
+                            </p>
+
+                        </div>
+
+                        <!-- FOOTER -->
+                        <div style="background:#f4f6f8; padding:15px; text-align:center; font-size:12px; color:#777;">
+                            © {fecha_hora[:4]} ACAASO - Todos los derechos reservados
+                        </div>
+
+                    </div>
+
+                </div>
+                """,
+                "attachments": [
+                    {
+                        "filename": f"reporte_{alumno_id}.pdf",
+                        "content": pdf_base64
+                    }
+                ]
+            })
+
+            print("✅ correo enviado con Resend")
+
+            # 🧹 limpiar archivo
+            try:
+                os.remove(ruta_pdf)
+            except:
+                pass
+
         except Exception as e:
-            print("❌ ERROR SMTP:", str(e))    
+            print("❌ ERROR RESEND:", str(e))
     else:
-        print("ℹ️ solucionario no enviado (configuración del quiz)")
-        
-    return None
+        print("ℹ️ solucionario no enviado")
 
-from flask import request, jsonify
+
 
 
 @app.route('/enviar_codigo_quiz', methods=['POST'])
@@ -3157,37 +3237,39 @@ def endpoint_enviar_codigo_quiz():
     
 def enviar_codigo_quiz(correo, nombre_completo, titulo_quiz, codigo_quiz):
     
-    import smtplib
-    from email.message import EmailMessage
+    import resend
 
-    msg = EmailMessage()
-    msg['Subject'] = 'Acceso a evaluación – ACAASO Assessment'
-    msg['From'] = "ACAASO <pardoalf@gmail.com>"
-    msg['To'] = correo
+    try:
+        resend.Emails.send({
+            "from": "ACAASO <pardoalf@acaaso.com>",
+            "to": correo,
+            "subject": "Acceso a evaluación – ACAASO Assessment",
+            "html": f"""
+                <p>Hola {nombre_completo},</p>
 
-    msg.set_content(f"""
-Hola {nombre_completo},
+                <p>Te informamos que tienes una evaluación disponible en la plataforma <b>ACAASO Assessment</b>.</p>
 
-Te informamos que tienes una evaluación disponible en la plataforma ACAASO Assessment.
+                <p><b>Detalles del quiz:</b></p>
+                <ul>
+                    <li><b>Título:</b> {titulo_quiz}</li>
+                    <li><b>Código de acceso:</b> <span style="font-size:18px;"><b>{codigo_quiz}</b></span></li>
+                </ul>
 
-Detalles del quiz:
-- Título: {titulo_quiz}
-- Código de acceso: {codigo_quiz}
+                <p><b>Instrucciones:</b></p>
+                <ol>
+                    <li>Ingresa a la plataforma.</li>
+                    <li>Introduce el código.</li>
+                    <li>Resuelve el quiz.</li>
+                </ol>
 
-Instrucciones:
-1. Ingresa a la plataforma.
-2. Introduce el código.
-3. Resuelve el quiz.
+                <p>Atentamente,<br>ACAASO Assessment</p>
+            """
+        })
 
-Atentamente,
-ACAASO Assessment
-""")
+        print(f"✅ Código enviado con Resend a {correo}")
 
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login(EMAIL_REMITENTE, EMAIL_PASSWORD)
-        smtp.send_message(msg)
-
-    print(f"✅ Código enviado a {correo}")
+    except Exception as e:
+        print("❌ ERROR RESEND:", str(e))
 #=======================================================
 #
 # PROFESOR
