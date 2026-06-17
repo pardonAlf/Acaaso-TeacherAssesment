@@ -2605,11 +2605,11 @@ def ver_resultados(quiz_id):
     top_puntajes = [r[3] for r in top]
 
     # 🔥 2. APROBADOS VS DESAPROBADOS
-    Excelente = sum(1 for r in resultados if r[5] >=18)
-    MuyBien = sum(1 for r in resultados if r[5] <18 and r[5]>=16)
-    Bien = sum(1 for r in resultados if r[5] <16 and r[5]>=13)
-    Regular =sum(1 for r in resultados if r[5] <13 and r[5]>=11)
-    Mal =sum(1 for r in resultados if r[5] <11)
+    Excelente = sum(1 for r in resultados if r[6] >=18)
+    MuyBien = sum(1 for r in resultados if r[6] <18 and r[6]>=16)
+    Bien = sum(1 for r in resultados if r[6] <16 and r[6]>=13)
+    Regular =sum(1 for r in resultados if r[6] <13 and r[6]>=11)
+    Mal =sum(1 for r in resultados if r[6] <11)
 
     aprobados_data = [Excelente, MuyBien,Bien,Regular,Mal]
 
@@ -2626,7 +2626,7 @@ def ver_resultados(quiz_id):
 }
 
     for r in resultados:
-        nota = r[5]
+        nota = r[6]
         if nota <= 2:
             rangos["0-2"] += 1
         elif nota <= 5:
@@ -2649,25 +2649,52 @@ def ver_resultados(quiz_id):
 
     # 🔥 4. PREGUNTAS MÁS FALLADAS (simple demo)
     cur.execute("""
-      SELECT 
+        SELECT 
             p.id,
             p.texto,
-            COUNT(*) AS errores
+
+            COUNT(DISTINCT CASE 
+                WHEN o.es_correcta = false THEN r.alumno_id 
+            END) AS alumnos_fallaron,
+
+            COUNT(DISTINCT r.alumno_id) AS total_alumnos,
+
+            ROUND(
+                (
+                    COUNT(DISTINCT CASE 
+                        WHEN o.es_correcta = false THEN r.alumno_id 
+                    END)::decimal
+                    /
+                    NULLIF(COUNT(DISTINCT r.alumno_id), 0)
+                ) * 100
+            ,1) AS porcentaje_error
+
         FROM respuestas_alumno r
         JOIN preguntas p ON r.pregunta_id = p.id
         JOIN opciones o ON r.opcion_id = o.id
-        WHERE o.es_correcta = false
-        AND p.quiz_id = %s
+
+        WHERE p.quiz_id = %s
+
         GROUP BY p.id, p.texto
-        ORDER BY errores DESC
+
+        ORDER BY porcentaje_error DESC
         LIMIT 10;
     """, (quiz_id,))
 
     preguntas = cur.fetchall()
-     
-    preguntas_labels = [f"P{p[0]}" for p in preguntas]
-    preguntas_tooltips = [p[1] for p in preguntas]  # 👈 texto real
-    preguntas_fallos = [p[2] for p in preguntas]
+    preguntas = [p for p in preguntas if p[4] > 0] 
+    preguntas_labels = [(p[1] or "Pregunta")[:30] for p in preguntas]
+    preguntas_tooltips = [p[1] for p in preguntas]
+    preguntas_fallos = [float(p[4]) for p in preguntas]  # 👈 ahora % no conteo
+    
+    # lista de alumnos
+    promedio = round(
+        sum(r[6] for r in resultados) / len(resultados),
+        2
+    ) if resultados else 0
+    
+    # mayor nota
+    mayor_nota = max(r[6] for r in resultados) if resultados else 0
     
     cur.execute("SELECT titulo FROM quiz WHERE id = %s", (quiz_id,))
     resultado = cur.fetchone()
@@ -2687,6 +2714,14 @@ def ver_resultados(quiz_id):
     intentos_por_alumno = cur.fetchall()
 
     intentos_dict = {row[0]: row[1] for row in intentos_por_alumno}
+    
+    cur.execute("""
+        SELECT COUNT(*) 
+        FROM preguntas 
+        WHERE quiz_id = %s
+    """, (quiz_id,))
+
+    total_preguntas = cur.fetchone()[0]
 
     cur.close()
     conn.close()
@@ -2703,12 +2738,14 @@ def ver_resultados(quiz_id):
 
         notas_labels=notas_labels,
         notas_data=notas_data,
-
+        total_preguntas=total_preguntas,
         preguntas_labels=preguntas_labels,
         preguntas_fallos=preguntas_fallos,
         preguntas_tooltips=preguntas_tooltips,
         intentos=intentos_dict,
-        titulo_quiz=titulo_quiz
+        titulo_quiz=titulo_quiz,
+        promedio=promedio ,
+        mayor_nota=mayor_nota
     )
     
     

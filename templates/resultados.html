@@ -3,505 +3,483 @@
 <head>
     <meta charset="UTF-8">
     <title>Resultados</title>
+
+    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <style>
-       
-        body {  
-        font-size: 14px;
-        }
         body {
-        font-family: 'Inter', system-ui, sans-serif;
-        }
-        body {
-        background: #d2dae9; /* gris sólido elegante */
-        }
-        body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.02);
-        pointer-events: none;
-        }
-
-        .contenedor {
-            max-width: 1200px;
-            margin: auto;
-        }
-        .container-fluid {
-        background: #d2dae9; 
-        margin-top: 20px;
-        padding-left: 40px;
-        padding-right: 40px;
-        }
-
-        .card {
-        background: #ffffff;
-        border-radius: 14px;
-        border: 1px solid #e2e8f0; /* 👈 esto evita que desaparezca */
-        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-        }
-
-        .card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-        }
-
-        .titulo {
-            font-size: 18px;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-       /* TABLA PRO HD */
-        .table {
-        background: #ffffff;
-        border-radius: 10px;
-        overflow: hidden;
-        font-size: 12.5px; /* 👈 más compacto */
+            background: radial-gradient(circle at top, #0f172a, #020617);
+            color: #e2e8f0;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 30px;
         }
 
         /* HEADER */
-        .table th {
-        background-color: #e5e7eb !important; /* 👈 gris más oscuro */
-        color: #374151;
-        font-weight: 600;
-        border-bottom: 2px solid #cbd5e1;
-        padding: 6px 8px; /* 👈 más compacto */
+        .title {
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
         }
 
-        /* CELDAS */
-        .table td {
-        color: #111827;
-        border-bottom: 1px solid #d1d5db; /* 👈 líneas visibles */
-        padding: 5px 8px; /* 👈 filas más pegadas */
-        line-height: 1.2; /* 👈 compacta */
+        /* CARDS (UNIFICADO) */
+        .card-modern {
+            background: linear-gradient(
+                145deg,
+                rgba(255,255,255,0.05),
+                rgba(255,255,255,0.02)
+            );
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 18px;
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            transition: all 0.25s ease;
+            box-shadow: 
+                0 10px 30px rgba(0,0,0,0.4),
+                inset 0 1px 0 rgba(255,255,255,0.05);
         }
 
-        /* FILAS ALTERNAS (MUY IMPORTANTE EN 4K) */
-        .table tbody tr:nth-child(even) {
-        background-color: #f3f4f6; /* 👈 gris más marcado */
+        .card-modern:hover {
+            transform: translateY(-6px) scale(1.01);
+            border-color: rgba(255,255,255,0.15);
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.08);
         }
 
-        /* HOVER MÁS FUERTE */
+        /* KPI */
+        .card-modern h2 {
+            font-size: 30px;
+            font-weight: 700;
+            margin: 4px 0 0 0;
+        }
+
+        .card-modern .text-muted {
+            font-size: 13px;
+            color: #94a3b8 !important;
+        }
+
+        /* TITULOS DE GRAFICOS */
+        .card-modern h5 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #cbd5f5;
+        }
+
+        /* ICONO KPI */
+        .card-modern div[style*="width:45px"] {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        /* ESPACIADO */
+        .row.g-4 {
+            margin-bottom: 10px;
+        }
+
+        /* TABLA */
+        .table {
+            color: #e2e8f0;
+        }
+
+        .table thead {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .table tbody tr {
+            transition: 0.2s;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
         .table tbody tr:hover {
-        background-color: #dbeafe;
-        }
-        .badge {
-            font-size: 12px;
-            padding: 4px 8px;
+            background: rgba(255,255,255,0.05);
         }
 
-        .nota-alta {
-        background-color: #dcfce7;
-        color: #166534;
+        .table-active {
+            background: rgba(59,130,246,0.3) !important;
         }
 
-        .nota-media {
-        background-color: #fef9c3;
-        color: #854d0e;
+        /* BOTONES */
+        .btn {
+            border-radius: 10px;
+            padding: 6px 12px;
         }
 
-        .nota-baja {
-        background-color: #fee2e2;
-        color: #991b1b;
+        .btn-light {
+            background: linear-gradient(135deg, #ffffff, #e5e7eb);
+            border: none;
+            color: black;
+            font-weight: 500;
         }
 
-         
-        .row > div {
-        margin-bottom: 20px;
+        .btn-outline-light {
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
-        h6 {
-        font-weight: 600;
-        color: #374151;
+        /* SCROLL TABLA */
+        .table-responsive {
+            max-height: 400px;
+            overflow-y: auto;
         }
 
-        canvas {
-        margin-top: 10px;
-        }
-        .card canvas {
-        max-height: 220px;
+        .table-responsive::-webkit-scrollbar {
+            width: 6px;
         }
 
-        .col-md-5 .card {
-        height: 100%;
-        }
-
-        /* DESKTOP (normal) */
-        .dashboard-fixed {
-        display: flex;
-        gap: 20px;
-        align-items: stretch;
-        }
-
-        /* IZQUIERDA */
-        .left-panel {
-        width: 35%;
-        min-width: 320px;
-        }
-
-        /* DERECHA */
-        .right-panel {
-        width: 65%;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        }
-
-        /* FILAS DERECHA */
-        .right-top,
-        .right-bottom {
-        display: flex;
-        gap: 15px;
-        }
-
-        .right-top > div,
-        .right-bottom > div {
-        flex: 1;
-        }
-
-        /* 🔥 SOLO en pantallas pequeñas cambia */
-        @media (max-width: 992px) {
-            .dashboard-fixed {
-                flex-direction: column;
-            }
-
-            .left-panel,
-            .right-panel {
-                width: 100%;
-            }
-
-            .right-top,
-            .right-bottom {
-                flex-direction: column;
-            }
-        }
-                
-
-       
-        .card.mb-4 {
-        background: #ffffff;
-        border-radius: 14px;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-        }
-
-        .card.mb-4 h4 {
-        color: #1f2937;
-        font-weight: 600;
-        }
-        .card.mb-4::before {
-        content: "";
-        display: block;
-        height: 4px;
-        background: #2563eb;
-        border-radius: 14px 14px 0 0;
-        }
-        @media (min-resolution: 2dppx) {
-            body {
-                background: linear-gradient(135deg, #728bac, #114180);
-            }
-        }
-        #pdf-content {
-        background: white;
-        }
-
-        @media print {
-
-            body * {
-                visibility: hidden;
-            }
-
-            #pdf-export, #pdf-export * {
-                visibility: visible;
-            }
-
-            #pdf-export {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
-
-        }
-
-       
-        #btnVerQuiz:disabled {
-            background-color: #cfd8dc !important;
-            border-color: #cfd8dc !important;
-            color: #6c757d !important;
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-
-        .table tbody tr.selected td {
-            background-color: #c9dff3 !important;
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
         }
  
-         
     </style>
 </head>
 
 <body>
 
-<div id="pdf-content">
-    
+    <div class="container-fluid">
 
-<div class="container-fluid mt-4">
-    <div class="card mb-4 p-3 d-flex justify-content-between align-items-center" style="flex-direction: row; margin-top:'20px'">   
-        <h4 style="margin:0; font-weight:600; color:#2c3e50;">
-            📊 QUIZ {{ titulo_quiz }}
-        </h4>
-        <div>
-            <button id="btnVerQuiz" 
-                    class="btn btn-sm btn-primary me-2" 
-                    disabled
-                    onclick="verQuizAlumno()">
-                👁 Ver Quiz
-            </button>
-            
-            <button onclick="generarPDF()" class="btn btn-sm btn-outline-primary me-2">
-                📄 PDF
-            </button>
-            <a href="/" class="btn btn-sm btn-outline-secondary">Volver</a>
+        <!-- HEADER -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="title">
+                Resultados
+            </div>
+
+            <div>
+                <button class="btn btn-light btn-sm me-2" onclick="verQuizAlumno()" disabled>
+                    Ver Quiz
+                </button>
+                <button class="btn btn-outline-light btn-sm me-2" onclick="generarPDF()">PDF</button>
+                <a href="/dashboard_profesor" class="btn btn-outline-light btn-sm">Volver</a>
+            </div>
         </div>
-    </div>
-    <div class="dashboard-fixed">
 
-        <!-- IZQUIERDA -->
-        <div class="left-panel">
-            <div class="card p-3 h-100">
+        <!-- etiquetas -->
+       <div class="row g-4 mb-4">
 
-                <!-- HEADER -->
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 style="margin:0;">📊 Lista de alumnos</h6>
-                    <span class="badge bg-secondary">{{ resultados|length }} alumnos</span>
+            <!-- Alumnos -->
+            <div class="col-md-3">
+                <div class="card-modern d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted">Alumnos evaluados</div>
+                        <h2>{{ resultados|length }}</h2>
+                    </div>
+                    <div style="
+                        width:45px;
+                        height:45px;
+                        border-radius:12px;
+                        background: linear-gradient(135deg, #3b82f6, #2563eb);
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:20px;
+                    ">
+                        👥
+                    </div>
                 </div>
+            </div>
 
-                <!-- TABLA -->
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>DNI</th>
-                            <th>Alumno</th>
-                            <th>✔</th>
-                            <th>Total</th>
-                            <th>Nota</th>
-                            <th>Intentos</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for r in resultados %}
-                        <tr class="fila-alumno" data-alumno-id="{{ r[0] }}">
-                            <td>{{ loop.index }}</td>
-                            <td>{{ r[1] }}</td>
-                            <td>{{ r[2] }} {{ r[3] }}</td>
-                            <td>{{ r[4] }}</td>
-                            <td>{{ r[5] }}</td>
-                            <td>
-                                {% if r[6] >= 16 %}
-                                    <span class="badge nota-alta">{{ r[6] }}</span>
-                                {% elif r[6] >= 11 %}
-                                    <span class="badge nota-media">{{ r[6] }}</span>
-                                {% else %}
-                                    <span class="badge nota-baja">{{ r[6] }}</span>
+            <!-- Promedio -->
+            <div class="col-md-3">
+                <div class="card-modern d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted">Promedio</div>
+                        <h2 style="color:
+                                {% if promedio >= 18 %}#22c55e
+                                {% elif promedio >= 16 %}#84cc16
+                                {% elif promedio >= 13 %}#facc15
+                                {% elif promedio >= 11 %}#f59e0b
+                                {% else %}#ef4444
                                 {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge bg-secondary">
-                                    {{ intentos.get(r[0], 1) }}
-                                </span>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-
+                            ">
+                            {{ (promedio / 20 * 100) | round(0) }}%
+                        </h2>
+                    </div>
+                    <div style="
+                        width:45px;
+                        height:45px;
+                        border-radius:12px;
+                        background: linear-gradient(135deg, #22c55e, #16a34a);
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:20px;
+                    ">
+                        📈
+                    </div>
+                </div>
             </div>
+
+            <!-- Mayor nota -->
+            <div class="col-md-3">
+                <div class="card-modern d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted">Mayor nota</div>
+                        <h2 style="
+                            color:
+                            {% if mayor_nota >= 18 %}#22c55e
+                            {% elif mayor_nota >= 16 %}#84cc16
+                            {% elif mayor_nota >= 13 %}#facc15
+                            {% elif mayor_nota >= 11 %}#f59e0b
+                            {% else %}#ef4444
+                            {% endif %}
+                        ">
+                            {{ mayor_nota }}
+                        </h2>
+                    </div>
+                    <div style="
+                        width:45px;
+                        height:45px;
+                        border-radius:12px;
+                        background: linear-gradient(135deg, #a855f7, #7e22ce);
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:20px;
+                    ">
+                        🏆
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preguntas -->
+            <div class="col-md-3">
+                <div class="card-modern d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted">Preguntas</div>
+                        <h2>{{ total_preguntas }}</h2>
+                    </div>
+                    <div style="
+                        width:45px;
+                        height:45px;
+                        border-radius:12px;
+                        background: linear-gradient(135deg, #f59e0b, #d97706);
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:20px;
+                    ">
+                        🧾
+                    </div>
+                </div>
+            </div>
+
         </div>
 
-        <!-- DERECHA -->
-        <div class="right-panel">
+        <div class="row g-4">
 
-            <div class="right-top">
-                <div class="card p-3 w-50">
-                    <h6>Top 10 Alumnos</h6>
-                    <canvas id="graficoTop"></canvas>
-                </div>
+            <!-- Distribución -->
+            <div class="col-md-4">
+                <div class="card-modern">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5>Distribución de puntajes</h5>
 
-                <div class="card p-3 w-50">
-                    <h6>Preguntas más falladas</h6>
-                    <canvas id="graficoPreguntas"></canvas>
-                </div>
-            </div>
+                        <div style="
+                            background: rgba(255,255,255,0.08);
+                            padding: 4px 10px;
+                            border-radius: 8px;
+                            font-size: 12px;
+                            color: #e2e8f0;
+                        ">
+                            {{ resultados|length }} alumnos
+                        </div>
+                    </div>
 
-            <div class="right-bottom">
-                <div class="card p-3 w-50">
-                    <h6>Aprobados vs Desaprobados</h6>
-                    <canvas id="graficoPie"></canvas>
-                </div>
-
-                <div class="card p-3 w-50">
-                    <h6>Distribución de notas</h6>
                     <canvas id="graficoNotas"></canvas>
                 </div>
             </div>
 
+            <!-- Aprobados -->
+            <div class="col-md-4">
+                <div class="card-modern">
+                    <h5 class="mb-3">Aprobados vs Desaprobados</h5>
+
+                    <div class="d-flex align-items-center justify-content-between">
+
+                        <!-- gráfico -->
+                        <div style="width:55%;">
+                            <canvas id="graficoPie"></canvas>
+                        </div>
+
+                        <!-- leyenda -->
+                        <div style="width:40%; font-size:13px;">
+
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Excelente</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width:10px; height:10px; background:#22c55e; border-radius:2px;"></div>
+                                    <span id="l1"></span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Muy Bien</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width:10px; height:10px; background:#4ade80; border-radius:2px;"></div>
+                                    <span id="l2"></span>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Bien</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width:10px; height:10px; background:#facc15; border-radius:2px;"></div>
+                                    <span id="l3"></span>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Regular</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width:10px; height:10px; background:#fb923c; border-radius:2px;"></div>
+                                    <span id="l4"></span>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Mal</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width:10px; height:10px; background:#ef4444; border-radius:2px;"></div>
+                                    <span id="l5"></span>
+                                </div>
+                            </div>
+
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preguntas mas falladas -->
+            <div class="col-md-4">
+                <div class="card-modern">
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5>Preguntas más falladas</h5>
+
+                        <div style="
+                            background: rgba(255,255,255,0.08);
+                            padding: 4px 10px;
+                            border-radius: 8px;
+                            font-size: 12px;
+                        ">
+                            Insights clave
+                        </div>
+                    </div>
+
+                    <canvas id="graficoPreguntas"></canvas>
+
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card-modern">
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5>Lista de alumnos</h5>
+                        <span class="badge bg-light text-dark">{{ resultados|length }} alumnos</span>
+                    </div>
+
+                    <table class="table table-dark table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Alumno</th>
+                                <th>Puntaje</th>
+                                <th>Respuestas Correctas</th>
+                                <th>Nota</th>
+                                <th>Intentos</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in resultados %}
+                            <tr class="fila-alumno" data-alumno-id="{{ r[0] }}">
+                                <td>{{ loop.index }}</td>
+                                <td>{{ r[2] }} {{ r[3] }}</td>
+                                <td>
+                                    <span style="
+                                        font-weight:600;
+                                        color:
+                                        {% if r[6] >= 18 %}#22c55e
+                                        {% elif r[6] >= 16 %}#84cc16
+                                        {% elif r[6] >= 13 %}#facc15
+                                        {% elif r[6] >= 11 %}#f59e0b
+                                        {% else %}#ef4444
+                                        {% endif %}
+                                        ">
+                                        {{ (r[6] / 20 * 100) | round(0) }}%
+                                    </span>
+                                </td>
+                                <td>{{ r[4] }}/{{ r[5] }}</td>
+                                <td>{{ r[6] }}</td>
+                                <td>{{ intentos.get(r[0], 1) }}</td>
+                                <td>
+                                    <span style="
+                                        padding:4px 10px;
+                                        border-radius:8px;
+                                        font-size:12px;
+                                        font-weight:600;
+                                        color:white;
+                                        background:
+                                        {% if r[6] >= 18 %}#22c55e
+                                        {% elif r[6] >= 16 %}#84cc16
+                                        {% elif r[6] >= 13 %}#facc15
+                                        {% elif r[6] >= 11 %}#f59e0b
+                                        {% else %}#ef4444
+                                        {% endif %}
+                                    ">
+                                        {% if r[6] >= 18 %}Excelente
+                                        {% elif r[6] >= 16 %}Muy Bien
+                                        {% elif r[6] >= 13 %}Bien
+                                        {% elif r[6] >= 11 %}Regular
+                                        {% else %}Mal
+                                        {% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
         </div>
 
     </div>
-    
 
-</div>
- 
-<div id="pdf-export" style="
-    display:none;
-    background:white;
-    width:794px;           /* A4 */
-    margin:auto;
-    padding:40px 50px;
-    font-family: Arial;
-">
+<script>
 
-    <!-- 🔹 HEADER -->
-    <div style="
-        display:flex;
-        justify-content:space-between;
-        font-size:12px;
-        color:#6b7280;
-        margin-bottom:10px;
-    ">
-        <div>
-            <strong style="font-size:14px; color:#111827;">ACAASO</strong><br>
-            Sistema de Evaluación
-        </div>
+let filaSeleccionada = null;
+let alumnoSeleccionado = null;
 
-        <div style="text-align:right;">
-            Fecha: {{ now().strftime('%d/%m/%Y') if now else '' }}<br>
-            Reporte académico
-        </div>
-    </div>
+document.querySelectorAll('.fila-alumno').forEach(fila => {
 
-    <hr style="margin:15px 0 25px 0;">
+    fila.addEventListener('click', function () {
 
-    <!-- 🔹 TÍTULO -->
-    <h1 style="
-        text-align:center;
-        font-size:22px;
-        margin-bottom:5px;
-        color:#111827;
-    ">
-        QUIZ {{ titulo_quiz }}
-    </h1>
+        // quitar selección anterior
+        if (filaSeleccionada) {
+            filaSeleccionada.classList.remove('table-active');
+        }
 
-    <p style="
-        text-align:center;
-        font-size:13px;
-        color:#6b7280;
-        margin-bottom:25px;
-    ">
-        Reporte de evaluación
-    </p>
+        // marcar nueva fila
+        this.classList.add('table-active');
+        filaSeleccionada = this;
 
-    <!-- 🔹 TABLA GRANDE (PROTAGONISTA) -->
-    <div style="margin-bottom:40px;">
+        // guardar alumno_id
+        alumnoSeleccionado = this.dataset.alumnoId;
 
-        <table style="
-            width:100%;
-            border-collapse: collapse;
-            border: 1px soldi black;
-            font-size:15px;  /* 👈 MÁS GRANDE */
-        ">
-            <thead>
-                <tr style="background:#9ca3af; color:white;">
-                    <th style="padding:10px; border:1px solid #cbd5e1;">#</th>
-                    <th style="padding:10px; border:1px solid #cbd5e1;">DNI</th>
-                    <th style="padding:10px; border:1px solid #cbd5e1;">Alumno</th>
-                    <th style="padding:10px; border:1px solid #cbd5e1;">Correctas</th>
-                    <th style="padding:10px; border:1px solid #cbd5e1;">Total</th>
-                    <th style="padding:10px; border:1px solid #cbd5e1;">Nota</th>
-                </tr>
-            </thead>
+        // activar botón
+        document.querySelector("button[onclick='verQuizAlumno()']").disabled = false;
 
-            <tbody>
-                {% for r in resultados %}
-                <tr>
-                    <td style="padding:8px; border:1px solid #e5e7eb; text-align:center;">
-                        {{ loop.index }}
-                    </td>
+    });
 
-                    <td style="padding:8px; border:1px solid #e5e7eb;">
-                        {{ r[0] }}
-                    </td>
+});
 
-                    <td style="padding:8px; border:1px solid #e5e7eb;">
-                        {{ r[1] }} {{ r[2] }}
-                    </td>
-
-                    <td style="padding:8px; border:1px solid #e5e7eb; text-align:center;">
-                        {{ r[3] }}
-                    </td>
-
-                    <td style="padding:8px; border:1px solid #e5e7eb; text-align:center;">
-                        {{ r[4] }}
-                    </td>
-
-                    <td style="
-                        padding:8px;
-                        border:1px solid #e5e7eb;
-                        text-align:center;
-                        font-weight:bold;
-                        font-size:15px;
-                        color:#1d4ed8;
-                    ">
-                        {{ r[5] }}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-    </div>
-
-    <!-- 🔹 GRÁFICOS (MÁS COMPACTOS) -->
-    <div>
-
-        <h3 style="
-            text-align:center;
-            font-size:15px;
-            margin-bottom:20px;
-            color:#374151;
-        ">
-            Análisis gráfico
-        </h3>
-
-        <table style="width:100%;">
-            <tr>
-                <td style="padding:10px;">
-                    <img id="pdfTop" style="width:100%;">
-                </td>
-                <td style="padding:10px;">
-                    <img id="pdfPreguntas" style="width:100%;">
-                </td>
-            </tr>
-            <tr>
-                <td style="padding:10px;">
-                    <img id="pdfPie" style="width:100%;">
-                </td>
-                <td style="padding:10px;">
-                    <img id="pdfNotas" style="width:100%;">
-                </td>
-            </tr>
-        </table>
-
-    </div>
-
-</div>
+</script>
 <script>
 
 function verQuizAlumno() {
@@ -514,149 +492,110 @@ function verQuizAlumno() {
 }
 
 </script>
+
 <script>
 
-let filaSeleccionada = null;
-let alumnoSeleccionado = null;
-let intentoSeleccionado = 1;
-const intentosAlumno = {{ intentos | tojson }};
+window.onload = function() {
 
-document.querySelectorAll('.fila-alumno').forEach(fila => {
+    const gridColor = "rgba(255,255,255,0.05)";
+    const textColor = "#94a3b8";
 
-    fila.addEventListener('click', function () {
 
-        // quitar selección anterior
-        if (filaSeleccionada) {
-            filaSeleccionada.classList.remove('selected');
-        }
-
-        // marcar nueva fila
-        this.classList.add('selected');
-        filaSeleccionada = this;
-
-        // guardar alumno_id
-        alumnoSeleccionado = this.dataset.alumnoId;
-
-        // 🔥 NUEVO BLOQUE
-        let totalIntentos = intentosAlumno[alumnoSeleccionado] || 1;
-
-        if (totalIntentos > 1) {
-
-            let opcion = prompt(`Este alumno tiene ${totalIntentos} intentos.\n¿Qué intento deseas ver? (1 - ${totalIntentos})`);
-
-            if (!opcion || opcion < 1 || opcion > totalIntentos) {
-                return;
-            }
-
-            intentoSeleccionado = opcion;
-
-        } else {
-            intentoSeleccionado = 1;
-        }
-
-        // activar botón
-        document.getElementById('btnVerQuiz').disabled = false;
-
-    });
-
-});
-
-</script>
-<script>
-    const topLabels = {{ top_nombres | tojson }};
-    const topData = {{ top_puntajes | tojson }};
- 
-    const coloresAzules = [
-        "#93c5fd",
-        "#60a5fa",
-        "#3b82f6",
-        "#2563eb",
-        "#1d4ed8",
-        "#1e40af",
-        "#1e3a8a",
-        "#172554"
-    ];
-
-    new Chart(document.getElementById('graficoTop'), {
-        type: 'bar',
-        data: {
-            labels: topLabels,
-            datasets: [{
-                label: 'Correctas',
-                data: topData,
-                backgroundColor: coloresAzules
-            }]
-        },
-        options: {
-            indexAxis: 'y'
-        }
-    });
-
+    /*preguntas mas falladas*/
     const preguntasLabels = {{ preguntas_labels | safe }};
     const preguntasData = {{ preguntas_fallos | safe }};
-    const preguntasTooltips = {{ preguntas_tooltips | tojson }};
-
-    const coloresRojos = [
-        "#fca5a5",
-        "#f87171",
-        "#ef4444",
-        "#dc2626",
-        "#b91c1c",
-        "#991b1b",
-        "#7f1d1d",
-        "#450a0a"
-    ];
 
     new Chart(document.getElementById('graficoPreguntas'), {
         type: 'bar',
         data: {
             labels: preguntasLabels,
             datasets: [{
-                label: 'Errores',
                 data: preguntasData,
-                backgroundColor: coloresRojos
+                borderRadius: 6,
+                backgroundColor: preguntasData.map(v => {
+                    if (v >= 7) return "#ef4444"; // 🔴 muchas fallas
+                    if (v >= 4) return "#f59e0b"; // 🟡 medio
+                    return "#22c55e"; // 🟢 pocas fallas
+                })
             }]
         },
         options: {
+            indexAxis: 'y',
             plugins: {
+                legend: {
+                    display: false
+                },
+
                 tooltip: {
                     callbacks: {
-                        title: function(context) {
-                            const index = context[0].dataIndex;
-                            return preguntasTooltips[index]; // 👈 muestra texto real
+
+                        title: function() {
+                            return ""; // ❌ quita la línea de arriba
+                        },
+
+                        label: function(context) {
+                            const i = context.dataIndex;
+                            const texto = {{ preguntas_tooltips | tojson }}[i];
+                            const valor = context.raw;
+
+                            return texto + " → " + valor + "% error";
                         }
                     }
+                }
+
+            },
+            scales: {
+                x: {
+                    ticks: { color: "#94a3b8" },
+                    grid: { color: "rgba(255,255,255,0.05)" }
+                },
+                y: {
+                    ticks: { color: "#94a3b8" },
+                    grid: { display: false }
                 }
             }
         }
     });
 
+
+    // 📊 Aprobados vs Desaprobados
     const aprobadosdata = {{ aprobados_data | safe }};
 
     new Chart(document.getElementById('graficoPie'), {
-        type: 'pie',
+        type: 'doughnut',
         data: {
-            labels: ['Excelente','MuyBien','Bien','Regular','Mal'],
+            labels: ['Excelente','Muy Bien','Bien','Regular','Mal'],
             datasets: [{
                 data: aprobadosdata,
+                borderWidth: 0,
                 backgroundColor: [
-                "#22c55e",  // verde
-                "#34cf15",  // verde
-                "#c9eb0d",  // verde
-                "#f8b90d",  // verde
-                "#ef4444"   // rojo
+                    "#22c55e", // Excelente (18–20) → VERDE
+                    "#84cc16", // Muy bien (16–17)
+                    "#facc15", // Bien (13–15)
+                    "#f59e0b", // Regular (11–12)
+                    "#ef4444"  // Mal (<11) → ROJO
                 ]
             }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
         }
     });
+    // 👉 llenar leyenda personalizada
+    const total = aprobadosdata.reduce((a, b) => a + b, 0);
 
-    const grises = [
-        "#9ca3af",
-        "#6b7280",
-        "#4b5563",
-        "#374151"
-    ];
+    document.getElementById("l1").innerText = Math.round((aprobadosdata[0]/total)*100) + "%";
+    document.getElementById("l2").innerText = Math.round((aprobadosdata[1]/total)*100) + "%";
+    document.getElementById("l3").innerText = Math.round((aprobadosdata[2]/total)*100) + "%";
+    document.getElementById("l4").innerText = Math.round((aprobadosdata[3]/total)*100) + "%";
+    document.getElementById("l5").innerText = Math.round((aprobadosdata[4]/total)*100) + "%";
 
+
+    // 📊 Distribución de notas
     const notasdata = {{ notas_data | safe }};
     const notaslabels = {{ notas_labels | safe }};
 
@@ -665,87 +604,43 @@ document.querySelectorAll('.fila-alumno').forEach(fila => {
         data: {
             labels: notaslabels,
             datasets: [{
-                label: 'Cantidad',
+                label: '',
                 data: notasdata,
-                backgroundColor: grises
+                borderRadius: 6,
+                backgroundColor: notaslabels.map(label => {
+
+                    if (label.includes("18") || label.includes("17")) {
+                        return "#22c55e"; // verde alto
+                    }
+
+                    if (label.includes("14") || label.includes("15") || label.includes("16")) {
+                        return "#84cc16"; // verde medio
+                    }
+
+                    if (label.includes("11") || label.includes("12") || label.includes("13")) {
+                        return "#facc15"; // amarillo
+                    }
+
+                    return "#ef4444"; // rojo bajo
+                })
             }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                y: { ticks: { color: textColor }, grid: { color: gridColor } }
+            }
         }
     });
- 
-</script> 
-<script>
-async function generarPDF() {
 
-    // 🔥 convertir gráficos
-    document.getElementById("pdfTop").src =
-        document.getElementById("graficoTop").toDataURL();
+};
 
-    document.getElementById("pdfPreguntas").src =
-        document.getElementById("graficoPreguntas").toDataURL();
 
-    document.getElementById("pdfPie").src =
-        document.getElementById("graficoPie").toDataURL();
-
-    document.getElementById("pdfNotas").src =
-        document.getElementById("graficoNotas").toDataURL();
-
-    const pdfDiv = document.getElementById("pdf-export");
-    pdfDiv.style.display = "block";
-
-    const canvas = await html2canvas(pdfDiv, { scale: 2 });
-
-    pdfDiv.style.display = "none";
-
-    const imgData = canvas.toDataURL("image/png");
-
-    // 🔥 VISOR (separado del documento)
-    const ventana = window.open("", "_blank");
-
-    ventana.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <style>
-                body {
-                    margin:0;
-                    background:#e5e7eb;
-                    text-align:center;
-                    font-family:Arial;
-                }
-
-                .toolbar {
-                    background:white;
-                    padding:8px;
-                    border-bottom:1px solid #ddd;
-                }
-
-                .paper {
-                    width:794px;
-                    margin:20px auto;
-                    background:white;
-                    padding:20px;
-                    box-shadow:0 10px 30px rgba(0,0,0,0.2);
-                }
-
-                img {
-                    width:100%;
-                }
-            </style>
-        </head>
-        <body>
-
-            <!-- 👇 DOCUMENTO LIMPIO -->
-            <div class="paper">
-                <img src="${imgData}">
-            </div>
-
-        </body>
-        </html>
-    `);
-
-    ventana.document.close();
-}
 </script>
-
 </body>
 </html>

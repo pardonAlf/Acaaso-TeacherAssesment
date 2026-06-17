@@ -547,7 +547,7 @@ function mostrar(seccion, elemento=null) {
     }
 
     // detectar tamaño pantalla
-    let esLaptop = window.innerWidth <= 1400;
+    let esLaptop = window.innerWidth <= 1200;
 
     if (seccion === "crear") {
         if (esLaptop) {
@@ -561,6 +561,13 @@ function mostrar(seccion, elemento=null) {
             "linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), " + fondos[seccion];
     } else {
         fondo.style.backgroundImage = fondos[seccion];
+    }
+    if (seccion === "resultados") {
+        if (esLaptop) {
+            fondo.style.backgroundPosition = "center 40px";
+        } else {
+            fondo.style.backgroundPosition = "center 5px";
+        }
     }
 }
 </script>
