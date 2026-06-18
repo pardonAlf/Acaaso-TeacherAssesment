@@ -25,9 +25,13 @@ from dotenv import load_dotenv
 import os
 from flask import make_response
 load_dotenv("llave.env")
-import resend
+try:
+    import resend
+    resend.api_key = "re_Ldk95Lwd_CjWmmK3PcUzbioT4wUfiTz2R"
+except:
+    resend = None
 
-resend.api_key = "re_Ldk95Lwd_CjWmmK3PcUzbioT4wUfiTz2R"
+
  
 from openai import OpenAI
 client = OpenAI()
@@ -3274,7 +3278,7 @@ def endpoint_enviar_codigo_quiz():
     
 def enviar_codigo_quiz(correo, nombre_completo, titulo_quiz, codigo_quiz):
     
-    import resend
+    #import resend
 
     try:
         resend.Emails.send({
