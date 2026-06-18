@@ -3018,7 +3018,7 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
     
     import os
     import base64
-    import resend
+    #import resend
 
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
     from reportlab.lib.styles import getSampleStyleSheet
