@@ -27,12 +27,16 @@ from flask import make_response
 load_dotenv("llave.env")
 try:
     import resend
-    resend.api_key = "re_Ldk95Lwd_CjWmmK3PcUzbioT4wUfiTz2R"
-except:
+    resend.api_key = os.getenv("RESEND_API_KEY")
+
+    if not resend.api_key:
+        print("❌ RESEND_API_KEY no definida")
+        resend = None
+
+except Exception as e:
+    print("❌ Error importando resend:", str(e))
     resend = None
 
-
- 
 from openai import OpenAI
 client = OpenAI()
 
@@ -344,6 +348,71 @@ def profesores():
 
     return render_template('profesores.html', profesores=profesores)
 
+@app.route('/reporte_alumno/<int:quiz_id>/<int:alumno_id>')
+def reporte_alumno(quiz_id, alumno_id):
+
+    intento = request.args.get('intento', 1)
+
+    examen = obtener_examen_alumno(alumno_id, quiz_id, intento)
+    fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+    # 🔥 generar archivo usando tu función existente
+    generar_y_enviar_reporte(
+        examen["detalle"],
+        examen["nota"],
+        examen["correo"],
+        examen["nombre"],
+        alumno_id,
+        examen["titulo"],
+        examen["dni"],
+        fecha,
+        False  # ❌ no enviar correo
+    )
+
+    import os
+
+    if os.name == "nt":
+        ruta_pdf = f"reporte_{alumno_id}.pdf"
+    else:
+        ruta_pdf = f"/tmp/reporte_{alumno_id}.pdf"
+
+    return send_file(
+        ruta_pdf,
+        as_attachment=True,
+        download_name=f"{examen['nombre']}_reporte.pdf",
+        mimetype='application/pdf'
+    )
+    
+@app.route('/obtener_intentos/<int:alumno_id>/<int:quiz_id>')
+def obtener_intentos(alumno_id, quiz_id):
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT q.id, q.titulo, iq.intento_numero
+        FROM intentos_quiz iq
+        JOIN quiz q ON q.id = iq.quiz_id
+        WHERE iq.alumno_id = %s
+          AND iq.quiz_id = %s
+        ORDER BY iq.intento_numero
+    """, (alumno_id, quiz_id))
+
+    rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    data = [
+        {
+            "quiz_id": r[0],
+            "quiz": r[1],
+            "intento": r[2]
+        }
+        for r in rows
+    ]
+
+    return jsonify(data)
 
 @app.route('/reporte_quiz/<int:quiz_id>')
 def reporte_quiz(quiz_id):
@@ -3122,6 +3191,11 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
 
     print("VALOR enviar_solucionario:", enviar_solucionario)
 
+
+    if resend is None:
+        print("❌ Resend no disponible o sin API key")
+        return
+    
     if enviar_solucionario:
         try:
             # 📎 Leer PDF y convertir a base64
@@ -3217,7 +3291,58 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
     else:
         print("ℹ️ solucionario no enviado")
 
+@app.route('/eliminar_intento', methods=['POST'])
+def eliminar_intento():
 
+    data = request.get_json()
+
+    alumno_id = data['alumno_id']
+    quiz_id = data['quiz_id']
+    intento = int(data['intento'])  # 🔥 importante
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        # 🔍 obtener intento_id real
+        cur.execute("""
+            SELECT id
+            FROM intentos_quiz
+            WHERE alumno_id = %s
+              AND quiz_id = %s
+              AND intento_numero = %s
+        """, (alumno_id, quiz_id, intento))
+
+        row = cur.fetchone()
+
+        if not row:
+            return jsonify({"ok": False, "error": "No encontrado"})
+
+        intento_id = row[0]
+
+        # 🔥 borrar respuestas
+        cur.execute("""
+            DELETE FROM respuestas_alumno
+            WHERE intento_id = %s
+        """, (intento_id,))
+
+        # 🔥 borrar intento
+        cur.execute("""
+            DELETE FROM intentos_quiz
+            WHERE id = %s
+        """, (intento_id,))
+
+        conn.commit()
+
+        return jsonify({"ok": True})
+
+    except Exception as e:
+        print("❌ ERROR eliminar:", str(e))
+        return jsonify({"ok": False, "error": str(e)})
+
+    finally:
+        cur.close()
+        conn.close()
 
 
 @app.route('/enviar_codigo_quiz', methods=['POST'])

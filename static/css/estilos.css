@@ -319,11 +319,6 @@ table.tabla thead th {
     border-top: 1px solid #e5e7eb;
 }
 
-.tabla tr:hover {
-    background: #f1f5f9;
-}
-
-
 /* SOLO afecta tablas dashboard */
 .tabla-dashboard thead th {
     background-color: #6b92e6 !important;
@@ -392,9 +387,7 @@ h3 {
     transition: 0.2s;
 }
 
-.table tbody tr:hover {
-    background: #f8fafc;
-}
+ 
 
 /* celdas */
 .table td {
@@ -763,9 +756,7 @@ Resultados Salon
     transition: all 0.15s ease;
 }
 
-.nota-celda:hover {
-    background-color: #e0edff;
-}
+ 
 
 .nota-celda.activa {
     background-color: #3b82f6 !important;
