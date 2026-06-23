@@ -320,10 +320,21 @@ def dashboard_profesor():
             """, (session['cempre'], session['user_id']))
         
     quizzes = cur.fetchall()
+    
+    cur.execute("""
+        SELECT id
+        FROM cola_ia
+        WHERE estado IN ('pendiente', 'procesando')
+        ORDER BY id DESC
+    """)
+
+    cola = cur.fetchall()
+
+
     cur.close()
     conn.close()
 
-    return render_template('dashboard_profesor.html', quizzes=quizzes)
+    return render_template('dashboard_profesor.html', quizzes=quizzes,cola=cola)
 
 @app.route('/profesores')
 def profesores():
@@ -1113,7 +1124,11 @@ def generar_quiz_ia():
     prompt_usuario = data.get('prompt')
     cantidad = data.get('cantidad')
     tipo = data.get('tipo')
-    print("Cantidad de preguntas: ",cantidad)
+    titulo = data.get("titulo")
+    
+    # 🔥 NUEVO — leer configuración m
+    multiple_intentos = str(data.get("multiple_intentos")).lower() in ["true", "1", "on"] 
+    enviar_solucionario = str(data.get("enviar_solucionario")).lower() in ["true", "1", "on"] 
 
     prompt = f"""
     Genera un quiz basado en esto: {prompt_usuario}
@@ -1145,26 +1160,31 @@ def generar_quiz_ia():
      
     """
 
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
+    conn = get_db_connection()
+    cur = conn.cursor()
 
-    contenido = response.choices[0].message.content
-    print("IA RAW:", contenido)
+    usuario_id = session.get("user_id")
+    usuario = session.get("usuario")
+    cempre = session.get("cempre")
 
-    import json
-    preguntas = json.loads(contenido)
-        # 🔥 FORZAR cantidad exacta
-    try:
-        cantidad_int = int(cantidad)
-        preguntas = preguntas[:cantidad_int]
-    except:
-        pass    
+    cur.execute(""" 
+        INSERT INTO cola_ia ( prompt, cantidad, tipo, estado, usuario_id, 
+                            usuario, cempre, multiple_intentos, enviar_solucionario,titulo ) 
+        VALUES (%s, %s, %s, 'pendiente', %s, %s, %s, %s, %s,%s) 
+        RETURNING id 
+    """, ( 
+        prompt, cantidad, tipo, usuario_id, usuario, 
+        cempre, multiple_intentos, enviar_solucionario,titulo ))
+    cola_id = cur.fetchone()[0]
 
-    return jsonify(preguntas)
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "status": "encolado",
+        "cola_id": cola_id
+    })
 
 @app.route('/procesar_examen', methods=['POST'])
 def procesar_examen():
@@ -1956,12 +1976,17 @@ def guardar_respuestas():
     
 
     row = cur.fetchone()
-    enviar_solucionario = row[0] if row else False
+    valor = row[0] if row else False
+
+    enviar_solucionario = True if valor in [True, 't', 'true', '1', 1] else False
     
     print("DEBUG enviar_solucionario:", enviar_solucionario)
 
     cur.close()
     conn.close()
+    
+    print("DEBUG RAW DB:", valor)
+    print("DEBUG NORMALIZADO:", enviar_solucionario)
 
     # 🚀 BACKGROUND TASK
     threading.Thread(
@@ -3983,17 +4008,28 @@ def mejoras():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT descripcion, usuario, fecha, estado, version, id, tipo
-        FROM mejoras
-        ORDER BY 
-            CASE 
-                WHEN estado = 'nuevo' THEN 1
-                WHEN estado = 'revisado' THEN 2
-                WHEN estado = 'realizado' THEN 3
-            END,
-            fecha DESC
-    """) 
+    if session.get('rol') == 'root':
+        # 🔥 ROOT solo ve enviados
+        cur.execute("""
+            SELECT descripcion, usuario, fecha, estado, version, id, tipo
+            FROM mejoras
+            WHERE estado in ('enviado','revisado','terminado')
+            ORDER BY estado asc,fecha DESC
+        """)
+    else:
+        # 🔥 usuarios normales ven todo
+        cur.execute("""
+            SELECT descripcion, usuario, fecha, estado, version, id, tipo
+            FROM mejoras
+            ORDER BY 
+                CASE 
+                    WHEN estado = 'nuevo' THEN 1
+                    WHEN estado = 'enviado' THEN 2
+                    WHEN estado = 'revisado' THEN 3
+                    WHEN estado = 'terminado' THEN 4
+                END,
+                fecha DESC
+        """)
     mejoras = cur.fetchall()
 
     cur.close()
@@ -4034,22 +4070,60 @@ def guardar_mejora():
 
     if id_mejora and id_mejora.strip() != "":
 
-         # 🔥 obtener estado actual
-        cur.execute("SELECT estado FROM mejoras WHERE id = %s", (id_mejora,))
-        estado_actual = cur.fetchone()[0]
-
+        # 🔍 obtener datos actuales
+        cur.execute("SELECT descripcion, usuario, estado FROM mejoras WHERE id = %s", (id_mejora,))
+        descripcion_actual, usuario_creador, estado_actual = cur.fetchone()
+             
+        # 🔒 bloqueo total si está terminado
+        if estado_actual == 'terminado':
+            cur.close()
+            conn.close()
+            return "No se puede editar un ticket terminado", 403
+        
         # 🔥 si estaba enviado → volver a nuevo
-        nuevo_estado = estado_actual
-        if estado_actual == 'enviado':
-            nuevo_estado = 'nuevo'
+        # 🔥 regla: si el usuario edita su ticket enviado → vuelve a nuevo
+        if estado_actual == 'enviado' and usuario == usuario_creador:
+           nuevo_estado = 'nuevo'
+        else:
+            nuevo_estado = estado_actual
 
-        cur.execute("""
-            UPDATE mejoras
-            SET descripcion = %s,
-                tipo = %s,
-                estado = %s
-            WHERE id = %s
-        """, (descripcion, tipo, nuevo_estado, id_mejora))
+        # 🔥 SI ES ROOT → agrega respuesta, no reemplaza
+        if session.get('rol') == 'root':
+
+            fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+            nueva_descripcion = descripcion_actual + f"""
+            <br><br>
+            <b>Respuesta de Desarrollo - {fecha}</b><br>
+            {descripcion}
+            """
+            cur.execute("""
+                UPDATE mejoras
+                SET descripcion = %s
+                WHERE id = %s
+            """, (nueva_descripcion, id_mejora))
+
+        # 🔥 SI ES USUARIO NORMAL → comportamiento actual
+        else:
+
+            # regla enviado → nuevo
+            if estado_actual == 'enviado' and usuario == usuario_creador:
+                nuevo_estado = 'nuevo'
+            else:
+                nuevo_estado = estado_actual
+
+            cur.execute("""
+                UPDATE mejoras
+                SET descripcion = %s,
+                    tipo = %s,
+                    estado = %s
+                WHERE id = %s
+            """, (descripcion, tipo, nuevo_estado, id_mejora))
+
+
+
+
+
 
         conn.commit()
         cur.close()
@@ -4094,6 +4168,11 @@ def actualizar_mejora():
     # Obtener datos actuales
     cur.execute("SELECT usuario, estado FROM mejoras WHERE id = %s", (id_mejora,))
     fila = cur.fetchone()
+    
+    estados_validos = ['nuevo', 'enviado', 'revisado', 'terminado']
+
+    if estado not in estados_validos:
+        return "Estado inválido", 400
 
     if not fila:
         cur.close()
@@ -4106,7 +4185,9 @@ def actualizar_mejora():
     puede_editar = False
 
     if rol == 'root':
-        puede_editar = True
+        # 🔒 solo puede cambiar desde 'enviado'
+        if estado_actual == 'enviado' and estado in ['revisado', 'terminado']:
+            puede_editar = True
     elif estado_actual == 'nuevo' and usuario_creador == usuario:
         puede_editar = True
 
@@ -4153,6 +4234,12 @@ def eliminar_mejora():
         return "No existe", 404
 
     usuario_creador, estado_actual = fila
+    
+    # 🔒 bloqueo total si está terminado
+    if estado_actual == 'terminado':
+        cur.close()
+        conn.close()
+        return "No se puede eliminar un ticket terminado", 403
 
     # 🔒 reglas (igual que editar)
     puede_eliminar = False

@@ -39,7 +39,7 @@
             border-left: 4px solid #6b7280; /* gris */
         }
 
-        .fila-realizado td:first-child {
+        .fila-terminado td:first-child {
             border-left: 4px solid #22c55e; /* verde */
         }
        .table td, .table th {
@@ -122,6 +122,22 @@
             -webkit-line-clamp: unset;
             max-height: 400px; /* ~20 líneas */
         }
+       
+
+        tr.fila-revisado td {
+            background-color: #84bce4 !important;
+        }
+
+        tr.fila-terminado td {
+            background-color: #6fec79 !important;
+        }
+        tr.fila-revisado td:first-child {
+            border-left: 5px solid #118df3;
+        }
+
+        tr.fila-terminado td:first-child {
+            border-left: 5px solid #258828;
+        }
     </style>
 </head>
 <body>
@@ -162,7 +178,7 @@
                         <option value="nuevo">Nuevo</option>
                         <option value="enviado">Enviado</option>
                         <option value="revisado">Revisado</option>
-                        <option value="realizado">Realizado</option>
+                        <option value="terminado">Terminado</option>
                     </select>
 
                     <input type="text"
@@ -190,9 +206,9 @@
                 <tbody>
                     {% for m in mejoras %}
                         <tr id="fila-{{ m[5] }}" data-estado="{{ m[3] }}" class="
-                            {% if m[3] == 'nuevo' %}table-white fila-nuevo
-                            {% elif m[3] == 'revisado' %}table-secondary fila-revisado
-                            {% elif m[3] == 'realizado' %}table-success fila-realizado
+                            {% if m[3] == 'nuevo' %}fila-nuevo
+                            {% elif m[3] == 'revisado' %}fila-revisado
+                            {% elif m[3] == 'terminado' %}fila-terminado
                             {% endif %}
                         ">
                         <td class="tipo-{{ m[6] }}" style="white-space:nowrap;">
@@ -228,7 +244,7 @@
                                 <select class="form-select form-select-sm" style="width:100%; min-width:130px;" 
                                     onchange="actualizarMejora('{{ m[5] }}', this.value, this.closest('tr').querySelector('.version-input')?.value || '')">
                                     <option value="revisado">Revisado</option>
-                                    <option value="realizado">Realizado</option>
+                                    <option value="terminado">Terminado</option>
                                 </select>
 
                                 {% else %}

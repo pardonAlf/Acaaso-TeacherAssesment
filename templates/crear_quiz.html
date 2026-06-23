@@ -492,7 +492,7 @@ async function ejecutarIA() {
         // 🔹 GENERAR DESDE PROMPT
         if (tipo === "generar_prompt") {
 
-            setLoaderText("Generando preguntas desde prompt...");
+            setLoaderText("Enviando a generación...");
 
             let cantidad = document.getElementById("cantidadIA").value;
             let tipoPreg = document.getElementById("tipoPreguntasIA").value;
@@ -504,6 +504,12 @@ async function ejecutarIA() {
                 return;
             }
 
+            let multiple = document.getElementById("multiple_intentos_panel").checked;
+            let solucionario = document.getElementById("enviar_solucionario_panel").checked;
+
+            console.log("MULTIPLE:", multiple);
+            console.log("SOLUCIONARIO:", solucionario);
+
             let response = await fetch("/generar_quiz_ia", {
                 method: "POST",
                 headers: {
@@ -512,20 +518,30 @@ async function ejecutarIA() {
                 body: JSON.stringify({
                     prompt: prompt,
                     cantidad: cantidad,
-                    tipo: tipoPreg
+                    tipo: tipoPreg,
+                    multiple_intentos: multiple,
+                    enviar_solucionario: solucionario,
+                    titulo: document.getElementById("titulo").value
                 })
             });
+            if (!response.ok) {
+                let txt = await response.text();
+                console.error("ERROR BACKEND:", txt);
+                alert("Error backend, revisa consola");
+                detenerLoader();
+                return;
+            }
 
-            if (!response.ok) throw new Error("Error IA");
+            await response.json();
 
-            let data = await response.json();
-            cargarDesdeIA(data);
+            // 🔥 YA NO ESPERAMOS RESPUESTA
+            window.location.href = "/dashboard_profesor";
         }
 
-        // 🔹 IMPORTAR QUIZ
+        // 🔹 IMPORTAR QUIZ (SE MANTIENE IGUAL)
         else if (tipo === "importar") {
 
-            setLoaderText("Leyendo archivo y convirtiendo preguntas...");
+            setLoaderText("Leyendo archivo...");
 
             let fileInput = document.getElementById("archivoIA_modal");
 
@@ -546,13 +562,15 @@ async function ejecutarIA() {
             if (!response.ok) throw new Error("Error procesando archivo");
 
             let data = await response.json();
+
+            // 🔥 ESTE SÍ SE QUEDA (no usa IA en cola)
             cargarDesdeIA(data);
         }
 
         // 🔹 GENERAR DESDE ARCHIVO
         else if (tipo === "generar_archivo") {
 
-            setLoaderText("Analizando contenido y generando preguntas...");
+            setLoaderText("Enviando archivo a generación...");
 
             let fileInput = document.getElementById("archivoIA_modal");
             let cantidad = document.getElementById("cantidadIA").value;
@@ -582,8 +600,10 @@ async function ejecutarIA() {
 
             if (!response.ok) throw new Error("Error generando desde archivo");
 
-            let data = await response.json();
-            cargarDesdeIA(data);
+            await response.json();
+
+            // 🔥 YA NO ESPERAMOS RESPUESTA
+            window.location.href = "/dashboard_profesor";
         }
 
     } catch (error) {
@@ -591,7 +611,7 @@ async function ejecutarIA() {
         alert("Ocurrió un error con la IA");
     }
 
-    // 🔥 SIEMPRE cerrar loader correctamente
+    // 🔥 cerrar loader (aunque redireccione)
     detenerLoader();
 }
  

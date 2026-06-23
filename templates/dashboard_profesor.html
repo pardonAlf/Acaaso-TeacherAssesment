@@ -47,6 +47,26 @@
                 </thead>
 
                 <tbody>
+                   {% for c in cola %}
+                    <tr style="opacity:0.6;">
+                        <td></td>
+
+                        {% if session['rol'] == 'admin' %}
+                            <td>—</td>
+                            <td>IA</td>
+                            <td>Generando quiz...</td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td><span class="badge bg-warning text-dark">GENERANDO</span></td>
+                        {% else %}
+                            <td>—</td>
+                            <td>Generando quiz...</td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td><span class="badge bg-warning text-dark">GENERANDO</span></td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
                     {% for q in quizzes %}
                     <tr>
                         <td>
