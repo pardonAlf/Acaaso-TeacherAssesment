@@ -160,4 +160,9 @@ def procesar_cola():
 
 
 if __name__ == "__main__":
-    procesar_cola()
+    print("🚀 Worker iniciado...")
+
+    while True:
+        print("🔥 buscando tareas...")
+        procesar_cola()
+        time.sleep(5)
