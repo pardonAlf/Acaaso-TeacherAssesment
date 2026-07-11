@@ -88,19 +88,11 @@
                         style="font-size:18px; font-weight:500;"
                         value="{{ quiz.titulo }}">
 
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" name="multiple_intentos" id="multiple_intentos"
-                            {% if quiz.multiple_intentos %}checked{% endif %}>
-                        <label class="form-check-label" for="multiple_intentos">
-                            Permitir múltiples intentos
-                        </label>
-                        <br>
-                        <label class="form-check-label"  ">
-                            <input class="form-check-input" type="checkbox" id="enviar_solucionario" name="enviar_solucionario"
-                                {% if quiz.enviar_solucionario %}checked{% endif %}>
-                            Enviar solucionario al finalizar
-                        </label>
-                    </div>
+                    <button type="button"
+                            class="btn btn-light btn-sm border"
+                            onclick="abrirConfig()">
+                        ⚙️ Configuración
+                    </button>
 
                     <button type="button" class="btn btn-primary btn-sm" onclick="agregarPregunta()">
                         + Pregunta
@@ -134,6 +126,11 @@
                             </select>
 
                         </div>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                onclick="eliminarPregunta(this, {{ p.id }})">
+                            ✕
+                        </button>
 
                     </div>
 
@@ -143,51 +140,71 @@
                         class="form-control form-control-sm pregunta-texto"
                         value="{{ p.texto }}">
 
+                    <input type="hidden"
+                        name="pregunta_id_{{ num }}"
+                        value="{{ p.id }}">
+
                     <!-- CONTENIDO -->
                     <div id="extra_{{ num }}">
 
-                        {% if p.tipo == 'vf' %}
+                        {% if p.tipo == 'vf' %} 
 
-                            <div class="d-flex gap-2">
+                            {% for op in p.opciones %}
 
-                                <select name="correcta_{{ num }}"
-                                        class="form-select form-select-sm"
-                                        style="width:140px;">
+                                <div class="d-flex align-items-center mb-1">
 
-                                    <option value="Verdadero"
-                                        {% for op in p.opciones %}
-                                            {% if op[0] == 'Verdadero' and op[1] %}selected{% endif %}
-                                        {% endfor %}>
-                                        Verdadero
-                                    </option>
+                                    {% if op[1] == 'Verdadero' %}
+                                        <input type="hidden"
+                                            name="opcion_id_{{ num }}_verdadero"
+                                            value="{{ op[0] }}">
+                                    {% else %}
+                                        <input type="hidden"
+                                            name="opcion_id_{{ num }}_falso"
+                                            value="{{ op[0] }}">
+                                    {% endif %}
 
-                                    <option value="Falso"
-                                        {% for op in p.opciones %}
-                                            {% if op[0] == 'Falso' and op[1] %}selected{% endif %}
-                                        {% endfor %}>
-                                        Falso
-                                    </option>
+                                    <input type="radio"
+                                        name="correcta_{{ num }}"
+                                        value="{{ op[1] }}"
+                                        class="me-2"
+                                        {% if op[2] %}checked{% endif %}>
 
-                                </select>
+                                    <span style="width:18px;font-size:11px;color:#6c757d;">
+                                        {{ "V" if op[1]=="Verdadero" else "F" }}
+                                    </span>
+
+                                    <input type="text"
+                                        class="form-control form-control-sm {% if op[2] %}border-success{% endif %}"
+                                        value="{{ op[1] }}"
+                                        readonly>
+
+                                </div>
+
+                            {% endfor %}
+
+                                <label class="form-label mt-2 mb-1">
+                                    <strong>Explicación:</strong>
+                                </label>
 
                                 <input type="text"
                                     name="explicacion_{{ num }}"
                                     class="form-control form-control-sm"
-                                    placeholder="Explicación"
                                     value="{{ p.explicacion or '' }}">
-
-                            </div>
 
                         {% else %}
 
                             {% for op in p.opciones %}
                             <div class="d-flex align-items-center mb-1">
 
+                                <input type="hidden"
+                                    name="opcion_id_{{ num }}_{{ loop.index }}"
+                                    value="{{ op[0] }}">
+
                                 <input type="radio"
                                     name="correcta_{{ num }}"
-                                    value="{{ op[0] }}"
+                                    value="{{ op[1] }}"
                                     class="me-2"
-                                    {% if op[1] %}checked{% endif %}>
+                                    {% if op[2] %}checked{% endif %}>
 
                                 <span style="width:18px; font-size:11px; color:#6c757d;">
                                     {{ ['A','B','C','D','E'][loop.index0] }}
@@ -195,11 +212,20 @@
 
                                 <input type="text"
                                     name="opcion_{{ num }}_{{ loop.index }}"
-                                    class="form-control form-control-sm {% if op[1] %}border-success{% endif %}"
-                                    value="{{ op[0] }}">
+                                    class="form-control form-control-sm {% if op[2] %}border-success{% endif %}"
+                                    value="{{ op[1] }}">
 
                             </div>
                             {% endfor %}
+                            <label class="form-label mt-2 mb-1">
+                                <strong>Explicación:</strong>
+                            </label>
+
+                            <input type="text"
+                                name="explicacion_{{ num }}"
+                                class="form-control form-control-sm mt-2"
+                                placeholder="Explicación"
+                                value="{{ p.explicacion or '' }}">
 
                         {% endif %}
 
@@ -211,6 +237,10 @@
 
             </div>
 
+            <input type="hidden" name="multiple_intentos" id="multiple_intentos_hidden">
+            <input type="hidden" name="enviar_solucionario" id="enviar_solucionario_hidden">
+            <input type="hidden" name="privado" id="privado_hidden">
+            <input type="hidden" id="config_json_hidden" name="config_json">
             <!-- GUARDAR -->
             <div class="mt-3 text-end">
                 <button class="btn btn-dark btn-sm">Guardar Cambios</button>
@@ -228,17 +258,17 @@
         const div = document.createElement("div");
         div.className = "card mb-3 p-3";
 
-        div.innerHTML = `
-            <label>Pregunta ${contador}</label>
-            <input type="text" name="pregunta_${contador}" class="form-control mb-2">
+       div.innerHTML = `
+        <label>Pregunta ${contador}</label>
+        <input type="text" name="pregunta_${contador}" class="form-control mb-2">
 
-            <select name="tipo_${contador}" class="form-select mb-2" onchange="cambiarTipo(this, ${contador})">
-                <option value="vf">Verdadero/Falso</option>
-                <option value="multiple">Opción múltiple</option>
-            </select>
+        <select name="tipo_${contador}" class="form-select mb-2" onchange="cambiarTipo(this, ${contador})">
+            <option value="vf">Verdadero/Falso</option>
+            <option value="multiple">Opción múltiple</option>
+        </select>
 
-            <div id="extra_${contador}"></div>
-        `;
+        <div id="extra_${contador}"></div>
+    `;
 
         document.getElementById("preguntas").appendChild(div);
         // 🔥 ESTA ES LA CLAVE
@@ -246,16 +276,103 @@
         contador++;
     }
 
+    function eliminarPregunta(boton, preguntaId) {
+
+        if (!confirm("¿Eliminar esta pregunta?")) {
+            return;
+        }
+
+        fetch(`/eliminar_pregunta/${preguntaId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                forzar: false
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+
+            if (data.ok) {
+
+                boton.closest(".pregunta-item").remove();
+
+            } else if (data.requiere_confirmacion) {
+
+                if (confirm(data.mensaje)) {
+
+                    fetch(`/eliminar_pregunta/${preguntaId}`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            forzar: true
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(r2 => {
+                        if (r2.ok) {
+                            boton.closest(".pregunta-item").remove();
+                        } else {
+                            alert(r2.mensaje);
+                        }
+                    });
+
+                }
+
+            } else {
+
+                alert(data.mensaje);
+
+            }
+
+        });
+
+    }
+
     function cambiarTipo(select, num) {
         const div = document.getElementById("extra_" + num);
 
         if (select.value === "vf") {
+
             div.innerHTML = `
-                <select name="correcta_${num}" class="form-select mb-2">
-                    <option value="Verdadero">Verdadero</option>
-                    <option value="Falso">Falso</option>
-                </select>
-                <input type="text" name="explicacion_${num}" class="form-control" placeholder="Explicación">
+                <div class="form-check mb-1">
+
+                    <input class="form-check-input"
+                        type="radio"
+                        name="correcta_${num}"
+                        value="Verdadero"
+                        checked>
+
+                    <label class="form-check-label">
+                        Verdadero
+                    </label>
+
+                </div>
+
+                <div class="form-check mb-2">
+
+                    <input class="form-check-input"
+                        type="radio"
+                        name="correcta_${num}"
+                        value="Falso">
+
+                    <label class="form-check-label">
+                        Falso
+                    </label>
+
+                </div>
+
+                <label class="form-label mb-1">
+                    <strong>Explicación:</strong>
+                </label>
+
+                <input type="text"
+                    name="explicacion_${num}"
+                    class="form-control"
+                    placeholder="Explicación">
             `;
         } else {
             let opciones = "";
@@ -277,7 +394,205 @@
                 div.innerHTML = opciones;
         }
     }
+
+    document.addEventListener("change", function (e) {
+
+        if (e.target.type !== "radio") return;
+
+        const nombre = e.target.name;
+        const radios = document.querySelectorAll(`input[name="${nombre}"]`);
+
+        radios.forEach(r => {
+            const texto = r.closest(".d-flex").querySelector(".form-control");
+            if (texto) {
+                texto.classList.remove("border-success");
+            }
+        });
+
+        const texto = e.target.closest(".d-flex").querySelector(".form-control");
+        if (texto) {
+            texto.classList.add("border-success");
+        }
+
+    });
     </script>
 
+       
+    <div id="overlayConfig" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.4);
+        z-index: 1050;
+        display: none;
+    "></div>
+    <div id="panelConfig" style="
+        position: fixed;
+        top: 0;
+        right: -400px; /* oculto */
+        width: 400px;
+        height: 100%;
+        background: white;
+        border-left: 1px solid #e4e7ec;
+        box-shadow: -5px 0 15px rgba(0,0,0,0.05);
+        z-index: 1051;
+        transition: right 0.3s ease;
+        padding: 16px;
+    ">
+
+        <!-- header -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <b style="font-size:13px;">Configuración</b>
+            <button class="btn btn-sm btn-light" onclick="cerrarConfig()">✕</button>
+        </div>
+
+        <!-- contenido (temporal) -->
+        <div style="font-size:12px;">
+
+            <!-- 1 -->
+            <div class="form-check mb-2">
+                <input class="form-check-input"
+                    type="checkbox"
+                    id="multiple_intentos_panel"
+                    {% if quiz.multiple_intentos %}checked{% endif %}>
+                <label class="form-check-label">Múltiples intentos</label>
+            </div>
+
+            <!-- 2 -->
+            <div class="form-check mb-2">
+                <input class="form-check-input"
+                    type="checkbox"
+                    id="enviar_solucionario_panel"
+                    {% if quiz.enviar_solucionario %}checked{% endif %}>
+                <label class="form-check-label">Enviar solucionario</label>
+            </div>
+
+            <div class="form-check mb-2">
+                <input class="form-check-input"
+                    type="checkbox"
+                    id="privado_panel"
+                    {% if not quiz.publico %}checked{% endif %}>
+                <label class="form-check-label">
+                    Quiz privado
+                </label>
+            </div>
+
+            <hr>
+
+            <!-- 3 -->
+            <div class="mb-2">
+                <select id="tiempo_minutos" class="form-select form-select-sm">
+                    <option value="">Seleccionar minutos</option>
+                   <option value="1"
+                        {% if quiz.config_json.tiempo_minutos == 1 %}selected{% endif %}>
+                        1
+                    </option>
+                    <option value="5"
+                        {% if quiz.config_json.tiempo_minutos ==5 %}selected{% endif %}>
+                       5
+                    </option>
+                    <option value="10"
+                        {% if quiz.config_json.tiempo_minutos == 10 %}selected{% endif %}>
+                        10
+                    </option>
+                    <option value="15"
+                        {% if quiz.config_json.tiempo_minutos == 15 %}selected{% endif %}>
+                        15
+                    </option>
+                    <option value="20"
+                        {% if quiz.config_json.tiempo_minutos == 20 %}selected{% endif %}>
+                        20
+                    </option>
+                    <option value="30"
+                        {% if quiz.config_json.tiempo_minutos == 30 %}selected{% endif %}>
+                        30
+                    </option>
+                    <option value="45"
+                        {% if quiz.config_json.tiempo_minutos == 45 %}selected{% endif %}>
+                        45
+                    </option>
+                    <option value="60"
+                        {% if quiz.config_json.tiempo_minutos == 60 %}selected{% endif %}>
+                        60
+                    </option>
+                </select>
+            </div>
+
+            <hr>
+
+            <!-- 4 -->
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="mantener_ultimo" disabled>
+                <label class="form-check-label">
+                    Mantener último intento <span class="badge-dev">por desarrollar</span>
+                </label>
+            </div>
+
+            <!-- 5 -->
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="mejor_nota" disabled>
+                <label class="form-check-label">
+                    Mantener mejor nota <span class="badge-dev">por desarrollar</span>
+                </label>
+            </div>
+
+            <hr>
+
+            <!-- 6 -->
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="comodin" disabled>
+                <label class="form-check-label">
+                    Activar comodines (3 ayudas) <span class="badge-dev">por desarrollar</span>
+                </label>
+            </div>
+
+            <!-- 🔥 BOTONES -->
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <button class="btn btn-light btn-sm" onclick="cerrarConfig()">Cancelar</button>
+                <button class="btn btn-primary btn-sm" onclick="guardarConfig()">OK</button>
+            </div>
+
+        </div>
+
+    </div>
+    <script>
+    
+    function abrirConfig() {
+        document.getElementById("overlayConfig").style.display = "block";
+        document.getElementById("panelConfig").style.right = "0";
+    }
+
+    function cerrarConfig() {
+        document.getElementById("overlayConfig").style.display = "none";
+        document.getElementById("panelConfig").style.right = "-400px";
+    }
+    function guardarConfig() {
+
+        document.getElementById("multiple_intentos_hidden").value =
+            document.getElementById("multiple_intentos_panel").checked ? "on" : "";
+
+        document.getElementById("enviar_solucionario_hidden").value =
+            document.getElementById("enviar_solucionario_panel").checked ? "on" : "";
+
+        document.getElementById("privado_hidden").value =
+            document.getElementById("privado_panel").checked ? "on" : "";
+
+        let tiempoMinutos = document.getElementById("tiempo_minutos").value;
+
+        let config = {
+            tiempo_minutos: tiempoMinutos === "" ? null : parseInt(tiempoMinutos),
+            comodin: false,
+            modo: "normal"
+        };
+
+        document.getElementById("config_json_hidden").value = JSON.stringify(config);
+
+        cerrarConfig();
+    }
+
+    </script>
+   
 </body>
 </html>

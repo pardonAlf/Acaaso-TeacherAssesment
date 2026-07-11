@@ -5,11 +5,13 @@
 <title>Resolver Quiz</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 <style>
 body {
-    min-height: 100vh;
-    margin: 0;
+    min-height:calc(100vh - 40px);
+    padding:20px;
 
     background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
                 url("{{ url_for('static', filename='img/quiz-acaaso.png') }}");
@@ -63,15 +65,389 @@ body {
     }
 }
 
+ 
+#pantallaInicio{
+
+    min-height:100vh;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    padding:30px;
+
+}
+
+.inicio-card{
+
+    width:650px;
+    max-width:92%;
+    background:white;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+
+.inicio-header{
+    background:linear-gradient(135deg,#062d67,#0c6adf);
+    color:white;
+    text-align:center;
+    padding: 10px;
+}
+
+.inicio-header h1{
+
+    margin:0;
+    font-size:40px;
+    color:#b6c5db;
+    font-weight:700;
+    letter-spacing:3px;
+}
+
+.inicio-header div{
+
+    margin-top:5px;
+
+    opacity:.9;
+
+    letter-spacing:2px;
+
+    text-transform:uppercase;
+
+}
+
+.inicio-body{
+
+    padding:15px;
+
+}
+
+.inicio-icono{
+
+    text-align:center;
+
+    font-size:40px;
+
+    color:#0c6adf;
+
+}
+
+.inicio-subtitulo{  
+
+    text-align:center;
+    color:#7b8794;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:3px;
+    margin-top:6px;
+
+}
+.inicio-titulo {
+
+    display:grid;
+    grid-template-columns: 20% 80%;
+    margin-bottom: 30px;
+
+}
+
+.inicio-titulo .inicio-subtitulo2{
+
+    text-align:center;
+    margin:8px 0 8px;
+    font-size:20px;
+    font-weight:700;
+    color:#17345d;
+    line-height:30px;
+
+}
+
+.inicio-datos{
+
+    display:grid;
+
+    grid-template-columns:repeat(4,1fr);
+
+    gap:10px;
+
+    margin-bottom:20px;
+
+}
+
+.dato{
+
+    border:2px solid #83abd8;
+
+    border-radius:14px;
+
+    padding:6px;
+
+    text-align:center;
+
+}
+
+.dato i{
+    font-size:30px;
+}
+
+.dato-alumno i{
+    color:#2563eb !important;
+}
+
+.dato-preguntas i{
+    color:#16a34a !important;
+}
+
+.dato-tiempo i{
+    color:#ea580c !important;
+}
+
+.dato-intentos i{
+    color:#7c3aed !important;
+}
+
+.dato span{
+
+    display:block;
+
+    margin-top:4px;
+
+    color:#666;
+
+    font-size:13px;
+
+    text-transform:uppercase;
+
+}
+
+.dato b{
+
+    display:block;
+
+    margin-top:5px;
+
+    font-size:15px;
+
+    color:#17345d;
+
+}
+
+.icon1{
+    color:rgb(11, 117, 95);
+}
+
+.inicio-aviso{
+
+    background:#cdd1dd;
+
+    border-left:3px solid #bfc8d4;
+    border-radius: 10px;
+
+    padding:8px;
+
+    margin-bottom:10px;
+
+}
+
+.inicio-aviso b{
+
+    font-size:13px;
+
+    color:#666;
+
+}
+
+.inicio-aviso ul{
+
+    margin-top:5px;
+
+    padding-left:18px;
+
+}
+
+.inicio-aviso li{
+
+    font-size:13px;
+
+    color:#777;
+
+    line-height:15px;
+
+}
+
+#btnComenzar{
+
+    width:100%;
+
+    height:50px;
+
+    font-size:18px;
+
+    font-weight:700;
+     
+
+}
+.pie{
+    color:gray;
+    font-size: 10px;
+    font-weight:bold;
+}
+
+
+@media(max-width:700px){
+
+    .inicio-datos{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .inicio-header h1{
+
+        font-size:38px;
+
+    }
+
+    .inicio-titulo h2{
+
+        font-size:28px;
+
+    }
+    .dato i{
+        font-size:42px;
+        margin-bottom:12px;
+    }
+
+    
+
+}
+
 </style>
 </head>
 
 <body>
 
-<div class="card-quiz">
+<div id="pantallaInicio">
 
-    <h5 id="contador"></h5>
-         
+    <div class="inicio-card">
+
+        <div class="inicio-header">
+
+            <h1>ACAASO</h1>
+
+            <div>Teacher Assessment</div>
+             
+
+        </div>
+
+        <div class="inicio-body">
+
+            
+
+            <div class="inicio-titulo">
+                <div class="inicio-icono">
+                    
+                    <i class="bi bi-file-earmark-text"></i>
+                    <div class="inicio-subtitulo">
+                        EVALUACIÓN
+                    </div>
+                </div>
+
+                <div class="inicio-subtitulo2">
+                    <span style="color:rgb(210, 197, 197)">Título: </span><br>
+                     {{ titulo if titulo else "TÍTULO DEL QUIZ" }}
+                </div>
+
+            </div>
+
+            <div class="inicio-datos">
+
+                <div class="dato dato-alumno">
+
+                    <i class="bi bi-person-circle"></i>
+
+                    <span>Alumno</span>
+
+                    <b>{{ alumno_nombre if alumno_nombre else "Alumno de Prueba" }}</b>
+
+                </div>
+
+                <div class="dato dato-preguntas">
+
+                    <i class="bi bi-patch-question-fill"></i>
+
+                    <span>Preguntas</span>
+
+                    <b>{{ preguntas|length }}</b>
+
+                </div>
+
+                <div class="dato dato-tiempo">
+
+                    <i class="bi bi-hourglass-split"></i>
+
+                    <span>Tiempo</span>
+
+                    <b id="textoTiempo"></b>
+
+                </div>
+
+                <div class="dato dato-intentos">
+
+                    <i class="bi bi-layers-fill"></i>
+
+                    <span>Intentos</span>
+
+                    <b>{{ "Múltiples" if multiple_intentos else "Uno" }}</b>
+
+                </div>
+
+            </div>
+
+            <div class="inicio-aviso">
+
+                <b>Antes de comenzar</b>
+
+                <ul>
+
+                    <li>El tiempo comenzará al presionar <b>Estoy listo</b>.</li>
+
+                    <li>Las preguntas no respondidas serán calificadas como incorrectas.</li>
+
+                    <li>Al finalizar el tiempo el examen será enviado automáticamente.</li>
+
+                </ul>
+
+            </div>
+
+            <button
+                class="btn btn-primary btn-lg"
+                id="btnComenzar">
+
+                <i class="bi bi-play-circle"></i>
+
+                ESTOY LISTO
+
+            </button>
+            <div class="pie">Su programa será guardado automáticamente</div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div id="pantallaQuiz" class="card-quiz"  style="display:none">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+
+        <h5 id="contador" class="mb-0"></h5>
+
+        <h5 id="reloj" class="mb-0 text-danger fw-bold"></h5>
+
+    </div>
+
     <h4 id="pregunta"></h4>
 
     <div id="opciones"></div>
@@ -94,14 +470,51 @@ const alumno_id = {{ alumno_id | default(None) | tojson }};
 const quiz_id = {{ quiz_id | default(None) | tojson }};
 const salon_quiz_id = {{ salon_quiz_id | default(None) | tojson }};
 let preguntas = {{ preguntas | tojson }};
- 
+let quizFinalizado = false; 
+let intento_id=null
 
 let index = 0;
+const configQuiz = {{ config_json | default('{}') | safe }};
+if (configQuiz.tiempo_minutos) {
+
+    document.getElementById("textoTiempo").innerHTML =
+        configQuiz.tiempo_minutos + " minutos";
+
+} else {
+
+    document.getElementById("textoTiempo").innerHTML =
+        "Sin límite";
+
+}
+
+let tiempoLimite = configQuiz?.tiempo_minutos ?? null;
+let segundosRestantes = tiempoLimite ? tiempoLimite * 60 : null;
+let timer = null;
+
+function actualizarReloj() {
+
+    const reloj = document.getElementById("reloj");
+
+    if (segundosRestantes === null) {
+        reloj.innerHTML = "";
+        return;
+    }
+
+    const minutos = Math.floor(segundosRestantes / 60);
+    const segundos = segundosRestantes % 60;
+
+    reloj.innerHTML =
+        `${String(minutos).padStart(2, "0")}:${String(segundos).padStart(2, "0")}`;
+}
+
 let respuestas = {};
+let tiempoInicioPregunta = Date.now();
+let tiempoPorPregunta = {};
  
 
 function cargarPregunta() {
     let p = preguntas[index];
+    tiempoInicioPregunta = Date.now();  
 
     document.getElementById("contador").innerText = 
         "Pregunta " + (index + 1) + " de " + preguntas.length;
@@ -126,149 +539,159 @@ function cargarPregunta() {
     } else {
         document.getElementById("btnSiguiente").innerText = "Siguiente";
     }
+    actualizarReloj();
+}
+function iniciarCronometro() {
 
-    // 🔥 AQUI VA ESTO
-    /*
-    if (index === preguntas.length - 1) {
-        document.body.innerHTML = `
-        <div style="
-            height:100vh;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            background: linear-gradient(135deg, #0f172a, #1e293b);
-            color:white;
-            font-family: 'Segoe UI', sans-serif;
-            flex-direction:column;
-        ">
-            <div style="
-                width:50px;
-                height:50px;
-                border:5px solid #ccc;
-                border-top:5px solid #22c55e;
-                border-radius:50%;
-                animation: spin 1s linear infinite;
-            "></div>
+    if (segundosRestantes === null)
+        return;
 
-            <p style="margin-top:20px; font-size:18px;">
-                Procesando tu evaluación...
-            </p>
-        </div>
+    if (timer)
+        clearInterval(timer);
 
-        <style>
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+    actualizarReloj();
+
+    timer = setInterval(() => {
+
+        segundosRestantes--;
+
+        actualizarReloj();
+
+       if (segundosRestantes <= 0) {
+
+            clearInterval(timer);
+
+            segundosRestantes = 0;
+            actualizarReloj();
+
+            finalizarQuiz();
+
         }
-        </style>
-        `;
-        document.getElementById("btnSiguiente").innerText = "Enviar";
-    } else {
-        document.getElementById("btnSiguiente").innerText = "Siguiente";
-    }
-    */
-    }
 
+    }, 1000);
+}
 function seleccionar(pregunta_id, opcion_id) {
     respuestas[pregunta_id] = opcion_id;
     document.getElementById("btnSiguiente").disabled = false;
 }
 
-document.getElementById("btnSiguiente").addEventListener("click", () => {
+function finalizarQuiz() {
 
-    // 🔥 SI ES LA ÚLTIMA → ENVIAR
-    if (index === preguntas.length - 1) {
+    if (quizFinalizado) return;
+        
+    quizFinalizado = true;
 
-        document.getElementById("btnSiguiente").disabled = true; // 🔥 SOLO AQUÍ
+    document.getElementById("btnSiguiente").disabled = true;
 
-        fetch("/guardar_respuestas", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                alumno_id: alumno_id,
-                salon_quiz_id: salon_quiz_id,
-                intento_id: {{ intento_id }},
-                respuestas: respuestas
-            })
+    fetch("/guardar_respuestas", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            alumno_id: alumno_id,
+            salon_quiz_id: salon_quiz_id,
+            intento_id: intento_id,
+            respuestas: respuestas,
+            preguntas: preguntas.map(p => p.id),
+            tiempo_por_pregunta: tiempoPorPregunta
         })
-        .then(res => res.json())
-        .then(data => {
+    })
+    .then(res => res.json())
+    .then(data => {
 
         const modo = "{{ session.get('modo') }}";
 
         if (modo === "local") {
 
             alert(`Resultado: ${data.correctas}/${data.total} - Nota: ${data.nota}`);
-
-            window.location.href = "/"; // 🔥 vuelve al inicio
+            window.location.href = "/";
 
         } else {
 
             document.body.innerHTML = `
+            <div style="
+                height:60vh;
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                background: linear-gradient(135deg, #0f172a, #1e293b);
+                font-family: 'Segoe UI', sans-serif;
+            ">
                 <div style="
-                    height:60vh;
-                    display:flex;
-                    justify-content:center;
-                    align-items:center;
-                    background: linear-gradient(135deg, #0f172a, #1e293b);
-                    font-family: 'Segoe UI', sans-serif;
+                    background:white;
+                    padding:40px;
+                    border-radius:16px;
+                    text-align:center;
+                    width:350px;
+                    box-shadow:0 10px 30px rgba(0,0,0,0.3);
                 ">
-                    <div style="
-                        background:white;
-                        padding:40px;
-                        border-radius:16px;
-                        text-align:center;
-                        width:350px;
-                        box-shadow:0 10px 30px rgba(0,0,0,0.3);
+                    <h4 style="color:#64748b; margin-bottom:10px;">Resultado</h4>
+
+                    <p style="color:#22c55e; font-size:14px;">
+                        ${data.correctas} / ${data.total} correctas
+                    </p>
+
+                    <h1 style="
+                        font-size:60px;
+                        margin:10px 0;
+                        color:#0f172a;
                     ">
-                        <h4 style="color:#64748b; margin-bottom:10px;">Resultado</h4>
+                        ${data.nota}
+                    </h1>
 
-                        <p style="color:#22c55e; font-size:14px;">
-                            ${data.correctas} / ${data.total} correctas
-                        </p>
+                    <p style="color:#475569; margin-bottom:15px;">
+                        ${getMensaje(data.nota)}
+                    </p>
 
-                        <h1 style="
-                            font-size:60px;
-                            margin:10px 0;
-                            color:#0f172a;
-                        ">
-                            ${data.nota}
-                        </h1>
-
-                        <p style="color:#475569; margin-bottom:15px;">
-                            ${getMensaje(data.nota)}
-                        </p>
-
-                        <button onclick="salir()" style="
-                            margin-top:10px;
-                            padding:10px 20px;
-                            border:none;
-                            border-radius:8px;
-                            background:#22c55e;
-                            color:white;
-                            font-size:16px;
-                            cursor:pointer;
-                        ">
-                            Finalizar
-                        </button>
-                    </div>
+                    <button onclick="salir()" style="
+                        margin-top:10px;
+                        padding:10px 20px;
+                        border:none;
+                        border-radius:8px;
+                        background:#22c55e;
+                        color:white;
+                        font-size:16px;
+                        cursor:pointer;
+                    ">
+                        Finalizar
+                    </button>
                 </div>
-            `;
+            </div>
+        `; 
+
         }
 
-    })
+    });
+
+}
+
+document.getElementById("btnSiguiente").addEventListener("click", () => {
+
+    // ===== Tiempo empleado en la pregunta actual =====
+    const segundos = Math.round((Date.now() - tiempoInicioPregunta) / 1000);
+
+    tiempoPorPregunta[preguntas[index].id] = segundos;
+    if (index === preguntas.length - 1) {
+
+        finalizarQuiz();
+        return;
 
     } else {
-        // 🔥 SI NO → SIGUE
+
         index++;
         cargarPregunta();
+
     }
+    
 
 });
 
+document.getElementById("btnComenzar")
+    .addEventListener("click", comenzarQuiz);
+
 cargarPregunta();
+//iniciarCronometro();
 
 function salir() {
     window.location.href = "about:blank";
@@ -279,7 +702,34 @@ window.onpopstate = function () {
     history.go(1);
 };
 
+
+async function comenzarQuiz() {
+
+    let response = await fetch("/iniciar_quiz", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            quiz_id: quiz_id,
+            alumno_id: alumno_id
+        })
+    });
+
+    let data = await response.json();
+
+    intento_id = data.intento_id;
+
+    document.getElementById("pantallaInicio").style.display = "none";
+    document.getElementById("pantallaQuiz").style.display = "block";
+
+    iniciarCronometro();
+
+}
+
 </script>
+
+
 
 </body>
 </html>

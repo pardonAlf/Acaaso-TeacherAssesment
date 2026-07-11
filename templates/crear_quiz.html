@@ -506,10 +506,21 @@ async function ejecutarIA() {
 
             let multiple = document.getElementById("multiple_intentos_panel").checked;
             let solucionario = document.getElementById("enviar_solucionario_panel").checked;
+            let publico = !document.getElementById("privado_panel").checked;
+
+            let tiempoMinutos = document.getElementById("tiempo_minutos").value;
+
+            let config = {
+                tiempo_minutos: tiempoMinutos === "" ? null : parseInt(tiempoMinutos),
+                comodin: false,
+                modo: "normal"
+            };
 
             console.log("MULTIPLE:", multiple);
             console.log("SOLUCIONARIO:", solucionario);
-
+            console.log("PUBLICO:", publico);
+            console.log("CONFIG:", config);
+         
             let response = await fetch("/generar_quiz_ia", {
                 method: "POST",
                 headers: {
@@ -521,7 +532,9 @@ async function ejecutarIA() {
                     tipo: tipoPreg,
                     multiple_intentos: multiple,
                     enviar_solucionario: solucionario,
-                    titulo: document.getElementById("titulo").value
+                    publico: publico,
+                    titulo: document.getElementById("titulo").value,
+                    config_json: JSON.stringify(config)
                 })
             });
             if (!response.ok) {
@@ -532,10 +545,13 @@ async function ejecutarIA() {
                 return;
             }
 
-            await response.json();
+            let data = await response.json();
 
-            // 🔥 YA NO ESPERAMOS RESPUESTA
-            window.location.href = "/dashboard_profesor";
+            // 🔥 guardar cola_id
+            localStorage.setItem("cola_id", data.cola_id);
+
+            // 🔥 ir al dashboard
+            window.location.href = "/dashboard_profesor?ia=1";
         }
 
         // 🔹 IMPORTAR QUIZ (SE MANTIENE IGUAL)
@@ -554,6 +570,18 @@ async function ejecutarIA() {
             let formData = new FormData();
             formData.append("archivo", fileInput.files[0]);
 
+            formData.append("titulo", document.getElementById("titulo").value);
+
+            formData.append(
+                "multiple_intentos",
+                document.getElementById("multiple_intentos_panel").checked
+            );
+
+            formData.append(
+                "enviar_solucionario",
+                document.getElementById("enviar_solucionario_panel").checked
+            );
+
             let response = await fetch("/procesar_examen", {
                 method: "POST",
                 body: formData
@@ -561,10 +589,13 @@ async function ejecutarIA() {
 
             if (!response.ok) throw new Error("Error procesando archivo");
 
-            let data = await response.json();
+                let data = await response.json();
 
-            // 🔥 ESTE SÍ SE QUEDA (no usa IA en cola)
-            cargarDesdeIA(data);
+                // 🔥 guardar cola_id
+                localStorage.setItem("cola_id", data.cola_id);
+
+                // 🔥 ir al dashboard y dejar que el polling haga el resto
+                window.location.href = "/dashboard_profesor?ia=1";
         }
 
         // 🔹 GENERAR DESDE ARCHIVO
@@ -600,10 +631,12 @@ async function ejecutarIA() {
 
             if (!response.ok) throw new Error("Error generando desde archivo");
 
-            await response.json();
+           let data = await response.json();
 
-            // 🔥 YA NO ESPERAMOS RESPUESTA
-            window.location.href = "/dashboard_profesor";
+            // 🔥 guardar cola_id
+            localStorage.setItem("cola_id", data.cola_id);
+
+            window.location.href = "/dashboard_profesor?ia=1";
         }
 
     } catch (error) {
@@ -882,15 +915,18 @@ function guardarQuiz() {
 
     let multiple = document.getElementById("multiple_intentos_panel").checked;
     let solucionario = document.getElementById("enviar_solucionario_panel").checked;
+    let privado = document.getElementById("privado_panel").checked;
 
     agregarInput(form, "multiple_intentos", multiple ? "true" : "false");
     agregarInput(form, "enviar_solucionario", solucionario ? "true" : "false");
-
+    agregarInput(form, "privado", privado ? "true" : "false");
 
 
     // 🔥 NUEVO
+    let tiempoMinutos = document.getElementById("tiempo_minutos").value;
+
     let config = {
-        tiempo: null,
+        tiempo_minutos: tiempoMinutos === "" ? null : parseInt(tiempoMinutos),
         comodin: false,
         modo: "normal"
     };
@@ -995,6 +1031,14 @@ async function subirExamen() {
     let formData = new FormData();
     formData.append("archivo", fileInput.files[0]);
 
+    formData.append("titulo", document.getElementById("titulo").value);
+
+    formData.append("multiple_intentos",
+        document.getElementById("multiple_intentos_panel").checked);
+
+    formData.append("enviar_solucionario",
+        document.getElementById("enviar_solucionario_panel").checked);
+
     try {
         let response = await fetch("/procesar_examen", {
             method: "POST",
@@ -1095,6 +1139,7 @@ function guardarConfig() {
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <div id="overlayLoader" style="display:none;">
         <div class="loader-box">
             <div id="textoLoader" class="loader-text">Procesando...</div>
@@ -1148,19 +1193,24 @@ function guardarConfig() {
                 <label class="form-check-label">Enviar solucionario</label>
             </div>
 
-            <hr>
-
-            <!-- 3 -->
             <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="tiempo_limitado" disabled>
+                <input class="form-check-input"
+                    type="checkbox"
+                    id="privado_panel"
+                    checked>
                 <label class="form-check-label">
-                    Tiempo limitado <span class="badge-dev">por desarrollar</span>
+                    Quiz privado
                 </label>
             </div>
 
+            <hr>
+
+            <!-- 3 -->
+
             <div class="mb-2">
                 <select id="tiempo_minutos" class="form-select form-select-sm">
-                    <option value="">Seleccionar minutos</option>
+                    <option value="">Sin limite de Tiempo (minutos) </option>
+                    <option>1</option>
                     <option>5</option>
                     <option>10</option>
                     <option>15</option>

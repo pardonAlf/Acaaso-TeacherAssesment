@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet" href="style.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<title>Mis Logros</title>
+<style>
+        *{
+        margin:0;
+        padding:0;
+        box-sizing:border-box;
+        font-family:'Inter',sans-serif;
+        }
+
+    body{
+        background:#f5f8ff;
+        font-family:'Inter',sans-serif;
+        font-size:14px;
+    }
+
+    .layout{
+        display:grid;
+        grid-template-columns:280px 1fr;
+        min-height:100vh;
+    }
+
+    /**************
+    SIDEBAR
+    **************/
+
+    .sidebar{
+        background:white;
+        border-right:1px solid #e9eef8;
+        display:flex;
+        flex-direction:column;
+        width:280px;
+        min-width:280px;
+        padding:24px;
+    }
+    
+
+    .logo{
+        margin-bottom:20px;
+    }
+
+    .logo img{
+        width:80px;
+    }
+
+    .perfil{
+        display:flex;
+        align-items:center;
+        gap:15px;
+        margin-bottom:40px;
+    }
+
+    .perfil img{
+        width:60px;
+        border-radius:50%;
+    }
+
+    .perfil h3{
+        font-size:22px;
+        font-weight:700;
+        color:#0e2254;
+    }
+
+    .perfil span{
+        color:#6d7b9a;
+    }
+
+    nav{
+        display:flex;
+        flex-direction:column;
+        gap:12px;
+    }
+
+    nav a{
+        padding:18px 22px;
+        border-radius:14px;
+        cursor:pointer;
+        font-weight:600;
+        color:#204080;
+        text-decoration:none;
+    }
+
+    nav .activo{
+        background:#0b4fd5;
+        color:white;
+    }
+
+    .logout{
+        margin-top:auto;
+        font-weight:600;
+        color:#274278;
+    }
+
+    #encabezado #logro{
+        font-size: 30px;
+        width: 100%;
+    }
+
+    #encabezado p{
+        font-size: 15px;
+    }
+
+
+
+    /****************
+
+    MAIN
+
+    ****************/
+
+    main{
+        padding:18px 20px;
+    }
+
+    /***************/
+
+    .hero{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin-bottom:20px;
+    }
+
+    .hero h1{
+        font-size:52px;
+        font-weight:800;
+        color:#0d1f56;
+        margin-bottom:10px;
+    }
+
+    .hero p{
+        font-size:15px;
+        color:#5d6c90;
+    }
+
+    .hero img{
+        width:120px;
+    }
+
+    /*******************/
+    #fila1 span{
+        font-size: 20px;
+    }
+
+    /******************/
+
+    .titulo{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin-bottom:15px;
+    }
+
+    .titulo h2{
+        font-size:32px;
+        color:#102054;
+
+    }
+
+    .titulo a{
+        text-decoration:none;
+        color:#1952d7;
+        font-weight:700;
+        font-size: 12px;
+    }
+
+    .titulo img{
+        height: 30px;
+    }
+
+    /******************/
+
+    .cards{
+        display:grid;
+        grid-template-columns:repeat(4,1fr);
+        gap:25px;
+        margin-bottom: 20px;
+    }
+
+    /******************/
+
+    .card{
+        background:white;
+        padding:25px;
+        border-radius:22px;
+        box-shadow:0 10px 35px rgba(0,0,0,.05);
+        height: 240px;
+    }
+
+    .card img{
+        width:75px;
+        margin-bottom:18px;
+
+    }
+
+    .card h3{
+       font-size:23px;
+        color:#14285f;
+        margin-bottom:8px;
+    }
+
+    .card small{
+        display:block;
+        color:#7585a5;
+        margin-bottom:25px;
+    }
+
+    .card-publico{
+        background:white;
+        padding:25px;
+        border-radius:22px;
+        box-shadow:0 10px 35px rgba(0,0,0,.05);
+        height: 210px;
+    }
+
+    .card-publico img{
+        width:75px;
+        margin-bottom:18px;
+    }
+
+    .card-publico h3{
+       font-size:23px;
+        color:#14285f;
+        margin-bottom:8px;
+    }
+
+    .card-publico small{
+        display:block;
+        color:#7585a5;
+        margin-bottom:25px;
+    }
+
+    .nota{
+         
+        padding:8px 15px;
+        border-radius:14px;
+        font-size:20px;
+        font-weight:700;
+        
+
+    }
+
+    .verde{
+        background:#ddf7e5;
+        color:#18a73d;
+
+    }
+
+    .amarillo{
+        background:#fff1d6;
+        color:#e5960d;
+
+    }
+
+    .card p{
+        clear:both;
+        color:#66769a;
+        margin:15px 0;
+
+    }
+
+    .card button{
+        width:100%;
+        padding:10px;
+        border:none;
+        border-radius:12px;
+        background:#2a56ad;
+        font-size:18px;
+        font-weight:700;
+        color:#edeef1;
+        cursor:pointer;
+    }
+
+    .card-publico p{
+        clear:both;
+        color:#66769a;
+        margin:15px 0;
+
+    }
+
+    .card-publico button{
+        width:100%;
+        padding:10px;
+        border:none;
+        border-radius:12px;
+        background:#2aad31;
+        font-size:18px;
+        font-weight:700;
+        color:#edeef1;
+        cursor:pointer;
+    }
+</style>
+
+</head>
+
+<body>
+
+<div class="layout">
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+
+            <img src="static/img/logo.png">
+
+        </div>
+
+        <div class="perfil">
+
+            <img src="static/img/avatar.png">
+
+            <div>
+
+                <h4>Hola, {{ nombre }}</h4>
+
+                <span>🎓 Estudiante</span>
+
+            </div>
+
+        </div>
+
+        <nav>
+
+            <a class="activo">
+                🏆 Logros
+            </a>
+
+            <a>
+                🌎 Quizzes Públicos
+            </a>
+
+        </nav>
+
+        <div class="logout">
+
+            Cerrar sesión
+
+        </div>
+
+    </aside>
+
+
+    <!-- CONTENIDO -->
+
+    <main>
+
+        <section class="hero">
+
+            <div id="encabezado">
+
+                <div id="fila1" style="display:flex">
+                    <span >🏆 </span><div id="logro"> Mis Logros </div> 
+                </div>
+                
+                <p>Aquí puedes ver los quizzes que has completado y tu progreso.</p>
+
+            </div>
+
+            <img src="static/img/trofeo.jpg">
+
+        </section>
+
+
+        <section>
+
+           <div class="titulo">
+
+                <span>
+                    <img src="static/img/quizesCompletados.jpg" style="float:left">
+                    <h3>Quizzes Completados</h3>
+                </span>
+
+                <a href="">Ver todos →</a>
+
+            </div>
+
+            {% if completados %}
+
+            <div class="cards">
+
+                {% for quiz in completados %}
+
+                <div class="card">
+
+                    <div>
+
+                        <img src="{{ url_for('static', filename='img/check.png') }}"
+                            style="float:left; height:55px">
+
+                        <h4>{{ quiz[1] }}</h4>
+
+                        <small>Quiz</small>
+
+                    </div>
+
+                    <div class="nota {% if quiz[2] and quiz[2] >= 14 %}verde{% else %}amarillo{% endif %}">
+
+                        {{ "%.1f"|format(quiz[2]) if quiz[2] is not none else "--" }}
+
+                    </div>
+
+                    <p style="font-size:10px">
+
+                        Completado el
+                        {{ quiz[3].strftime("%d/%m/%Y %H:%M") if quiz[3] else "--" }}
+
+                    </p>
+
+                    <button style="font-size:12px">
+                        Intento {{ quiz[4] }}
+                    </button>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            {% else %}
+
+            <div class="alert alert-info text-center my-4">
+                <strong>🏆 Aún no has completado ningún quiz.</strong><br>
+                Resuelve un quiz público o uno asignado por tu profesor para comenzar a ver tus logros.
+            </div>
+
+            {% endif %}
+
+            {% if publicos %}
+
+<div class="cards">
+
+    {% for quiz in publicos %}
+
+    <div class="card-publico">
+
+        <div>
+
+            <img src="{{ url_for('static', filename='img/check.png') }}"
+                 style="float:left; height:55px">
+
+            <h4>{{ quiz[1] }}</h4>
+
+            <small>Quiz Público</small>
+
+                    </div>
+
+                    <p style="font-size:10px">
+                        Disponible
+                    </p>
+
+                    <button
+                        class="btn btn-success w-100"
+                        style="font-size:12px"
+                        onclick="location.href='/resolver_quiz_publico/{{ quiz[0] }}'">
+
+                        Resolver Quiz
+
+                    </button>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            {% else %}
+
+            <div class="alert alert-warning">
+                No hay quizzes públicos disponibles.
+            </div>
+
+            {% endif %}
+
+        </section>
+
+    </main>
+
+</div>
+
+</body>
+</html>

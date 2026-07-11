@@ -23,6 +23,7 @@ from flask import session, redirect, url_for
 import threading
 from dotenv import load_dotenv
 import os
+import json
 from flask import make_response
 load_dotenv("llave.env")
 try:
@@ -289,14 +290,21 @@ def dashboard_profesor():
                 (select count(distinct p.id)  
                     from preguntas p
                     where p.quiz_id=z.id) AS preguntas,
-                z.codigo 
+                z.codigo,
+                z.publico,
+                COALESCE(
+                    (z.config_json::json->>'tiempo_minutos')::int,
+                    0
+                ) AS tiempo_minutos,
+                z.multiple_intentos,
+                z.enviar_solucionario
                 FROM quiz z
                 INNER JOIN usuarios u on u.id=z.usuario_id
                 LEFT JOIN preguntas p ON p.quiz_id = z.id
                 LEFT JOIN respuestas_alumno r ON r.pregunta_id = p.id
                 WHERE z.estado = 'A'
                 AND z.cempre= %s
-                GROUP BY z.id,u.usuario, z.titulo, z.codigo
+                GROUP BY z.id,u.usuario, z.titulo, z.codigo, z.publico,z.multiple_intentos,z.enviar_solucionario
                 ORDER BY z.id DESC
             """, (session['cempre'], ))
     else:
@@ -308,14 +316,21 @@ def dashboard_profesor():
                 (select count(distinct p.id)  
                     from preguntas p
                     where p.quiz_id=z.id) AS preguntas,
-                z.codigo 
+                z.codigo,
+                z.publico,
+                COALESCE(
+                    (z.config_json::json->>'tiempo_minutos')::int,
+                    0
+                ) AS tiempo_minutos,
+                z.multiple_intentos,
+                z.enviar_solucionario
                 FROM quiz z
                 LEFT JOIN preguntas p ON p.quiz_id = z.id
                 LEFT JOIN respuestas_alumno r ON r.pregunta_id = p.id
                 WHERE z.estado = 'A'
                 AND z.cempre= %s
                 AND z.usuario_id = %s
-                GROUP BY z.id, z.titulo, z.codigo
+                GROUP BY z.id, z.titulo, z.codigo, z.publico,z.multiple_intentos,z.enviar_solucionario
                 ORDER BY z.id DESC
             """, (session['cempre'], session['user_id']))
         
@@ -433,11 +448,17 @@ def reporte_quiz(quiz_id):
 
     # 🔹 obtener preguntas y opciones
     cur.execute("""
-        SELECT p.texto, o.texto, o.es_correcta
+        SELECT
+            p.id,
+            p.texto,
+            p.tipo,
+            p.explicacion,
+            o.texto,
+            o.es_correcta
         FROM preguntas p
         JOIN opciones o ON o.pregunta_id = p.id
         WHERE p.quiz_id = %s
-        ORDER BY p.id
+        ORDER BY p.id, o.id
     """, (quiz_id,))
 
     data = cur.fetchall()
@@ -488,21 +509,33 @@ def reporte_quiz(quiz_id):
     elements.append(Paragraph("<b>SOLUCIONARIO</b>", styles['Title']))
     elements.append(Spacer(1, 10))
 
-    # 🔹 AGRUPAR POR PREGUNTA
+   # 🔹 AGRUPAR POR PREGUNTA
     preguntas = {}
-    for p_texto, o_texto, correcta in data:
-        if p_texto not in preguntas:
-            preguntas[p_texto] = []
-        preguntas[p_texto].append((o_texto, correcta))
 
-    # 🔹 CONTENIDO
-    for i, (pregunta, opciones) in enumerate(preguntas.items(), start=1):
-        elements.append(Paragraph(f"{i}. {pregunta}", styles['Heading3']))
+    for p_id, p_texto, p_tipo, p_explicacion, o_texto, correcta in data:
+
+        if p_id not in preguntas:
+            preguntas[p_id] = {
+                "texto": p_texto,
+                "tipo": p_tipo,
+                "explicacion": p_explicacion,
+                "opciones": []
+            }
+
+        preguntas[p_id]["opciones"].append((o_texto, correcta))
+
+   # 🔹 CONTENIDO
+    for i, pregunta in enumerate(preguntas.values(), start=1):
+
+        elements.append(
+            Paragraph(f"{i}. {pregunta['texto']}", styles['Heading3'])
+        )
         elements.append(Spacer(1, 5))
 
         tabla_data = []
 
-        for op_texto, correcta in opciones:
+        for op_texto, correcta in pregunta["opciones"]:
+
             if correcta:
                 texto = f"✔ {op_texto}"
             else:
@@ -511,12 +544,24 @@ def reporte_quiz(quiz_id):
             tabla_data.append([Paragraph(texto, styles['Normal'])])
 
         tabla = Table(tabla_data)
+
         tabla.setStyle(TableStyle([
             ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
             ('BOX', (0,0), (-1,-1), 1, colors.black),
         ]))
 
         elements.append(tabla)
+
+        # 🔹 EXPLICACIÓN
+        if pregunta["explicacion"]:
+            elements.append(Spacer(1, 4))
+            elements.append(
+                Paragraph(
+                    f"<b>Explicación:</b> {pregunta['explicacion']}",
+                    styles["Normal"]
+                )
+            )
+
         elements.append(Spacer(1, 10))
 
     doc.build(elements)
@@ -525,11 +570,11 @@ def reporte_quiz(quiz_id):
     #return send_file(buffer, as_attachment=False,
     #            download_name="reporte.pdf",
     #            mimetype='application/pdf')
-    
+        
     return send_file(buffer,
-                 as_attachment=False,
-                 download_name=f"{titulo_quiz}.pdf",
-                 mimetype='application/pdf')
+    as_attachment=False,
+    download_name=f"{titulo_quiz}.pdf",
+    mimetype='application/pdf')
 
 @app.route('/alumno')
 def alumno():
@@ -767,19 +812,43 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
     nuevo_intento = ultimo + 1
 
     cur.execute("""
-        INSERT INTO intentos_quiz (alumno_id, quiz_id, intento_numero)
-        VALUES (%s, %s, %s)
+        INSERT INTO intentos_quiz (
+            alumno_id,
+            quiz_id,
+            intento_numero,
+            fecha_inicio
+        )
+        VALUES (
+            %s,
+            %s,
+            %s,
+            NOW()
+        )
         RETURNING id
     """, (alumno_id, quiz_id, nuevo_intento))
 
     intento_id = cur.fetchone()[0]
 
-    # 🔍 obtener quiz_id desde salon_quiz
+    print("INTENTO CREADO:", intento_id)
+
+    conn.commit()
+
+    # 👇 AGREGA ESTO AQUÍ
     cur.execute("""
-        SELECT quiz_id
-        FROM salon_quiz
-        WHERE id = %s 
-    """, (salon_quiz_id,))
+        SELECT id
+        FROM intentos_quiz
+        WHERE id = %s
+    """, (intento_id,))
+
+    print("VERIFICACION:", cur.fetchone())
+
+    # luego continúa con:
+    # obtener preguntas
+    cur.execute("""
+        SELECT id, texto, tipo, explicacion
+        FROM preguntas
+        WHERE quiz_id = %s
+    """, (quiz_id,))
 
     row = cur.fetchone()
 
@@ -1037,6 +1106,8 @@ def crear_quiz():
         usuario = session.get('usuario')
         multiple_intentos = request.form.get('multiple_intentos') in ['true', 'on', '1']
         enviar_solucionario = request.form.get("enviar_solucionario") in ['true', 'on', '1']
+        publico = not (request.form.get("privado") in ['true', 'on', '1'])
+        
         
         if not usuario:
             return redirect('/login')
@@ -1046,8 +1117,8 @@ def crear_quiz():
 
         # crear quiz
         cur.execute(
-            "INSERT INTO quiz (titulo,cempre,usuario_id, usuario, estado, multiple_intentos,enviar_solucionario, config_json) VALUES (%s,%s,%s, %s, %s, %s, %s, %s) RETURNING id",
-            (titulo,session['cempre'],session['user_id'], usuario, 'A', multiple_intentos,enviar_solucionario, config_json)
+            "INSERT INTO quiz (titulo,cempre,usuario_id, usuario, estado, multiple_intentos,enviar_solucionario,publico, config_json) VALUES (%s,%s,%s, %s, %s, %s, %s, %s) RETURNING id",
+            (titulo,session['cempre'],session['user_id'], usuario, 'A', multiple_intentos,enviar_solucionario,publico, config_json)
         )
         quiz_id = cur.fetchone()[0]
         
@@ -1121,17 +1192,34 @@ def crear_quiz():
 @app.route('/generar_quiz_ia', methods=['POST'])
 def generar_quiz_ia():
     data = request.get_json()
+    print("JSON RECIBIDO:", data)
     prompt_usuario = data.get('prompt')
     cantidad = data.get('cantidad')
     tipo = data.get('tipo')
     titulo = data.get("titulo")
+    config_json = data.get("config_json", "{}")
+    origen = data.get('origen', 'prompt')
+    contenido_extra = data.get('contenido_extra')  # aquí irá texto del archivo o quiz
     
     # 🔥 NUEVO — leer configuración m
     multiple_intentos = str(data.get("multiple_intentos")).lower() in ["true", "1", "on"] 
     enviar_solucionario = str(data.get("enviar_solucionario")).lower() in ["true", "1", "on"] 
+    publico = str(data.get("publico")).lower() in ["true", "1", "on"]
+
+    if origen == "prompt":
+        base = prompt_usuario
+
+    elif origen == "archivo":
+        base = f"Basado EXCLUSIVAMENTE en el siguiente texto:\n{contenido_extra}"
+
+    elif origen == "quiz_previo":
+        base = f"Convierte el siguiente contenido en un quiz estructurado con respuestas:\n{contenido_extra}"
+
+    else:
+        base = prompt_usuario
 
     prompt = f"""
-    Genera un quiz basado en esto: {prompt_usuario}
+    {base} 
     
     Genera un quiz con estas condiciones:
     - Cantidad total de preguntas: {cantidad}
@@ -1142,20 +1230,32 @@ def generar_quiz_ia():
       {{
         "tipo": "vf",
         "texto": "...",
-        "correcta": "Verdadero",
+        "correcta": "Verdadero" ,
         "explicacion": "..."
       }},
       {{
         "tipo": "multiple",
         "texto": "...",
-        "opciones": ["A","B","C","D","E"],
+        "opciones": [
+            "opcion 1",
+            "opcion 2",
+            "opcion 3",
+            "opcion 4",
+            "opcion 5"
+        ],
         "correcta": "A",
         "explicacion": "..."
       }}
     ]
+    
+    - Siempre generar exactamente 5 opciones.
+    - El contenido de las opciones debe ser texto real, NO letras.
+    - El campo "correcta" debe contener ÚNICAMENTE una letra: A, B, C, D o E.
+    - Nunca devolver el texto de la respuesta en el campo "correcta".
+    - Nunca devolver dos respuestas correctas.
 
     Genera EXACTAMENTE lo que el usuario pide .
-    la explicacion es un breve refuerzo de por que esa opcion es la verdadera
+    la explicacion es un breve refuerzo de por que la opcion elegida en (opcion) o en (VF) es la correcta
     No expliques nada mas. Solo JSON puro.
      
     """
@@ -1169,12 +1269,15 @@ def generar_quiz_ia():
 
     cur.execute(""" 
         INSERT INTO cola_ia ( prompt, cantidad, tipo, estado, usuario_id, 
-                            usuario, cempre, multiple_intentos, enviar_solucionario,titulo ) 
-        VALUES (%s, %s, %s, 'pendiente', %s, %s, %s, %s, %s,%s) 
+                            usuario, cempre, multiple_intentos, enviar_solucionario, publico,
+                            titulo, origen, contenido_extra,config_json ) 
+        VALUES (%s, %s, %s, 'pendiente', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
         RETURNING id 
     """, ( 
         prompt, cantidad, tipo, usuario_id, usuario, 
-        cempre, multiple_intentos, enviar_solucionario,titulo ))
+        cempre, multiple_intentos, enviar_solucionario, publico,
+        titulo, origen, contenido_extra,config_json
+    ))
     cola_id = cur.fetchone()[0]
 
     conn.commit()
@@ -1189,7 +1292,13 @@ def generar_quiz_ia():
 @app.route('/procesar_examen', methods=['POST'])
 def procesar_examen():
 
-    archivo = request.files.get('archivo')
+    archivo = request.files.get('archivo')  
+    
+    titulo = request.form.get("titulo")
+
+    multiple_intentos = str(request.form.get("multiple_intentos")).lower() in ["true", "1", "on"]
+    enviar_solucionario = str(request.form.get("enviar_solucionario")).lower() in ["true", "1", "on"]
+    publico = str(request.form.get("publico")).lower() in ["true", "1", "on"]
 
     if not archivo:
         return jsonify({"error": "No se envió archivo"}), 400
@@ -1224,35 +1333,59 @@ def procesar_examen():
     No expliques nada. Solo JSON válido.
     No olvidar cada respuesta debe estar precedida con las letras A - E (opcion multiple)
     """
+    conn = get_db_connection()
+    cur = conn.cursor()
 
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
+    usuario_id = session.get("user_id")
+    usuario = session.get("usuario")
+    cempre = session.get("cempre")
 
-    texto = response.choices[0].message.content
+    cur.execute("""
+        INSERT INTO cola_ia (
+            prompt,
+            contenido_extra,
+            origen,
+            estado,
+            usuario_id,
+            usuario,
+            cempre,
+            multiple_intentos,
+            enviar_solucionario,
+            publico,
+            titulo
+        )
+        VALUES (
+            %s, %s, %s, 'pendiente',
+            %s, %s, %s, %s,
+            %s, %s, %s
+        )
+        RETURNING id
+    """, (
+        prompt,
+        contenido,
+        "importar",
+        usuario_id,
+        usuario,
+        cempre,
+        multiple_intentos,
+        enviar_solucionario,
+        publico,
+        titulo
+    ))
 
-    import json
-    # 🔥 limpiar posible basura
-    texto = texto.strip()
+    cola_id = cur.fetchone()[0]
 
-    # si viene con ```json ... ```
-    if texto.startswith("```"):
-        texto = texto.replace("```json", "").replace("```", "").strip()
+    conn.commit()
+    cur.close()
+    conn.close()
 
-    # 🔥 intentar parsear seguro
-    try:
-        preguntas = json.loads(texto)
-    except Exception as e:
-        print("ERROR IA:", texto)
-        return jsonify({
-            "error": "La IA no devolvió JSON válido",
-            "raw": texto
-        }), 500
+    return jsonify({
+        "status": "encolado",
+        "cola_id": cola_id
+    })
+    
 
-    return jsonify(preguntas)
+     
 
 @app.route('/generar_quiz_desde_archivo', methods=['POST'])
 def generar_quiz_desde_archivo():
@@ -1319,21 +1452,43 @@ def generar_quiz_desde_archivo():
     La explicacion es una reseña breve de por que esa opcion es verdader o correcta
     No expliques nada. Solo JSON válido.
     """
+    conn = get_db_connection()
+    cur = conn.cursor()
 
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=[{"role": "user", "content": prompt}]
-    )
+    usuario_id = session.get("user_id")
+    usuario = session.get("usuario")
+    cempre = session.get("cempre")
 
-    texto = response.choices[0].message.content.strip()
+    # puedes ajustar defaults si quieres
+    multiple_intentos = str(request.form.get("multiple_intentos")).lower() in ["true", "1", "on"]
+    enviar_solucionario = str(request.form.get("enviar_solucionario")).lower() in ["true", "1", "on"]
+    publico = str(request.form.get("publico")).lower() in ["true", "1", "on"]
+    titulo = request.form.get("titulo") or "Quiz desde archivo"
 
-    if texto.startswith("```"):
-        texto = texto.replace("```json", "").replace("```", "").strip()
+    cur.execute(""" 
+        INSERT INTO cola_ia (
+            prompt, cantidad, tipo, estado, usuario_id, 
+            usuario, cempre, multiple_intentos, enviar_solucionario, publico,
+            titulo, origen, contenido_extra
+        ) 
+        VALUES (%s, %s, %s, 'pendiente', %s, %s, %s, %s, %s, %s, %s, %s, %s) 
+        RETURNING id 
+    """, ( 
+        prompt, cantidad, tipo, usuario_id, usuario, 
+        cempre, multiple_intentos, enviar_solucionario,publico, 
+        titulo, "archivo", contenido
+    ))
 
-    import json
-    preguntas = json.loads(texto)
+    cola_id = cur.fetchone()[0]
 
-    return jsonify(preguntas)
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "status": "encolado",
+        "cola_id": cola_id
+    })
 
 @app.route('/editar_quiz/<int:quiz_id>', methods=['GET', 'POST'])
 def editar_quiz(quiz_id):
@@ -1346,47 +1501,132 @@ def editar_quiz(quiz_id):
         titulo = request.form['titulo']
         multiple_intentos = request.form.get("multiple_intentos") == "on"
         enviar_solucionario = bool(request.form.get("enviar_solucionario"))
-
+        publico = not (request.form.get("privado") == "on")
+        config_json = request.form.get("config_json")
+        
         # actualizar título
         cur.execute(
-            "UPDATE quiz SET titulo=%s, multiple_intentos=%s, enviar_solucionario=%s WHERE id=%s",
-            (titulo, multiple_intentos, enviar_solucionario, quiz_id)
+            """
+            UPDATE quiz
+            SET titulo=%s,
+                multiple_intentos=%s,
+                enviar_solucionario=%s,
+                publico=%s,
+                config_json=%s
+            WHERE id=%s
+            """,
+            (
+                titulo,
+                multiple_intentos,
+                enviar_solucionario,
+                publico,
+                config_json,
+                quiz_id
+            )
         )
 
         # 🔥 borrar todo
-        cur.execute("DELETE FROM opciones WHERE pregunta_id IN (SELECT id FROM preguntas WHERE quiz_id=%s)", (quiz_id,))
-        cur.execute("DELETE FROM preguntas WHERE quiz_id=%s", (quiz_id,))
+#       cur.execute("DELETE FROM opciones WHERE pregunta_id IN (SELECT id FROM preguntas WHERE quiz_id=%s)", (quiz_id,))
+#        cur.execute("DELETE FROM preguntas WHERE quiz_id=%s", (quiz_id,))
 
         # 🔥 volver a insertar (igual que crear_quiz)
+        print(request.form)   # ← ponlo aquí temporalmente
+        
         for key, texto in request.form.items():
-            if key.startswith("pregunta_"):
+            if key.startswith("pregunta_") and not key.startswith("pregunta_id_"):
 
                 if not texto.strip():
                     continue
 
                 num = key.split("_")[1]
                 tipo = request.form.get(f"tipo_{num}")
-
-                cur.execute(
-                    "INSERT INTO preguntas (quiz_id, texto, tipo) VALUES (%s, %s, %s) RETURNING id",
-                    (quiz_id, texto, tipo)
-                )
-                pregunta_id = cur.fetchone()[0]
                 
+                pregunta_id = request.form.get(f"pregunta_id_{num}")
+
+                if pregunta_id:
+
+                    cur.execute("""
+                        UPDATE preguntas
+                        SET texto=%s,
+                            tipo=%s,
+                            explicacion=%s
+                        WHERE id=%s
+                    """, (
+                        texto,
+                        tipo,
+                        request.form.get(f"explicacion_{num}"),
+                        pregunta_id
+                    ))
+
+                else:
+
+                    cur.execute("""
+                        INSERT INTO preguntas (quiz_id, texto, tipo, explicacion)
+                        VALUES (%s, %s, %s, %s)
+                        RETURNING id
+                    """, (
+                        quiz_id,
+                        texto,
+                        tipo,
+                        request.form.get(f"explicacion_{num}")
+                    ))
+
+                    pregunta_id = cur.fetchone()[0]
 
                 if tipo == "vf":
                     correcta = request.form.get(f"correcta_{num}")
                     explicacion = request.form.get(f"explicacion_{num}")
+                    
+                    opcion_id_v = request.form.get(f"opcion_id_{num}_verdadero")
+                    opcion_id_f = request.form.get(f"opcion_id_{num}_falso")
 
-                    cur.execute(
-                        "INSERT INTO opciones (pregunta_id, texto, es_correcta) VALUES (%s, %s, %s)",
-                        (pregunta_id, "Verdadero", correcta == "Verdadero")
-                    )
+                    if opcion_id_v:
+    
+                        cur.execute("""
+                            UPDATE opciones
+                            SET texto=%s,
+                                es_correcta=%s
+                            WHERE id=%s
+                        """, (
+                            "Verdadero",
+                            correcta == "Verdadero",
+                            opcion_id_v
+                        ))
 
-                    cur.execute(
-                        "INSERT INTO opciones (pregunta_id, texto, es_correcta) VALUES (%s, %s, %s)",
-                        (pregunta_id, "Falso", correcta == "Falso")
-                    )
+                    else:
+
+                        cur.execute("""
+                            INSERT INTO opciones (pregunta_id, texto, es_correcta)
+                            VALUES (%s, %s, %s)
+                        """, (
+                            pregunta_id,
+                            "Verdadero",
+                            correcta == "Verdadero"
+                        ))
+
+                    if opcion_id_f:
+    
+                        cur.execute("""
+                            UPDATE opciones
+                            SET texto=%s,
+                                es_correcta=%s
+                            WHERE id=%s
+                        """, (
+                            "Falso",
+                            correcta == "Falso",
+                            opcion_id_f
+                        ))
+
+                    else:
+
+                        cur.execute("""
+                            INSERT INTO opciones (pregunta_id, texto, es_correcta)
+                            VALUES (%s, %s, %s)
+                        """, (
+                            pregunta_id,
+                            "Falso",
+                            correcta == "Falso"
+                        ))
 
                     cur.execute(
                         "UPDATE preguntas SET explicacion=%s WHERE id=%s",
@@ -1397,14 +1637,36 @@ def editar_quiz(quiz_id):
                     correcta = request.form.get(f"correcta_{num}")
 
                     for i in range(1, 6):
+                        
+                        opcion_id = request.form.get(f"opcion_id_{num}_{i}")
+                        
                         opcion = request.form.get(f"opcion_{num}_{i}")
                         if opcion:
                             es_correcta = (opcion == correcta) or (str(i) == correcta)
 
-                            cur.execute(
-                                "INSERT INTO opciones (pregunta_id, texto, es_correcta) VALUES (%s, %s, %s)",
-                                (pregunta_id, opcion, es_correcta)
-                            )
+                            if opcion_id:
+    
+                                cur.execute("""
+                                    UPDATE opciones
+                                    SET texto=%s,
+                                        es_correcta=%s
+                                    WHERE id=%s
+                                """, (
+                                    opcion,
+                                    es_correcta,
+                                    opcion_id
+                                ))
+
+                            else:
+
+                                cur.execute("""
+                                    INSERT INTO opciones (pregunta_id, texto, es_correcta)
+                                    VALUES (%s, %s, %s)
+                                """, (
+                                    pregunta_id,
+                                    opcion,
+                                    es_correcta
+                                ))
 
         conn.commit()
         cur.close()
@@ -1414,9 +1676,13 @@ def editar_quiz(quiz_id):
 
     # 🔹 GET (lo que ya tenías)
     cur.execute("""
-    SELECT titulo, multiple_intentos, enviar_solucionario
-        FROM quiz
-        WHERE id=%s
+        SELECT titulo,
+        multiple_intentos,
+        enviar_solucionario,
+        publico,
+        config_json
+    FROM quiz
+    WHERE id=%s
     """, (quiz_id,))
 
     row = cur.fetchone()
@@ -1424,7 +1690,9 @@ def editar_quiz(quiz_id):
     quiz = {
         "titulo": row[0],
         "multiple_intentos": row[1],
-        "enviar_solucionario": row[2]
+        "enviar_solucionario": row[2],
+        "publico": row[3],
+        "config_json": json.loads(row[4]) if row[4] else {}
     }
 
     cur.execute("""
@@ -1438,9 +1706,10 @@ def editar_quiz(quiz_id):
 
     for p in preguntas:
         cur.execute("""
-            SELECT texto, es_correcta
+            SELECT id, texto, es_correcta
             FROM opciones
             WHERE pregunta_id=%s
+            ORDER BY id
         """, (p[0],))
 
         opciones = cur.fetchall()
@@ -1741,6 +2010,48 @@ def acceso_quiz(codigo):
 
     return render_template('login_quiz.html', codigo=codigo)
 
+@app.route('/iniciar_quiz', methods=['POST'])
+def iniciar_quiz():
+
+    data = request.get_json()
+
+    quiz_id = data["quiz_id"]
+    alumno_id = data["alumno_id"]
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # obtener siguiente intento
+    cur.execute("""
+        SELECT COALESCE(MAX(intento_numero),0)
+        FROM intentos_quiz
+        WHERE alumno_id=%s
+          AND quiz_id=%s
+    """, (alumno_id, quiz_id))
+
+    ultimo = cur.fetchone()[0]
+    nuevo_intento = ultimo + 1
+
+    # crear intento
+    cur.execute("""
+        INSERT INTO intentos_quiz
+            (alumno_id, quiz_id, intento_numero)
+        VALUES
+            (%s,%s,%s)
+        RETURNING id
+    """, (alumno_id, quiz_id, nuevo_intento))
+
+    intento_id = cur.fetchone()[0]
+
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "status": "ok",
+        "intento_id": intento_id
+    })
 
 @app.route('/resolver_quiz/<int:quiz_id>/<int:alumno_id>')
 def resolver_quiz(quiz_id, alumno_id):
@@ -1752,21 +2063,26 @@ def resolver_quiz(quiz_id, alumno_id):
     cur = conn.cursor()
     
     cur.execute("""
-        SELECT COALESCE(MAX(intento_numero), 0)
-        FROM intentos_quiz
-        WHERE alumno_id = %s AND quiz_id = %s
-    """, (alumno_id, quiz_id))
-
-    ultimo = cur.fetchone()[0]
-    nuevo_intento = ultimo + 1
-
+        select nombre||' '||apellido 
+           from alumnos
+           WHERE id=%s
+        """, (alumno_id,))
+    
+    row = cur.fetchone()
+    
+    alumno_nombre=row[0] if row else "Alumno Prueba"
+    
     cur.execute("""
-        INSERT INTO intentos_quiz (alumno_id, quiz_id, intento_numero)
-        VALUES (%s, %s, %s)
-        RETURNING id
-    """, (alumno_id, quiz_id, nuevo_intento))
+        SELECT config_json, multiple_intentos,titulo
+        FROM quiz
+        WHERE id = %s
+    """, (quiz_id,))
 
-    intento_id = cur.fetchone()[0]
+    row = cur.fetchone()
+
+    config_json = row[0] if row else "{}"
+    multiple_intentos = row[1] if row else False
+    titulo=row[2] if row else "Titulo del quiz"
 
     # obtener preguntas
     cur.execute("""
@@ -1811,8 +2127,11 @@ def resolver_quiz(quiz_id, alumno_id):
         preguntas=data,
         quiz_id=quiz_id,
         alumno_id=alumno_id,
-        salon_quiz_id = salon_quiz_id,  # 🔥 SIEMPRE DEFINIDO
-        intento_id=intento_id
+        salon_quiz_id=salon_quiz_id,
+        config_json=config_json,
+        multiple_intentos=multiple_intentos,
+        titulo=titulo,
+        alumno_nombre=alumno_nombre
     )
     
 @app.route('/guardar_respuestas', methods=['POST'])
@@ -1822,15 +2141,19 @@ def guardar_respuestas():
 
     alumno_id = data['alumno_id']
     respuestas = data['respuestas']
+    preguntas = data.get("preguntas", [])
     salon_quiz_id = data.get('salon_quiz_id')
+    
+    tiempo_por_pregunta = data.get("tiempo_por_pregunta", {})
 
     conn = get_db_connection()
     cur = conn.cursor()
 
     correctas = 0
-    total = len(respuestas)
+    total = len(preguntas)
     detalle = []
-    valor_por_pregunta = 20 / total
+     
+    valor_por_pregunta = 20 / total if total > 0 else 0
 
     # 🔍 obtener quiz_id
     if salon_quiz_id:
@@ -1848,7 +2171,26 @@ def guardar_respuestas():
     if not quiz_id:
         print("⚠️ reconstruyendo quiz_id desde preguntas")
 
-        primera_pregunta = list(respuestas.keys())[0]
+        if preguntas:
+    
+            primera_pregunta = preguntas[0]
+
+            cur.execute("""
+                SELECT quiz_id
+                FROM preguntas
+                WHERE id = %s
+            """, (int(primera_pregunta),))
+
+            row = cur.fetchone()
+            quiz_id = row[0] if row else None
+        
+    intento_id = data["intento_id"]
+    print("INTENTO RECIBIDO:", intento_id)  
+
+    # 🔥 fallback de seguridad (NO rompe nada)
+    if preguntas:
+    
+        primera_pregunta = preguntas[0]
 
         cur.execute("""
             SELECT quiz_id
@@ -1856,36 +2198,6 @@ def guardar_respuestas():
             WHERE id = %s
         """, (int(primera_pregunta),))
 
-        row = cur.fetchone()
-        quiz_id = row[0] if row else None
-        
-    # 🔥 crear intento SIEMPRE en backend
-    cur.execute("""
-    SELECT COALESCE(MAX(intento_numero), 0) + 1
-        FROM intentos_quiz
-        WHERE quiz_id = %s AND alumno_id = %s
-    """, (quiz_id, alumno_id))
-
-    numero = cur.fetchone()[0]
-    
-    cur.execute("""
-        INSERT INTO intentos_quiz (quiz_id, alumno_id, intento_numero)
-        VALUES (%s, %s, %s)
-        RETURNING id
-    """, (quiz_id, alumno_id, numero))
-
-    intento_id = cur.fetchone()[0]
-
-    # 🔥 fallback de seguridad (NO rompe nada)
-    if not quiz_id:
-        print("⚠️ quiz_id no vino, usando pregunta")
-        
-        cur.execute("""
-            SELECT quiz_id
-            FROM preguntas
-            WHERE id = %s
-        """, (list(respuestas.keys())[0],))
-        
         row = cur.fetchone()
         quiz_id = row[0] if row else None
 
@@ -1924,10 +2236,26 @@ def guardar_respuestas():
         })
 
         cur.execute("""
-            INSERT INTO respuestas_alumno 
-            (alumno_id, pregunta_id, opcion_id, salon_quiz_id, quiz_id, intento_id)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (alumno_id, pregunta_id, opcion_id, salon_quiz_id, quiz_id, intento_id))
+            INSERT INTO respuestas_alumno
+            (
+                alumno_id,
+                pregunta_id,
+                opcion_id,
+                salon_quiz_id,
+                quiz_id,
+                intento_id,
+                tiempo_segundos
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (
+            alumno_id,
+            pregunta_id,
+            opcion_id,
+            salon_quiz_id,
+            quiz_id,
+            intento_id,
+            tiempo_por_pregunta.get(str(pregunta_id), 0)
+        ))
         if puntaje > 0:
             correctas += 1
 
@@ -1961,10 +2289,14 @@ def guardar_respuestas():
     
     cur.execute("""
     UPDATE intentos_quiz
-        SET nota_final = %s,
-            fecha_fin = NOW()
-        WHERE id = %s
+    SET
+        nota_final = %s,
+        fecha_fin = NOW(),
+        tiempo_total_segundos = EXTRACT(EPOCH FROM (NOW() - fecha_inicio))::INTEGER
+    WHERE id = %s
     """, (nota, intento_id))
+    
+    conn.commit()   # ← AGREGAR ESTA LÍNEA
     
     cur.execute("""
         SELECT enviar_solucionario
@@ -2431,6 +2763,16 @@ def resultados_salon():
     notas = []
     nombres = []
     preguntas_top = []
+    promedio_quiz = []
+    aprobados = 0
+    desaprobados = 0
+
+    detalle_aprobados = {
+        "Aprobados": [],
+        "Desaprobados": []
+    }
+    distribucion= []
+    distribucion_detalle = []
 
     # 🔐 VALIDAR SALON_ID (CLAVE)
     if salon_id:
@@ -2573,39 +2915,192 @@ def resultados_salon():
             tabla.append(fila)
 
         notas = [fila["promedio"] for fila in tabla]
+        distribucion = [0, 0, 0, 0]
+
+        distribucion_detalle = {
+            "0-10": [],
+            "11-13": [],
+            "14-16": [],
+            "17-20": []
+        }
+
+        for fila in tabla:
+
+            promedio = fila["promedio"]
+            alumno = f'{fila["alumno"]} ({promedio:.2f})'
+
+            if promedio <= 10:
+                distribucion[0] += 1
+                distribucion_detalle["0-10"].append(alumno)
+
+            elif promedio <= 13:
+                distribucion[1] += 1
+                distribucion_detalle["11-13"].append(alumno)
+
+            elif promedio <= 16:
+                distribucion[2] += 1
+                distribucion_detalle["14-16"].append(alumno)
+
+            else:
+                distribucion[3] += 1
+                distribucion_detalle["17-20"].append(alumno)
+                
+        aprobados = sum(1 for nota in notas if nota >= 11)
+        desaprobados = sum(1 for nota in notas if nota < 11)
+        
+        detalle_aprobados = {
+            "Aprobados": [],
+            "Desaprobados": []
+        }
+
+        for fila in tabla:
+
+            alumno = f'{fila["alumno"]} ({fila["promedio"]:.2f})'
+
+            if fila["promedio"] >= 11:
+                detalle_aprobados["Aprobados"].append(alumno)
+            else:
+                detalle_aprobados["Desaprobados"].append(alumno)
+                
         nombres = [fila["alumno"] for fila in tabla]
         
         # ===============================
-        # 📊 TOP 5 PREGUNTAS MÁS ACERTADAS
+        # 📊 analisis de quizzes
         # ===============================
          
         cur.execute("""
-            SELECT 
-                p.texto,
-                ROUND(
-                    (COUNT(CASE WHEN o.es_correcta THEN 1 END)::decimal 
-                    / NULLIF(COUNT(*),0)) * 100
-                ,1) as porcentaje
-            FROM respuestas_alumno ra
-            JOIN preguntas p ON p.id = ra.pregunta_id
-            JOIN opciones o ON o.id = ra.opcion_id
-            JOIN salon_quiz sq ON sq.quiz_id = ra.quiz_id
+            WITH ultimo_intento AS (
+                SELECT
+                    alumno_id,
+                    quiz_id,
+                    MAX(intento_id) AS intento_id
+                FROM respuestas_alumno
+                GROUP BY alumno_id, quiz_id
+            ),
+
+            notas_quiz AS (
+
+                SELECT
+                    ra.alumno_id,
+                    ra.quiz_id,
+
+                    ROUND(
+                        (
+                            COUNT(CASE WHEN o.es_correcta THEN 1 END)::decimal
+                            / NULLIF(COUNT(*),0)
+                        ) * 20,
+                    2) AS nota
+
+                FROM respuestas_alumno ra
+
+                JOIN ultimo_intento ui
+                    ON ui.alumno_id = ra.alumno_id
+                AND ui.quiz_id = ra.quiz_id
+                AND ui.intento_id = ra.intento_id
+
+                JOIN opciones o
+                    ON o.id = ra.opcion_id
+
+                GROUP BY
+                    ra.alumno_id,
+                    ra.quiz_id
+            )
+
+            SELECT
+
+                q.codigo,
+                q.titulo,
+                MAX(sq.fecha_asignacion),
+
+                ROUND(AVG(nq.nota),2) AS promedio,
+
+                COUNT(CASE WHEN nq.nota >= 11 THEN 1 END) AS aprobados,
+
+                COUNT(CASE WHEN nq.nota < 11 THEN 1 END) AS desaprobados,
+
+                MAX(nq.nota) AS maxima,
+
+                MIN(nq.nota) AS minima
+
+            FROM notas_quiz nq
+
+            JOIN quiz q
+                ON q.id = nq.quiz_id
+
+            JOIN salon_quiz sq
+                ON sq.quiz_id = q.id
+
             WHERE sq.salon_id = %s
-            GROUP BY p.id, p.texto
-            ORDER BY porcentaje DESC
-            LIMIT 5
+
+            GROUP BY
+                q.id,
+                q.codigo,
+                q.titulo
+
+            ORDER BY promedio DESC
         """, (salon_id,))
 
-        preguntas_top = [
-            {
-                "pregunta": (row[0] or "Pregunta")[:40],  # corto para gráfico
-                "porcentaje": float(row[1])
-            }
-            for row in cur.fetchall()
+       
+        colores = [
+            "#1D4ED8",  # Azul
+            "#10B981",  # Verde
+            "#8B5CF6",  # Morado
+            "#F97316",  # Naranja
+            "#EC4899",  # Rosa
+            "#06B6D4",  # Cian
+            "#84CC16",  # Lima
+            "#F59E0B"   # Ámbar
         ]
+        
+        promedio_quiz = []
 
+        filas = cur.fetchall()
+
+        promedio_anterior = None
+
+        for i, row in enumerate(filas):
+
+            codigo = row[0]
+            titulo = row[1]
+            fecha = row[2]
+            promedio = float(row[3])
+
+            if fecha:
+                fecha = fecha.strftime("%d/%m/%y")
+            else:
+                fecha = ""
+
+            if promedio_anterior is None:
+                variacion = None
+            else:
+                variacion = round(promedio - promedio_anterior, 2)
+
+            promedio_anterior = promedio
+
+            promedio_quiz.append({
+
+                "codigo": codigo,
+                "titulo": titulo,
+                "fecha": fecha,
+
+                "promedio": promedio,
+
+                "variacion": variacion,
+
+                "aprobados": row[4],
+                "desaprobados": row[5],
+
+                "maxima": float(row[6]),
+                "minima": float(row[7]),
+
+                "color": colores[i % len(colores)]
+
+            })
     cur.close()
     conn.close()
+    
+    print(promedio_quiz)
+     
 
     return render_template(
         "resultados_salon.html",
@@ -2614,7 +3109,13 @@ def resultados_salon():
         resultado=tabla,
         salon_seleccionado=salon_id or "",
         notas=notas,
+        aprobados=aprobados,
+        desaprobados=desaprobados,
+        detalle_aprobados=detalle_aprobados,
         nombres=nombres,
+        distribucion=distribucion,
+        promedio_quiz=promedio_quiz,
+        distribucion_detalle=distribucion_detalle,
         preguntas_top=preguntas_top
     )
 
@@ -3228,9 +3729,16 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
                 pdf_bytes = f.read()
 
             pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
+            print("Tamaño PDF (bytes):", len(pdf_bytes))
+            print("Tamaño Base64:", len(pdf_base64))
 
             # 📧 Enviar con Resend
+            import time
+
+            t0 = time.time()
+            print("📤 Enviando a Resend...")
             resend.Emails.send({
+                
                 "from": "ACAASO <pardoalf@acaaso.com>",
                 "to": correo,
                 "subject": "Resultado de tu Quiz",
@@ -3302,7 +3810,7 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
                     }
                 ]
             })
-
+            print("⏱ Tiempo:", round(time.time() - t0, 2), "segundos")
             print("✅ correo enviado con Resend")
 
             # 🧹 limpiar archivo
@@ -4292,6 +4800,165 @@ def ayuda():
         plan=plan,
         usuario_logeado=usuario_logeado
     )
- 
+
+@app.route('/estado_cola/<int:cola_id>')
+def estado_cola(cola_id):
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT estado
+        FROM cola_ia
+        WHERE id = %s
+    """, (cola_id,))
+
+    fila = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    if not fila:
+        return jsonify({"estado": "no_existe"})
+
+    return jsonify({"estado": fila[0]})
+
+
+@app.route("/eliminar_pregunta/<int:pregunta_id>", methods=["POST"])
+def eliminar_pregunta(pregunta_id):
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT COUNT(*)
+        FROM respuestas_alumno
+        WHERE pregunta_id = %s
+    """, (pregunta_id,))
+
+    tiene_respuestas = cur.fetchone()[0] > 0
+    
+    if tiene_respuestas and not request.json.get("forzar", False):
+        cur.close()
+        conn.close()
+        return {
+            "ok": False,
+            "requiere_confirmacion": True,
+            "mensaje": "Esta pregunta ya tiene respuestas de alumnos. Si la elimina también se eliminarán esas respuestas. ¿Desea continuar?"
+        }
+
+    # Borrar respuestas de esa pregunta
+    cur.execute("""
+        DELETE FROM respuestas_alumno
+        WHERE pregunta_id = %s
+    """, (pregunta_id,))
+
+    # Borrar opciones
+    cur.execute("""
+        DELETE FROM opciones
+        WHERE pregunta_id = %s
+    """, (pregunta_id,))
+
+    # Borrar pregunta
+    cur.execute("""
+        DELETE FROM preguntas
+        WHERE id = %s
+    """, (pregunta_id,))
+
+    conn.commit()
+
+    cur.close()
+    conn.close()
+    
+    return {"ok": True}
+
+@app.route('/logros_alumno')
+def logros_alumno():
+
+    if "alumno_id" not in session:
+        return redirect(url_for("login_alumno"))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            q.id,
+            q.titulo,
+            i.nota_final,
+            i.fecha_fin,
+            i.intento_numero
+        FROM intentos_quiz i
+        JOIN quiz q
+            ON q.id = i.quiz_id
+        WHERE i.alumno_id = %s
+        AND i.nota_final IS NOT NULL
+        ORDER BY i.fecha_fin DESC;
+    """, (session["alumno_id"],))
+
+    completados = cur.fetchall()
+    
+    cur.execute("""
+        SELECT
+            id,
+            titulo
+        FROM quiz
+        WHERE publico = TRUE
+        AND estado = 'A'
+        ORDER BY titulo
+    """)
+
+    publicos = cur.fetchall()
+    
+
+    cur.close()
+    conn.close()
+
+    return render_template(
+        "logros_alumno.html",
+        nombre=session["nombre"],
+        completados=completados,
+        publicos=publicos
+    )
+
+@app.route('/login_alumno', methods=['GET', 'POST'])
+def login_alumno():
+
+    if request.method == 'POST':
+
+        dni = request.form['dni'].strip()
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT id, dni, nombre, apellido, correo, cempre
+            FROM alumnos
+            WHERE dni=%s
+        """, (dni,))
+
+        alumno = cur.fetchone()
+
+        cur.close()
+        conn.close()
+
+        if alumno:
+
+            session["alumno_id"] = alumno[0]
+            session["dni"] = alumno[1]
+            session["nombre"] = alumno[2]
+            session["apellido"] = alumno[3]
+            session["correo"] = alumno[4]
+            session["cempre"] = alumno[5]
+
+            return redirect(url_for("logros_alumno"))
+
+        return render_template(
+            "login_alumno.html",
+            error="DNI no registrado"
+        )
+
+    return render_template("login_alumno.html")
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

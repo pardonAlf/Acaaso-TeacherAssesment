@@ -13,7 +13,7 @@
         <!-- ACCIONES -->
         <div class="acciones mb-2">
             <button onclick="crearQuiz()">Crear</button>
-            <button onclick="entrarQuiz()">Entrar</button>
+            <button onclick="entrarQuiz()">Editar</button>
             <button onclick="generarCodigo()" >Código</button>
             <button onclick="verResultados()">Resultados</button>
             <button class="danger" onclick="eliminarQuiz()">Eliminar</button>
@@ -35,14 +35,33 @@
                     <tr>
                         <th></th>
                         <th>ID</th>
+
                         {% if session['rol'] == 'admin' %}
                             <th>Usuario</th>
                         {% endif %}
+
                         <th>Título</th>
-                        
+
                         <th>Alumnos</th>
                         <th>Preguntas</th>
                         <th>Código</th>
+
+                        <th title="Público o Privado">
+                            <i class="bi bi-globe"></i>
+                        </th>
+
+                        <th title="Tiempo límite">
+                            <i class="fa-regular fa-hourglass-half text-warning"></i>
+                        </th>
+
+                        <th title="Múltiples intentos">
+                            <i class="fa-solid fa-rotate text-success"></i>
+                        </th>
+
+                        <th title="Enviar solucionario">
+                            <i class="fa-solid fa-envelope text-primary"></i>
+                        </th>
+
                     </tr>
                 </thead>
 
@@ -87,6 +106,31 @@
                                     <span class="badge-off">—</span>
                                 {% endif %}
                             </td>
+                            <td>
+                                {% if q[6] %}
+                                    🌐
+                                {% else %}
+                                    🔒
+                                {% endif %}
+                            </td>
+                            <td style="text-align:center;">
+                                {% if q[7] %}
+                                    {{ q[7] }}m
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if q[8] %}
+                                    <i class="bi bi-arrow-repeat text-success"></i>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if q[9] %}
+                                    <i class="bi bi-envelope-check-fill text-primary"></i>
+                                {% endif %}
+                            </td>
                         {% else %}
                             <td>{{ q[0] }}</td>
                             <td>{{ q[1] }}</td>
@@ -98,6 +142,31 @@
                                     <span class="badge-ok">{{ q[4] }}</span>
                                 {% else %}
                                     <span class="badge-off">—</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align:center;">
+                                {% if q[5] %}
+                                    <span title="Público" style="cursor:help;">🌐</span>
+                                {% else %}
+                                    <span title="Privado" style="cursor:help;">🔒</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align:center;">
+                                {% if q[6] %}
+                                    {{ q[6] }}m
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if q[7] %}
+                                    <i class="bi bi-arrow-repeat text-success"></i>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if q[8] %}
+                                    <i class="bi bi-envelope-check-fill text-primary"></i>
                                 {% endif %}
                             </td>
                         {% endif %}
@@ -317,6 +386,40 @@
                 window.location.href = `/eliminar_quiz/${quizId}`;
             }
         }
+    </script>
+    <script>
+    let cola_id = localStorage.getItem("cola_id");
+
+    console.log("DEBUG cola_id:", cola_id);
+    console.log("PATH:", window.location.pathname);
+
+    if (cola_id && window.location.pathname === "/dashboard_profesor") {
+
+        console.log("🔁 Iniciando seguimiento de cola:", cola_id);
+
+        let intervalo = setInterval(async () => {
+
+            try {
+                let res = await fetch(`/estado_cola/${cola_id}`);
+                let data = await res.json();
+
+                console.log("Estado cola:", data.estado);
+
+                if (data.estado && data.estado.trim().toLowerCase() === "terminado") {
+
+                    clearInterval(intervalo);
+
+                    localStorage.removeItem("cola_id");
+
+                    location.reload();
+                }
+
+            } catch (e) {
+                console.error("Error consultando estado", e);
+            }
+
+        }, 3000);
+    }
     </script>
 
 {% endblock %}
