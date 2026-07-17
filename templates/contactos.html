@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Solicitar una demostración</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+
+        body {
+            background: #f5f7fb;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        /*==========================
+                NAVBAR
+        ==========================*/
+
+        .navbar {
+            box-shadow: 0 3px 10px rgba(0,0,0,.08);
+        }
+
+        /*==========================
+              CONTENEDOR
+        ==========================*/
+
+        .contenedor {
+            max-width: 1320px;
+            margin: 25px auto;
+        }
+
+        /*==========================
+                PANEL
+        ==========================*/
+
+        .panel {
+            background: white;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 8px 35px rgba(0,0,0,.08);
+        }
+
+        /*==========================
+               IMAGEN
+        ==========================*/
+
+        .col-imagen {
+            background: #edf2f7;
+        }
+
+        .col-imagen img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /*==========================
+              FORMULARIO
+        ==========================*/
+
+        .col-form {
+            padding: 40px;
+            
+        }
+
+        h2 {
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 10px;
+        }
+
+        .descripcion {
+            color: #64748b;
+            margin-bottom: 25px;
+        }
+
+        .form-control,
+        .form-select {
+            border-radius: 10px;
+            min-height: 46px;
+        }
+
+        textarea.form-control {
+            min-height: 110px;
+        }
+
+        .btn-demo {
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: 600;
+        }
+
+        .info {
+            margin-top: 25px;
+        }
+
+        .info i {
+            color: #198754;
+            margin-right: 8px;
+        }
+
+        .info div {
+            margin-bottom: 8px;
+            color: #475569;
+            font-size: 14px;
+        }
+
+        @media (max-width:991px) {
+            .col-form {
+                padding: 25px;
+            }
+        }
+
+        /* =====================================================
+        Laptops (poca altura útil)
+        ===================================================== */
+
+        @media screen and (max-height: 900px) {
+
+            .contenedor {
+                margin: 12px auto;
+            }
+
+            .panel {
+                height: 90vh;
+
+                display: flex;
+                align-items: stretch;
+
+            }
+
+            .col-imagen,
+            .col-form {
+
+                display: flex;
+                flex-direction: column;
+
+            }
+
+            .col-form {
+                padding: 24px;
+                height: 80vh;
+            }
+
+            .col-imagen img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                object-position: center -100px;
+                display: block;
+            }
+            h2 {
+                font-size: 2.0rem;
+                margin-bottom: 5px;
+            }
+
+            .descripcion {
+                font-size: 14px;
+                margin-bottom: 10px;
+                line-height: 1.4;
+            }
+
+            .form-control,
+            .form-select {
+                height: 35px;
+                min-height: 35px;
+                font-size: 15px;
+            }
+
+            textarea.form-control {
+                min-height: 60px;
+            }
+
+            .mb-3 {
+                margin-bottom: .5rem !important;
+            }
+
+            .btn-demo {
+                padding: 8px;
+            }
+
+            .info {
+                margin-top: 16px;
+                font-size: 13px;
+            }
+
+            .info div {
+                margin-bottom: 5px;
+            }
+
+        }
+
+    </style>
+
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+
+            <a class="navbar-brand fw-bold" href="/">TeacherAssessment</a>
+
+            <button class="navbar-toggler"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="menu">
+
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="/#comofunciona">Cómo funciona</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link " href="/contactos">Consultas</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/contactos">Contactos</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="/ayuda">Ayuda</a>
+                    </li>
+                </ul>
+
+                <div>
+                    <a href="/ingresar_codigo" class="btn btn-success btn-sm">
+                        Ingresar código
+                    </a>
+
+                    <a href="/login" class="btn btn-outline-light btn-sm ms-2">
+                        Login
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </nav>
+
+    <div class="container contenedor">
+
+        <div class="panel">
+
+            <div class="row g-0 align-items-stretch">
+
+                <div class="col-lg-5 col-imagen h-100"> 
+                    <img src="{{ url_for('static', filename='img/contactos.png') }}">
+                </div>
+
+                <div class="col-lg-7 col-form h-100">
+
+                    <h2>Transforma la evaluación de tu institución</h2>
+
+                    <p class="descripcion">
+                        Conoce cómo ACAASO Teacher Assessment ayuda a universidades,
+                        colegios, institutos y empresas a crear evaluaciones inteligentes
+                        con resultados en tiempo real.
+                    </p>
+
+                    <form id="frmContacto" method="POST">
+
+                        <div class="row">
+
+                            <div class="col-md-6 mb-3">
+                                <input type="text"
+                                       class="form-control"
+                                       name="nombre"
+                                       placeholder="Nombre completo"
+                                       required>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <input type="text"
+                                       class="form-control"
+                                       name="institucion"
+                                       placeholder="Institución"
+                                       required>
+                            </div>
+
+                        </div>
+
+                        <div class="row">
+
+                            <div class="col-md-6 mb-3">
+                                <input type="text"
+                                       class="form-control"
+                                       name="cargo"
+                                       placeholder="Cargo">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <input type="email"
+                                       class="form-control"
+                                       name="correo"
+                                       placeholder="Correo institucional"
+                                       required>
+                            </div>
+
+                        </div>
+
+                        <div class="row">
+
+                            <div class="col-md-6 mb-3">
+                                <input type="text"
+                                       class="form-control"
+                                       name="whatsapp"
+                                       placeholder="WhatsApp">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <input type="text"
+                                       class="form-control"
+                                       name="pais"
+                                       placeholder="País">
+                            </div>
+
+                        </div>
+
+                        <div class="mb-3">
+                            <textarea class="form-control"
+                                      name="mensaje"
+                                      placeholder="¿Cómo podemos ayudarte?"></textarea>
+                        </div>
+
+                        <div class="form-check mb-4">
+
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   id="demo"
+                                   name="demo">
+
+                            <label class="form-check-label" for="demo">
+                                Deseo agendar una demostración personalizada.
+                            </label>
+
+                        </div>
+
+                        <div id="agendaDemo" style="display:none;">
+
+                            <div class="row">
+
+                                <div class="col-md-6 mb-3">
+                                    <input type="date"
+                                           class="form-control"
+                                           name="fecha_demo">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <select class="form-select" name="horario">
+                                        <option>Mañana</option>
+                                        <option>Tarde</option>
+                                        <option>Noche</option>
+                                    </select>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="d-grid">
+
+                           <button
+                                id="btnEnviar"
+                                type="submit"
+                                class="btn btn-primary btn-demo">
+
+                            <i class="fa-solid fa-paper-plane"></i>
+
+                            Solicitar demostración
+
+                        </button>
+
+                        </div>
+
+                        <div class="info">
+
+                            <div>
+                                <i class="fa-solid fa-shield-halved"></i>
+                                Información tratada de forma confidencial.
+                            </div>
+
+                            <div>
+                                <i class="fa-solid fa-clock"></i>
+                                Nos comunicaremos contigo en menos de 24 horas.
+                            </div>
+
+                            <div>
+                                <i class="fa-solid fa-video"></i>
+                                Demostración personalizada según las necesidades de tu institución.
+                            </div>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+    <script>
+
+        document.getElementById("demo").addEventListener("change", function () {
+
+            document.getElementById("agendaDemo").style.display =
+                this.checked ? "block" : "none";
+
+        });
+
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+     
+     
+    <div class="modal fade" id="modalOK" tabindex="-1">
+
+        <div class="modal-dialog modal-dialog-centered">
+
+            <div class="modal-content">
+
+                <div class="modal-header bg-success text-white">
+
+                    <h5 class="modal-title">
+                        Solicitud registrada
+                    </h5>
+
+                </div>
+
+                <div class="modal-body text-center">
+
+                    <i class="fa-solid fa-circle-check"
+                    style="font-size:70px;color:#22c55e;"></i>
+
+                    <br><br>
+
+                    <h4>¡Muchas gracias!</h4>
+
+                    <p>
+
+                        Su solicitud ha sido registrada correctamente.
+
+                        <br><br>
+
+                        Uno de nuestros especialistas se comunicará con usted
+                        a la brevedad posible para coordinar una demostración
+                        personalizada de ACAASO Teacher Assessment.
+
+                    </p>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        class="btn btn-success"
+                        data-bs-dismiss="modal">
+
+                        Aceptar
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div id="overlayEnvio" style="
+        display:none;
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,.45);
+        z-index:9999;
+    ">
+
+        <div style="
+            position:absolute;
+            top:50%;
+            left:50%;
+            transform:translate(-50%,-50%);
+            background:white;
+            padding:40px;
+            border-radius:15px;
+            text-align:center;
+            min-width:340px;
+            box-shadow:0 15px 40px rgba(0,0,0,.25);
+        ">
+
+            <div class="spinner-border text-primary"></div>
+
+            <br><br>
+
+            <h4>Enviando solicitud...</h4>
+
+            <p>
+
+                Espere un momento por favor.
+
+            </p>
+
+        </div>
+
+    </div>
+    <script>
+
+        document.getElementById("frmContacto").addEventListener("submit", async function(e) {
+
+            e.preventDefault();
+            document.getElementById("btnEnviar").disabled = true;
+
+            document.getElementById("overlayEnvio").style.display = "block";
+
+            const datos = new FormData(this);
+
+            try {
+
+                const respuesta = await fetch("/contactos", {
+
+                    method: "POST",
+                    body: datos
+
+                });
+
+                document.getElementById("overlayEnvio").style.display = "none";
+
+                if (respuesta.ok) {
+                    const modal = new bootstrap.Modal(
+                        document.getElementById("modalOK")
+                    );
+                    modal.show();
+                    this.reset();
+                    document.getElementById("agendaDemo").style.display = "none";
+                    document.getElementById("btnEnviar").disabled = false;
+                }
+                else {
+
+                    alert("Ocurrió un error enviando la solicitud.");
+
+                }
+
+            }
+            catch(error) {
+
+                document.getElementById("overlayEnvio").style.display = "none";
+
+                document.getElementById("btnEnviar").disabled = false;
+
+                alert("No fue posible conectar con el servidor.");
+
+            }
+
+        });
+
+    </script>
+
+</body>
+</html>

@@ -25,6 +25,11 @@ from dotenv import load_dotenv
 import os
 import json
 from flask import make_response
+
+import qrcode
+from io import BytesIO
+import base64
+
 load_dotenv("llave.env")
 try:
     import resend
@@ -755,6 +760,73 @@ def ingresar_dni():
 
         if quiz:
             quiz_id = quiz[0]
+            
+            cur.execute("""
+                SELECT multiple_intentos
+                FROM quiz
+                WHERE id = %s
+            """, (quiz_id,))
+
+            multiple_intentos = cur.fetchone()[0]
+            
+            if not multiple_intentos:
+    
+                cur.execute("""
+                    SELECT COUNT(*)
+                    FROM intentos_quiz
+                    WHERE alumno_id = %s
+                    AND quiz_id = %s
+                    AND nota_final IS NOT NULL
+                """, (alumno_id, quiz_id))
+
+                ya_rindio = cur.fetchone()[0] > 0
+
+                if ya_rindio:
+    
+                    cur.execute("""
+                        SELECT
+                            nota_final,
+                            fecha_fin,
+                            tiempo_total_segundos
+                        FROM intentos_quiz
+                        WHERE alumno_id = %s
+                        AND quiz_id = %s
+                        AND nota_final IS NOT NULL
+                        ORDER BY intento_numero DESC
+                        LIMIT 1
+                    """, (alumno_id, quiz_id))
+
+                    ultimo = cur.fetchone()
+
+                    nota = ultimo[0] if ultimo else 0
+                    fecha = ultimo[1].strftime("%d/%m/%Y %H:%M") if ultimo and ultimo[1] else "-"
+
+                    if ultimo and ultimo[2]:
+                        minutos = ultimo[2] // 60
+                        segundos = ultimo[2] % 60
+                        tiempo = f"{minutos:02}:{segundos:02}"
+                    else:
+                        tiempo = "--:--"
+
+                    cur.execute("""
+                        SELECT nombre, apellido
+                        FROM alumnos
+                        WHERE id = %s
+                    """, (alumno_id,))
+
+                    alumno = cur.fetchone()
+                    nombre = f"{alumno[0]} {alumno[1]}" if alumno else "Alumno"
+
+                    cur.close()
+                    conn.close()
+
+                    return render_template(
+                        "quiz_bloqueado.html",
+                        alumno=nombre,
+                        nota=nota,
+                        fecha=fecha,
+                        tiempo=tiempo
+                    )
 
             cur.close()
             conn.close()
@@ -764,6 +836,8 @@ def ingresar_dni():
                 quiz_id=quiz_id,
                 alumno_id=alumno_id
             ))
+            
+            
 
         # ❌ código inválido
         cur.close()
@@ -3304,9 +3378,12 @@ def ver_resultados(quiz_id):
         titulo_quiz = "Quiz no encontrado"
         
     cur.execute("""
-    SELECT alumno_id, COUNT(*) as total_intentos
+        SELECT
+            alumno_id,
+            COUNT(*)
         FROM intentos_quiz
         WHERE quiz_id = %s
+        AND nota_final IS NOT NULL
         GROUP BY alumno_id
     """, (quiz_id,))
 
@@ -3321,6 +3398,71 @@ def ver_resultados(quiz_id):
     """, (quiz_id,))
 
     total_preguntas = cur.fetchone()[0]
+    
+    cur.execute("""
+        SELECT
+            alumno_id,
+            ROUND(AVG(tiempo_total_segundos))
+        FROM intentos_quiz
+        WHERE quiz_id = %s
+        AND tiempo_total_segundos IS NOT NULL
+        AND nota_final IS NOT NULL
+        GROUP BY alumno_id
+    """, (quiz_id,))
+
+    tiempos_promedio = {
+        alumno_id: tiempo
+        for alumno_id, tiempo in cur.fetchall()
+    }
+    
+    cur.execute("""
+        SELECT
+            iq.alumno_id,
+            iq.intento_numero,
+            iq.nota_final,
+            iq.tiempo_total_segundos,
+            iq.fecha_fin,
+
+            COUNT(CASE WHEN o.es_correcta THEN 1 END) AS correctas,
+            COUNT(ra.id) AS total
+
+        FROM intentos_quiz iq
+
+        JOIN respuestas_alumno ra
+            ON ra.intento_id = iq.id
+
+        JOIN opciones o
+            ON o.id = ra.opcion_id
+
+        WHERE iq.quiz_id = %s
+
+        GROUP BY
+            iq.alumno_id,
+            iq.intento_numero,
+            iq.nota_final,
+            iq.tiempo_total_segundos,
+            iq.fecha_fin
+
+        ORDER BY
+            iq.alumno_id,
+            iq.intento_numero
+    """, (quiz_id,))
+
+    intentos_detalle = {}
+
+    for alumno_id, intento, nota, tiempo, fecha, correctas, total in cur.fetchall():
+    
+        if alumno_id not in intentos_detalle:
+            intentos_detalle[alumno_id] = []
+
+        intentos_detalle[alumno_id].append({
+            "intento": intento,
+            "nota": nota,
+            "tiempo": tiempo,
+            "fecha": fecha,
+            "correctas": correctas,
+            "total": total
+        })
 
     cur.close()
     conn.close()
@@ -3343,8 +3485,10 @@ def ver_resultados(quiz_id):
         preguntas_tooltips=preguntas_tooltips,
         intentos=intentos_dict,
         titulo_quiz=titulo_quiz,
+        tiempos_promedio=tiempos_promedio,
         promedio=promedio ,
-        mayor_nota=mayor_nota
+        mayor_nota=mayor_nota,
+        intentos_detalle=intentos_detalle
     )
     
     
@@ -3823,6 +3967,327 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
             print("❌ ERROR RESEND:", str(e))
     else:
         print("ℹ️ solucionario no enviado")
+        
+@app.route("/contactos", methods=["GET", "POST"])
+def contactos():
+
+    if request.method == "POST":
+
+        nombre = request.form["nombre"].strip()
+        institucion = request.form["institucion"].strip()
+        cargo = request.form["cargo"].strip()
+        correo = request.form["correo"].strip()
+        whatsapp = request.form["whatsapp"].strip()
+        pais = request.form["pais"].strip()
+        mensaje = request.form["mensaje"].strip()
+
+        desea_demo = "demo" in request.form
+
+        fecha_demo = request.form.get("fecha_demo") or None
+        horario = request.form.get("horario") or None
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            INSERT INTO contactos_demo
+            (
+                nombre,
+                institucion,
+                cargo,
+                correo,
+                whatsapp,
+                pais,
+                mensaje,
+                desea_demo,
+                fecha_demo,
+                horario
+            )
+            VALUES
+            (
+                %s,%s,%s,%s,%s,%s,%s,%s,%s,%s
+            )
+        """, (
+            nombre,
+            institucion,
+            cargo,
+            correo,
+            whatsapp,
+            pais,
+            mensaje,
+            desea_demo,
+            fecha_demo,
+            horario
+        ))
+
+        conn.commit()
+
+        cur.close()
+        conn.close()
+        
+        try:
+
+            resend.Emails.send({
+
+                "from": "ACAASO <pardoalf@acaaso.com>",
+
+               "to": [
+                    "pardoalf@acaaso.com",
+                    "pardoalf@gmail.com"
+                ],
+
+                "reply_to": correo,
+
+                "subject": f"🎯 Nueva solicitud de demostración - {institucion}",
+
+                "html": f"""
+
+                <div style="font-family:Arial;background:#f4f6f8;padding:25px;">
+
+                    <div style="
+                        max-width:700px;
+                        margin:auto;
+                        background:white;
+                        border-radius:12px;
+                        overflow:hidden;
+                        box-shadow:0 4px 15px rgba(0,0,0,.15);
+                    ">
+
+                        <div style="
+                            background:#0d47a1;
+                            color:white;
+                            padding:20px;
+                            text-align:center;
+                        ">
+
+                            <h2 style="margin:0;">
+                                Nueva solicitud de demostración
+                            </h2>
+
+                        </div>
+
+                        <div style="padding:30px;">
+
+                            <table style="width:100%;font-size:15px;">
+
+                                <tr>
+                                    <td style="font-weight:bold;width:180px;">Nombre</td>
+                                    <td>{nombre}</td>
+                                </tr>
+
+                                <tr>
+                                    <td style="font-weight:bold;">Institución</td>
+                                    <td>{institucion}</td>
+                                </tr>
+
+                                <tr>
+                                    <td style="font-weight:bold;">Cargo</td>
+                                    <td>{cargo}</td>
+                                </tr>
+
+                                <tr>
+                                    <td style="font-weight:bold;">Correo</td>
+                                    <td>{correo}</td>
+                                </tr>
+
+                                <tr>
+                                    <td style="font-weight:bold;">WhatsApp</td>
+                                    <td>{whatsapp}</td>
+                                </tr>
+
+                                <tr>
+                                    <td style="font-weight:bold;">País</td>
+                                    <td>{pais}</td>
+                                </tr>
+
+                            </table>
+
+                            <hr>
+
+                            <h4>Mensaje</h4>
+
+                            <div style="
+                                background:#f7f7f7;
+                                padding:15px;
+                                border-radius:8px;
+                            ">
+
+                                {mensaje}
+
+                            </div>
+
+                            <br>
+
+                            <table style="width:100%;">
+
+                                <tr>
+                                    <td><b>Solicita demostración</b></td>
+                                    <td>{"Sí" if desea_demo else "No"}</td>
+                                </tr>
+
+                                <tr>
+                                    <td><b>Fecha sugerida</b></td>
+                                    <td>{fecha_demo or "-"}</td>
+                                </tr>
+
+                                <tr>
+                                    <td><b>Horario</b></td>
+                                    <td>{horario or "-"}</td>
+                                </tr>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                """
+
+            })
+
+            print("✅ Solicitud enviada por correo.")
+            
+            try:
+
+                resend.Emails.send({
+
+                    "from": "ACAASO <pardoalf@acaaso.com>",
+
+                    "to": correo,
+
+                    "subject": "Hemos recibido su solicitud - ACAASO Teacher Assessment",
+
+                    "html": f"""
+
+                    <div style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20px;">
+
+                        <div style="
+                            max-width:650px;
+                            margin:auto;
+                            background:white;
+                            border-radius:10px;
+                            overflow:hidden;
+                            box-shadow:0 2px 8px rgba(0,0,0,.12);
+                        ">
+
+                            <div style="
+                                background:#0d47a1;
+                                text-align:center;
+                                padding:25px;
+                            ">
+
+                                <span style="
+                                    font-size:40px;
+                                    font-weight:900;
+                                    color:#29b6f6;
+                                    letter-spacing:4px;
+                                    font-family:Arial Black,Arial,sans-serif;
+                                ">
+                                    ACAASO
+                                </span>
+
+                                <div style="
+                                    color:white;
+                                    font-size:15px;
+                                    margin-top:8px;
+                                ">
+                                    Teacher Assessment
+                                </div>
+
+                            </div>
+
+                            <div style="padding:35px;">
+
+                                <p style="font-size:16px;">
+                                    Estimado(a)
+                                    <b>{nombre}</b>,
+                                </p>
+
+                                <p>
+                                    Muchas gracias por comunicarse con
+                                    <b>ACAASO Teacher Assessment</b>.
+                                </p>
+
+                                <p>
+                                    Hemos recibido correctamente su solicitud de información.
+                                </p>
+
+                                <p>
+                                    Uno de nuestros especialistas revisará la información enviada y
+                                    se comunicará con usted a la brevedad para coordinar una
+                                    demostración personalizada de nuestra plataforma.
+                                </p>
+
+                                <div style="
+                                    background:#eef6ff;
+                                    border-left:5px solid #0d47a1;
+                                    padding:15px;
+                                    margin:25px 0;
+                                ">
+
+                                    <b>Institución:</b> {institucion}<br>
+                                    <b>Correo:</b> {correo}
+
+                                </div>
+
+                                <p>
+                                    Mientras tanto puede visitar nuestro sitio web y conocer
+                                    las principales funcionalidades de ACAASO Teacher Assessment.
+                                </p>
+
+                                <br>
+
+                                <p>
+
+                                    Cordialmente,
+
+                                    <br><br>
+
+                                    <b>Equipo ACAASO</b>
+
+                                </p>
+
+                            </div>
+
+                            <div style="
+                                background:#f1f5f9;
+                                text-align:center;
+                                padding:15px;
+                                font-size:12px;
+                                color:#666;
+                            ">
+
+                                Este es un correo automático.
+                                No es necesario responder este mensaje.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    """
+
+                })
+
+                print("✅ Correo de confirmación enviado al cliente.")
+
+            except Exception as e:
+
+                print("❌ Error enviando correo al cliente:", e)
+
+        except Exception as e:
+
+            print("❌ Error enviando correo:", e)
+
+        return "", 200
+
+    return render_template(
+        "contactos.html",
+        ok=request.args.get("ok")
+    )
 
 @app.route('/eliminar_intento', methods=['POST'])
 def eliminar_intento():
@@ -3937,7 +4402,192 @@ def endpoint_enviar_codigo_quiz():
 def enviar_codigo_quiz(correo, nombre_completo, titulo_quiz, codigo_quiz):
     
     #import resend
+    
+    link_quiz = f"https://acaaso-teacherassesment.onrender.com/quiz/{codigo_quiz}"
+    qr_png = generar_qr(link_quiz)
+    #banner_url = "https://acaaso-teacherassesment.onrender.com/static/img/banner_enviar_quiz.png"
+    #banner_url = "http://localhost:5000/static/img/banner_enviar_quiz.png"
+    with open("static/img/banner_enviar3.png", "rb") as f:
+        banner_png = f.read() 
+    banner_base64 = base64.b64encode(banner_png).decode("utf-8")
 
+
+    print("Banner PNG:", len(banner_png), "bytes")
+    print("Banner Base64:", len(banner_base64), "caracteres")
+    try:
+        resend.Emails.send({
+            "from": "ACAASO <pardoalf@acaaso.com>",
+            "to": correo,
+            "subject": "Acceso a evaluación – ACAASO Assessment",
+            "html": f"""
+                <div style="font-family: Arial, sans-serif; background-color:#f4f6f8; padding:20px;">
+
+                <div style="max-width:600px; margin:auto; background:white; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+
+                    <!-- HEADER -->
+                    <div style="
+                        position:relative;
+                        height:120px;
+                        overflow:hidden;
+                    ">
+
+                        <img src="cid:banner_quiz"
+                            alt="ACAASO"
+                            style="
+                                width:100%;
+                                height:120px;
+                                object-fit:cover;
+                                display:block;
+                            ">
+                    </div>
+
+                    <div style="
+                        text-align:center;
+                        padding:18px 20px 12px 20px;
+                        background:white;
+                    ">
+
+                        <div style="
+                            font-size:42px;
+                            font-weight:900;
+                            color:#0d47a1;
+                            letter-spacing:4px;
+                            font-family:Arial Black, Arial, sans-serif;
+                            line-height:1;
+                        ">
+                            ACAASO
+                        </div>
+
+                        <div style="
+                            margin-top:6px;
+                            font-size:16px;
+                            letter-spacing:3px;
+                            color:#666;
+                            font-weight:600;
+                        ">
+                            Teacher Assessment
+                        </div>
+
+                    </div>
+
+                     
+
+                    <!-- BODY -->
+                    <div style="padding:25px; color:#333;">
+                        <p style="font-size:16px;">
+                            Hola <b>{nombre_completo}</b>,
+                        </p>
+
+                        <p>Te informamos que tienes una evaluación disponible en la plataforma <b>ACAASO Assessment</b>.</p>
+
+                        <p><b>Detalles del quiz:</b></p>
+                        <ul>
+                            <li><b>Título:</b> {titulo_quiz}</li>
+                            <div style="
+                                background:#f1f5fb;
+                                border:1px solid #d6e4ff;
+                                border-radius:8px;
+                                padding:18px;
+                                margin:20px 0;
+                                text-align:center;
+                            ">
+
+                                <div style="font-size:14px; color:#666;">
+                                    Código de acceso
+                                </div>
+
+                                <div style="
+                                    font-size:34px;
+                                    font-weight:bold;
+                                    color:#0d47a1;
+                                    letter-spacing:4px;
+                                    margin-top:8px;
+                                ">
+                                    {codigo_quiz}
+                                </div>
+
+                            </div>
+                            <div style="text-align:center; margin:25px 0;">
+
+                                <a href="{link_quiz}"
+                                style="
+                                        display:inline-block;
+                                        background:#0d47a1;
+                                        color:white;
+                                        text-decoration:none;
+                                        padding:14px 30px;
+                                        border-radius:8px;
+                                        font-size:16px;
+                                        font-weight:bold;
+                                ">
+                                    Ingresar al Quiz
+                                </a>
+
+                            </div>
+                            <p style="font-size:13px; color:#777; text-align:center; margin-top:15px;">
+                                Si el botón no funciona, copie y pegue el siguiente enlace en su navegador:
+                            </p>
+
+                            <p style="text-align:center; word-break:break-all;">
+                                <a href="{link_quiz}">{link_quiz}</a>
+                            </p>
+                        </ul>
+                        <div style="text-align:center; margin:30px 0;">
+                            <img src="cid:qr_quiz"
+                                alt="Código QR"
+                                style="width:220px; height:220px;">
+
+                            <p style="margin-top:15px; font-size:15px; color:#555;">
+                                Escanee este código QR para acceder directamente a la evaluación.
+                            </p>
+                        </div>
+
+                        <p><b>Instrucciones:</b></p>
+                        <ol>
+                            <li>Ingresa a la plataforma.</li>
+                            <li>Introduce el código.</li>
+                            <li>Resuelve el quiz.</li>
+                        </ol>
+
+                        <p>Atentamente,<br>ACAASO Assessment</p>
+                    </div>
+
+                    <!-- FOOTER -->
+                    <div style="background:#f4f6f8; padding:15px; text-align:center; font-size:12px; color:#777;">
+                        © ACAASO Assessment
+                    </div>
+
+                </div>
+
+            </div>
+            """,
+            "attachments": [
+                {
+                    "filename": "banner_enviar_quiz.png",
+                    "content": banner_base64,
+                    "content_type": "image/png",
+                    "content_id": "banner_quiz"
+                },
+                {
+                    "filename": "qr_quiz.png",
+                    "content": base64.b64encode(qr_png).decode("utf-8"),
+                    "content_type": "image/png",
+                    "content_id": "qr_quiz"
+                }
+            ]
+        })
+        print("Resend terminó")
+        print(f"✅ Código enviado con Resend a {correo}")
+
+    except Exception as e:
+        print("❌ ERROR RESEND:", str(e))
+        
+def enviar_codigo_quiz_backup(correo, nombre_completo, titulo_quiz, codigo_quiz):
+    
+    #import resend
+    
+    link_quiz = f"https://acaaso-teacherassesment.onrender.com/quiz/{codigo_quiz}"
+     
     try:
         resend.Emails.send({
             "from": "ACAASO <pardoalf@acaaso.com>",
@@ -3952,6 +4602,10 @@ def enviar_codigo_quiz(correo, nombre_completo, titulo_quiz, codigo_quiz):
                 <ul>
                     <li><b>Título:</b> {titulo_quiz}</li>
                     <li><b>Código de acceso:</b> <span style="font-size:18px;"><b>{codigo_quiz}</b></span></li>
+                     
+                    <li><b>Acceso directo:</b><br>
+                       <a href="{link_quiz}">{link_quiz}</a>
+                    </li>
                 </ul>
 
                 <p><b>Instrucciones:</b></p>
@@ -3969,6 +4623,32 @@ def enviar_codigo_quiz(correo, nombre_completo, titulo_quiz, codigo_quiz):
 
     except Exception as e:
         print("❌ ERROR RESEND:", str(e))
+        
+        
+def generar_qr(texto):
+    
+    qr = qrcode.QRCode(
+        version=1,
+        box_size=8,
+        border=2
+    )
+    
+    qr.add_data(texto)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")  
+    
+    buffer.seek(0)
+
+    qr_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8") 
+    
+    return buffer.getvalue()
+    
+    
+    
+    
 #=======================================================
 #
 # PROFESOR

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz ya resuelto</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+
+        body{
+            height:100vh;
+            margin:0;
+
+            background:
+                linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.55)),
+                url("../static/img/login-quiz1.png");
+
+            background-size:cover;
+            background-position:center;
+
+            display:flex;
+            justify-content:center;
+            align-items:center;
+
+            font-family:Segoe UI, Arial, sans-serif;
+        }
+
+        .card-info{
+
+            width:540px;
+            background:white;
+            border-radius:18px;
+            padding:35px;
+
+            box-shadow:0 20px 60px rgba(0,0,0,.35);
+
+            text-align:center;
+
+        }
+
+        .icono{
+
+            font-size:72px;
+            margin-bottom:15px;
+
+        }
+
+        .titulo{
+
+            font-size:28px;
+            font-weight:700;
+
+            color:#0f172a;
+
+        }
+
+        .texto{
+
+            color:#475569;
+            margin-top:15px;
+            margin-bottom:25px;
+
+        }
+
+        .resultado{
+
+            background:#f8fafc;
+
+            border-radius:12px;
+
+            padding:20px;
+
+            margin-bottom:25px;
+
+        }
+
+        .dato{
+
+            font-size:24px;
+            font-weight:bold;
+            color:#2563eb;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="card-info">
+
+    <div class="icono">
+        🎓
+    </div>
+
+    <div class="titulo">
+        Este quiz ya fue resuelto
+    </div>
+
+    <div class="texto">
+
+        Hola <strong>{{ alumno }}</strong>.
+
+        <br><br>
+
+        Este examen ya fue realizado anteriormente y el profesor
+        configuró este quiz para permitir <strong>un solo intento.</strong>
+
+    </div>
+
+    <div class="resultado">
+
+        <div>Nota obtenida</div>
+
+        <div class="dato">
+            {{ nota }}
+        </div>
+
+        <hr>
+
+        <div>
+            Tiempo empleado:
+            <strong>{{ tiempo }}</strong>
+        </div>
+
+        <div>
+            Fecha:
+            <strong>{{ fecha }}</strong>
+        </div>
+
+    </div>
+
+    <div class="alert alert-info">
+
+        Si necesitas volver a rendir este examen,
+        solicita autorización a tu profesor.
+
+    </div>
+
+    <a href="/" class="btn btn-primary">
+        Volver
+    </a>
+
+</div>
+
+</body>
+</html>

@@ -78,12 +78,19 @@
 
         .table thead {
             color: #6b7280;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .table tbody tr {
             transition: 0.2s;
             border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .table td,
+        .table th {
+            padding-top: 2px;
+            padding-bottom: 2px;
+            vertical-align: middle;
+            font-size: 12px;
         }
 
         .table tbody tr:hover {
@@ -163,18 +170,28 @@
                     <table class="table   table-hover align-middle">
                         <thead>
                             <tr>
+                                <th style="width:40px;"></th>
                                 <th>#</th>
                                 <th>Alumno</th>
                                 <th>Puntaje</th>
                                 <th>Respuestas Correctas</th>
                                 <th>Nota</th>
-                                <th>Intentos</th>
+                                <th>Tiempo</th>
+                                <th>Intentos</th>                              
                                 <th>Estado</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for r in resultados %}
                             <tr class="fila-alumno" data-alumno-id="{{ r[0] }}">
+                                <td class="text-center">
+                                    {% if intentos.get(r[0], 1) > 1 %}
+                                        <span class="toggle-intentos"
+                                            style="cursor:pointer;font-size:18px;font-weight:bold;">
+                                            ▶
+                                        </span>
+                                    {% endif %}
+                                </td>   
                                 <td>{{ loop.index }}</td>
                                 <td>{{ r[2] }} {{ r[3] }}</td>
                                 <td>
@@ -193,6 +210,12 @@
                                 </td>
                                 <td>{{ r[4] }}/{{ r[5] }}</td>
                                 <td>{{ r[6] }}</td>
+
+                                <td>
+                                    {% set t = tiempos_promedio.get(r[0], 0) %}
+                                    {{ "%02d:%02d"|format((t // 60), (t % 60)) }}
+                                </td>
+
                                 <td>{{ intentos.get(r[0], 1) }}</td>
                                 <td>
                                     <span style="
@@ -218,6 +241,70 @@
                                     </span>
                                 </td>
                             </tr>
+                            {% if intentos_detalle.get(r[0]) %}
+                                    {% for intento in intentos_detalle[r[0]] %}
+
+                                    <tr class="fila-intento"
+                                        data-alumno="{{ r[0] }}"
+                                        data-intento="{{ intento.intento }}"
+                                        style="display:none;background:#e5e7eb;">
+
+                                        <td style="text-align:center;color:#9ca3af;">
+                                            ↳
+                                        </td>
+
+                                        <td>
+                                            {{ intento.intento }}
+                                        </td>
+
+                                        <td style="padding-left:15px;color:#374151;">
+                                            Intento {{ intento.intento }}
+                                        </td>
+
+                                        <td>
+                                            {{ ((intento.nota or 0) / 20 * 100)|round(0) }}%
+                                        </td>
+
+                                        <td>
+                                            {{ intento.correctas }}/{{ intento.total }}
+                                        </td>
+
+                                        <td>
+                                            {{ intento.nota }}
+                                        </td>
+
+                                        <td>
+                                            {{ "%02d:%02d"|format((intento.tiempo or 0)//60, (intento.tiempo or 0)%60) }}
+                                        </td>
+                                        <td></td>
+                                        
+                                        <td>
+                                            <span style="
+                                                padding:4px 10px;
+                                                border-radius:8px;
+                                                font-size:12px;
+                                                font-weight:600;
+                                                color:white;
+                                                background:
+                                                {% if (intento.nota or 0) >= 18 %}#22c55e
+                                                {% elif (intento.nota or 0) >= 16 %}#84cc16
+                                                {% elif (intento.nota or 0) >= 13 %}#facc15
+                                                {% elif (intento.nota or 0) >= 11 %}#f59e0b
+                                                {% else %}#ef4444
+                                                {% endif %}
+                                            ">
+                                                {% if (intento.nota or 0) >= 18 %}Excelente
+                                                {% elif (intento.nota or 0) >= 16 %}Muy Bien
+                                                {% elif (intento.nota or 0) >= 13 %}Bien
+                                                {% elif (intento.nota or 0) >= 11 %}Regular
+                                                {% else %}Mal
+                                                {% endif %}
+                                            </span>
+                                        </td>
+                                        
+                                    </tr>
+                                    {% endfor %}
+                                {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>
@@ -468,6 +555,10 @@
 
 let filaSeleccionada = null;
 let alumnoSeleccionado = null;
+let intentoSeleccionado = null;
+let alumnoTieneMultiplesIntentos = false;
+
+const botonVerQuiz = document.querySelector("button[onclick='verQuizAlumno()']");
 
 document.querySelectorAll('.fila-alumno').forEach(fila => {
 
@@ -482,15 +573,76 @@ document.querySelectorAll('.fila-alumno').forEach(fila => {
         this.classList.add('table-active');
         filaSeleccionada = this;
 
-        // guardar alumno_id
+       // guardar alumno seleccionado
         alumnoSeleccionado = this.dataset.alumnoId;
 
-        // activar botón
-        document.querySelector("button[onclick='verQuizAlumno()']").disabled = false;
+        // aún no hay intento seleccionado
+        intentoSeleccionado = null;
+
+        // ¿Tiene varios intentos?
+        alumnoTieneMultiplesIntentos =
+            parseInt(this.cells[7].innerText) > 1;
+
+        // habilitar solo si tiene un único intento
+        botonVerQuiz.disabled = alumnoTieneMultiplesIntentos;
 
     });
 
 });
+document.querySelectorAll(".fila-intento").forEach(fila => {
+
+    fila.addEventListener("click", function () {
+
+        // quitar selección anterior
+        if (filaSeleccionada) {
+            filaSeleccionada.classList.remove("table-active");
+        }
+
+        // seleccionar esta fila
+        this.classList.add("table-active");
+        filaSeleccionada = this;
+
+        // guardar alumno e intento
+        alumnoSeleccionado = this.dataset.alumno;
+        intentoSeleccionado = this.dataset.intento;
+
+        // habilitar botón
+        botonVerQuiz.disabled = false;
+
+    });
+
+});
+
+document.querySelectorAll(".toggle-intentos").forEach(flecha => {
+
+    flecha.addEventListener("click", function(e){
+
+        e.stopPropagation();
+
+        const fila = this.closest("tr");
+        const alumno = fila.dataset.alumnoId;
+
+        const hijos = document.querySelectorAll(
+            '.fila-intento[data-alumno="' + alumno + '"]'
+        );
+
+        let abiertos = false;
+
+        hijos.forEach(f => {
+            if (f.style.display !== "none") {
+                abiertos = true;
+            }
+        });
+
+        hijos.forEach(f => {
+            f.style.display = abiertos ? "none" : "table-row";
+        });
+
+        this.innerHTML = abiertos ? "▶" : "▼";
+
+    });
+
+}); 
 
 </script>
 <script>
@@ -501,13 +653,15 @@ function verQuizAlumno() {
 
     const quizId = "{{ quiz_id }}";
 
-    window.open(`/ver_quiz_alumno/${quizId}/${alumnoSeleccionado}`, '_blank');
+    let url = `/ver_quiz_alumno/${quizId}/${alumnoSeleccionado}`;
+
+    if (intentoSeleccionado) {
+        url += `?intento=${intentoSeleccionado}`;
+    }
+
+    window.open(url, "_blank");
 }
-
-</script>
-
-<script>
-
+ 
 window.onload = function() {
 
     const gridColor = "rgba(255,255,255,0.05)";

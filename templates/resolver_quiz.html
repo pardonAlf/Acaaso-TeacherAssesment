@@ -474,7 +474,7 @@ let quizFinalizado = false;
 let intento_id=null
 
 let index = 0;
-const configQuiz = {{ config_json | default('{}') | safe }};
+const configQuiz = {{ config_json | default({}, true) | tojson }};
 if (configQuiz.tiempo_minutos) {
 
     document.getElementById("textoTiempo").innerHTML =
