@@ -37,25 +37,39 @@
 
 <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
 
-    <!-- 🔹 SALÓN (más grande) -->
+    <!-- 🔹 SALÓN -->
     <div style="position:relative; min-width:520px;">
         <input type="text" id="filtroSalon"
-            class="form-control form-control-sm"
-            placeholder="Salón...">
+               class="form-control form-control-sm"
+               placeholder="Salón...">
 
         <div id="listaSalones"></div>
     </div>
 
     <!-- 🔹 DNI / NOMBRE -->
-    <input type="text" id="filtro"
-        class="form-control form-control-sm"
-        style="width:200px;"
-        placeholder="DNI o nombre...">
+    <div style="position:relative; width:200px;">
 
-    <!-- 🔹 BOTONES -->
-     
+        <input type="text"
+               id="filtro"
+               class="form-control form-control-sm"
+               placeholder="DNI o nombre...">
 
-    <button class="btn btn-sm btn-outline-primary" onclick="seleccionarVisibles()">Seleccionar</button>
+        <div id="listaAlumnos" style=" #listaAlumnos{
+                position:absolute;
+                width:450px;
+                max-height:250px;
+                overflow-y:auto;
+                z-index:999;
+                background:white;
+                border:1px solid #ddd; "></div>
+
+    </div>
+
+    <!-- 🔹 BOTÓN -->
+    <button class="btn btn-sm btn-outline-primary"
+            onclick="seleccionarVisibles()">
+        Seleccionar
+    </button>
 
 </div>
 
@@ -86,8 +100,101 @@
     </button>
 </div>
 <script>
+const alumnosSeleccionados = new Set();
+
+document.querySelectorAll('#tablaAlumnos input[type="checkbox"]').forEach(registrarCheckbox);
+
+document.querySelectorAll("#tablaAlumnos tbody tr").forEach(fila => {
+    fila.dataset.origen = "inicial";
+});
+
+function limpiarOrigen(origen) {
+
+    let filas = document.querySelectorAll("#tablaAlumnos tbody tr");
+
+    filas.forEach(fila => {
+
+        if (fila.dataset.origen !== origen)
+            return;
+
+        let chk = fila.querySelector('input[type="checkbox"]');
+
+        if (!chk.checked) {
+            fila.remove();
+        }
+
+    });
+
+}
+
+function agregarAlumno(a, origen){
+
+    let tbody = document.querySelector("#tablaAlumnos tbody");
+
+    // ¿Ya existe?
+    let existe = tbody.querySelector(`input[value="${a[0]}"]`);
+    if (existe) return;
+
+    let checked = alumnosSeleccionados.has(parseInt(a[0])) ? "checked" : "";
+
+    let fila = document.createElement("tr");
+    fila.dataset.origen = origen;
+
+    fila.innerHTML = `
+        <td><input type="checkbox" value="${a[0]}" ${checked}></td>
+        <td>${a[1]}</td>
+        <td>${a[2]} ${a[3]}</td>
+        <td>${a[4]}</td>
+    `;
+
+    tbody.appendChild(fila);
+
+    let checkbox = fila.querySelector('input[type="checkbox"]');
+    registrarCheckbox(checkbox);
+
+}
+
+function registrarCheckbox(checkbox) {
+
+    checkbox.addEventListener("change", function () {
+
+        let id = parseInt(this.value);
+
+        console.log("CHANGE", id, this.checked);
+
+        if (this.checked)
+            alumnosSeleccionados.add(id);
+        else
+            alumnosSeleccionados.delete(id);
+
+        console.log(alumnosSeleccionados);
+
+    });
+
+}
  
- 
+function conservarMarcados() {
+
+    let filas = document.querySelectorAll("#tablaAlumnos tbody tr");
+
+    filas.forEach(fila => {
+
+        let chk = fila.querySelector('input[type="checkbox"]');
+
+        console.log(
+            "CHK",
+            chk.value,
+            "checked:", chk.checked,
+            "set:", alumnosSeleccionados.has(parseInt(chk.value))
+        );
+
+        if (!chk.checked) {
+            fila.remove();
+        }
+
+    });
+
+}   
  
  
 function enviar() {
@@ -124,32 +231,7 @@ function enviar() {
 }
  
 </script>
-<script>
-document.getElementById("filtro").addEventListener("input", function() {
 
-    let texto = this.value.toLowerCase().trim();
-    let filas = document.querySelectorAll("#tablaAlumnos tbody tr");
-
-    // 🔥 menos de 3 caracteres → no filtra (pero mantiene estado actual)
-    if (texto.length < 3) {
-        return;
-    }
-
-    // 🔍 filtra sobre TODA la tabla (no solo los 100)
-    filas.forEach(fila => {
-
-        let contenido = fila.innerText.toLowerCase();
-
-        if (contenido.includes(texto)) {
-            fila.style.display = "";
-        } else {
-            fila.style.display = "none";
-        }
-
-    });
-
-});
-</script>
 <script>
 function seleccionarVisibles() {
 
@@ -168,7 +250,6 @@ function seleccionarVisibles() {
 }
  
  
- 
 const inputSalon = document.getElementById("filtroSalon");
 const lista = document.getElementById("listaSalones");
 
@@ -183,19 +264,7 @@ inputSalon.addEventListener("input", function() {
         .then(res => res.json())
         .then(data => {
 
-            let tbody = document.querySelector("#tablaAlumnos tbody");
-            tbody.innerHTML = "";
-
-            data.forEach(a => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td><input type="checkbox" value="${a[0]}"></td>
-                        <td>${a[1]}</td>
-                        <td>${a[2]} ${a[3]}</td>
-                        <td>${a[4]}</td>
-                    </tr>
-                `;
-            });
+        data.forEach(a => agregarAlumno(a));
 
         });
 
@@ -210,8 +279,8 @@ inputSalon.addEventListener("input", function() {
     fetch(`/buscar_salones?q=${texto}`)
     .then(res => res.json())
     .then(data => {
-
-        lista.innerHTML = "";
+ 
+        lista.innerHTML = "";   // <-- Limpiar sugerencias anteriores
 
         data.forEach(s => {
 
@@ -229,19 +298,9 @@ inputSalon.addEventListener("input", function() {
                 .then(res => res.json())
                 .then(alumnos => {
 
-                    let tbody = document.querySelector("#tablaAlumnos tbody");
-                    tbody.innerHTML = "";
+                conservarMarcados();
 
-                    alumnos.forEach(a => {
-                        tbody.innerHTML += `
-                            <tr>
-                                <td><input type="checkbox" value="${a[0]}"></td>
-                                <td>${a[1]}</td>
-                                <td>${a[2]} ${a[3]}</td>
-                                <td>${a[4]}</td>
-                            </tr>
-                        `;
-                    });
+                alumnos.forEach(a => agregarAlumno(a));
 
                 });
 
@@ -256,6 +315,62 @@ inputSalon.addEventListener("input", function() {
     });
 
 });
+
+const inputAlumno = document.getElementById("filtro");
+const listaAlumnos = document.getElementById("listaAlumnos");
+
+    inputAlumno.addEventListener("input", function () {
+
+        let texto = this.value.trim();
+
+        if (texto.length < 4) {
+            listaAlumnos.innerHTML = "";
+            listaAlumnos.style.display = "none";
+            return;
+        }
+
+        fetch(`/buscar_alumnos?q=${texto}`)
+        .then(res => res.json())
+        .then(data => {
+
+            listaAlumnos.innerHTML = "";
+
+            data.forEach(a => {
+
+                let item = document.createElement("div");
+                item.className = "list-group-item list-group-item-action";
+                item.innerHTML = `<b>${a[1]}</b> - ${a[2]} ${a[3]}`;
+
+                item.onclick = () => {
+
+                    conservarMarcados();
+
+                    console.log("DESPUÉS DE conservar:", document.querySelectorAll("#tablaAlumnos tbody tr").length);
+
+                    agregarAlumno(a, "dni");
+
+                    console.log("DESPUÉS DE agregar:", document.querySelectorAll("#tablaAlumnos tbody tr").length);
+                    document.querySelectorAll("#tablaAlumnos tbody tr").forEach(f => {
+                        console.log(
+                            f.cells[2].innerText,
+                            "display:",
+                            getComputedStyle(f).display
+                        );
+                    });
+                    inputAlumno.value = "";
+                    listaAlumnos.innerHTML = "";
+                    listaAlumnos.style.display = "none";
+                };
+
+                listaAlumnos.appendChild(item);
+
+            });
+
+            listaAlumnos.style.display = data.length ? "block" : "none";
+
+        });
+
+    });
 </script>
  
  

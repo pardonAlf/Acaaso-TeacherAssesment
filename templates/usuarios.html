@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Usuarios{% endblock %}
+
+{% block content %}
+<style>
+
+.card{
+    border:0;
+    border-radius:14px;
+    box-shadow:0 .35rem 1.2rem rgba(0,0,0,.08)!important;
+    overflow:hidden;
+}
+
+.card-header{
+    background:#ffffff;
+    border-bottom:1px solid #e9ecef;
+    padding:10px 15px;
+    font-size:14px;
+    font-weight:600;
+    color:#495057;
+}
+
+.form-control,
+.form-select{
+    border-radius:8px;
+    font-size:.90rem;
+    padding:.45rem .70rem;
+    box-shadow:none;
+}
+
+.form-control,
+.form-select{
+    height:36px;
+    font-size:.90rem;
+    border-radius:8px;
+    padding:4px 10px;
+}
+
+.table td,
+.table th{
+    vertical-align:middle;
+}
+
+#listaUsuarios tr{
+    cursor:pointer;
+    transition:all .15s;
+}
+
+#listaUsuarios tr:hover{
+    background:#f5f9ff;
+}
+
+#listaUsuarios tr.table-active{
+    background:#dbeafe !important;
+}
+
+.table thead th{
+    font-size:.85rem;
+    font-weight:600;
+    color:#6c757d;
+    text-transform:uppercase;
+    border-bottom:2px solid #dee2e6;
+}
+
+</style>
+
+
+<div class="container-fluid mt-3">
+
+    <div class="row g-3">
+
+        <!-- Panel izquierdo -->
+        <div class="col-12 col-xl-5">
+            <div id="mensaje"
+                class="alert alert-success shadow"
+                style="
+                    display:none;
+                    position:fixed;
+                    top:50%;
+                    left:50%;
+                    transform:translate(-50%, -50%);
+                    z-index:9999;
+                    min-width:420px;
+                    max-width:600px;
+                    padding:20px 30px;
+                    text-align:center;
+                    font-size:1.2rem;
+                    font-weight:600;
+                    border-radius:12px;">
+            </div>
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header py-2">
+                    <strong id="tituloFormulario">Nuevo Usuario</strong>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row g-2 mb-2">
+                        <input type="hidden" id="id_usuario" value="">
+
+                        <div class="col-5">
+                            <input
+                                type="text"
+                                id="usuario"
+                                name="usuario"
+                                class="form-control"
+                                placeholder="Usuario"
+                                maxlength="30"
+                                autocomplete="off">
+                        </div>
+
+                        <div class="col-7">
+                            <input
+                                type="email"
+                                id="correo"
+                                name="correo"
+                                class="form-control"
+                                placeholder="Correo electrónico"
+                                maxlength="120"
+                                autocomplete="off">
+                        </div>
+
+                    </div>
+                    <div class="row g-2 mb-2">
+
+                        <div class="col-6">
+                            <input
+                                type="text"
+                                id="nombre"
+                                name="nombre"
+                                class="form-control"
+                                placeholder="Nombre"
+                                maxlength="80"
+                                autocomplete="off">
+                        </div>
+
+                        <div class="col-6">
+                            <input
+                                type="text"
+                                id="apellidos"
+                                name="apellidos"
+                                class="form-control"
+                                placeholder="Apellidos"
+                                maxlength="80"
+                                autocomplete="off">
+                        </div>
+
+                    </div>
+                     
+                    <div class="row g-2 mb-2">
+
+                        <div class="col-6">
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                class="form-control"
+                                placeholder="Contraseña"
+                                autocomplete="new-password">
+                        </div>
+
+                        <div class="col-6">
+                            <input
+                                type="password"
+                                id="password2"
+                                name="password2"
+                                class="form-control"
+                                placeholder="Confirmar contraseña"
+                                autocomplete="new-password">
+                        </div>
+
+                    </div>
+                    <div class="mb-2">
+                        <select id="rol" name="rol" class="form-select">
+                            <option value="">Seleccione un rol...</option>
+                            <option value="admin">Administrador</option>
+                            <option value="profesor">Profesor</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <select id="cempre" name="cempre" class="form-select">
+                            <option value="">Seleccione una empresa...</option>
+                        </select>
+                    </div>
+                    <div class="d-flex justify-content-between mt-3">
+
+                    <button
+                        type="button"
+                        id="btnNuevo"
+                        class="btn btn-success" 
+                        onclick="nuevoUsuario()"> 
+
+                        <i class="bi bi-plus-circle"></i> Nuevo
+
+                    </button>
+
+                    <div>
+
+                        <button
+                            type="button"
+                            id="btnGuardar"
+                            class="btn btn-primary" 
+                            onclick="guardarUsuario()">                    
+                            <i class="bi bi-floppy"></i> Guardar
+
+                        </button>
+
+                        <button
+                            type="button"
+                            id="btnEliminar"
+                            class="btn btn-danger"
+                            disabled>
+
+                            <i class="bi bi-trash"></i> Eliminar
+
+                        </button>
+
+                    </div>
+
+                </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Panel derecho -->
+        <div class="col-12 col-xl-7">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header py-2">
+                    <strong>Usuarios registrados</strong>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row mb-3 align-items-center">
+
+                        <div class="col-md-8">
+                            <input
+                                type="text"
+                                id="buscar"
+                                class="form-control"
+                                placeholder="🔍 Buscar usuario...">
+                        </div>
+
+                        
+
+                    </div>
+                    <div class="table-responsive">
+                        <!-- La tabla se cargará dinámicamente desde Flask -->
+                        <table class="table table-hover align-middle">
+
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:45px;"></th>
+                                    <th>Usuario</th>
+                                    <th>Nombre</th>
+                                    <th>Rol</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="listaUsuarios">
+
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">
+                                        No hay usuarios para mostrar.
+                                    </td>
+                                </tr>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    cargarEmpresas();
+    cargarUsuarios();
+});
+
+async function guardarUsuario() {
+
+    const btnGuardar = document.getElementById("btnGuardar");
+
+    btnGuardar.disabled = true;
+
+    const usuario = {
+        id: document.getElementById("id_usuario").value,
+        usuario: document.getElementById("usuario").value,
+        nombre: document.getElementById("nombre").value,
+        apellido: document.getElementById("apellidos").value,
+        correo: document.getElementById("correo").value,
+        password: document.getElementById("password").value,
+        rol: document.getElementById("rol").value,
+        cempre: document.getElementById("cempre").value
+    };
+
+    if (usuario.usuario.trim() === "") {
+        mostrarMensaje("Debe ingresar el usuario.", "warning");
+        document.getElementById("usuario").focus();
+        return;
+    }
+
+    const respuesta = await fetch("/api/usuarios/guardar", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(usuario)
+    });
+
+    const resultado = await respuesta.json();
+
+    if (!respuesta.ok) {
+        mostrarMensaje(resultado.mensaje, "danger");
+        return;
+    }
+
+    mostrarMensaje("✅ Usuario grabado satisfactoriamente.");
+
+    nuevoUsuario();
+
+    await cargarUsuarios();
+
+    
+
+}
+
+function mostrarMensaje(texto, tipo = "success") {
+
+    const mensaje = document.getElementById("mensaje");
+
+    mensaje.className = `alert alert-${tipo} shadow`;
+
+    mensaje.innerHTML = texto;
+
+    mensaje.style.display = "block";
+
+    setTimeout(() => {
+        mensaje.style.display = "none";
+    }, 1500);
+
+}
+
+async function cargarUsuarios(){
+
+    const respuesta = await fetch("/api/usuarios");
+    const datos = await respuesta.json();
+
+    const tbody = document.getElementById("listaUsuarios");
+
+    tbody.innerHTML = "";
+
+    datos.forEach(usuario => {
+
+        tbody.innerHTML += `
+            <tr onclick='seleccionarFila(this, ${JSON.stringify(usuario)})'>
+
+                <td>
+                    <i class="bi bi-person"></i>
+                </td>
+
+                <td>${usuario.usuario}</td>
+
+                <td>${usuario.nombre} ${usuario.apellido}</td>
+
+                <td>
+                    <span class="badge bg-secondary">
+                        ${usuario.rol}
+                    </span>
+                </td>
+
+            </tr>
+        `;
+
+    });
+
+}
+
+function seleccionarFila(fila, usuario){
+
+    document.querySelectorAll("#listaUsuarios tr").forEach(f=>{
+        f.classList.remove("table-active");
+    });
+
+    fila.classList.add("table-active");
+    document.getElementById("usuario").value = usuario.usuario;
+    document.getElementById("tituloFormulario").innerHTML = "Editar Usuario";
+    document.getElementById("nombre").value = usuario.nombre;
+    document.getElementById("apellidos").value = usuario.apellido;
+    document.getElementById("correo").value = usuario.correo;
+    document.getElementById("id_usuario").value = usuario.id;
+    document.getElementById("cempre").value = usuario.cempre;
+
+    document.getElementById("btnEliminar").disabled = false;
+}
+
+async function cargarEmpresas() {
+
+    const respuesta = await fetch("/api/empresas");
+    const empresas = await respuesta.json();
+
+    const combo = document.getElementById("cempre");
+
+    combo.innerHTML = '<option value="">Seleccione...</option>';
+
+    empresas.forEach(empresa => {
+
+        combo.innerHTML += `
+            <option value="${empresa.id}">
+                ${empresa.nombre}
+            </option>
+        `;
+
+    });
+
+}
+function nuevoUsuario() {
+
+    document.getElementById("id_usuario").value = "";
+    document.getElementById("usuario").value = "";
+    document.getElementById("nombre").value = "";
+    document.getElementById("apellidos").value = "";
+    document.getElementById("correo").value = "";
+    document.getElementById("password").value = "";
+    document.getElementById("rol").selectedIndex = 0;
+    document.getElementById("cempre").selectedIndex = 0;
+
+    document.getElementById("tituloFormulario").innerHTML = "Nuevo Usuario";
+
+    document.querySelectorAll("#listaUsuarios tr").forEach(fila => {
+        fila.classList.remove("table-active");
+    }); 
+
+    document.getElementById("usuario").focus();
+
+    document.getElementById("btnEliminar").disabled = true;
+
+}
+
+
+
+</script>
+
+{% endblock %}

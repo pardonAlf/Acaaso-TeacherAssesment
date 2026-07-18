@@ -1813,7 +1813,150 @@ def generar_codigo_unico(cur):
         
         if not existe:
             return codigo
-        
+
+
+@app.route("/usuarios")
+def usuarios():
+
+    if "usuario" not in session:
+        return redirect("/login")
+
+    if session["rol"] != "root":
+        return redirect("/")
+
+    return render_template("usuarios.html")   
+
+@app.route("/api/empresas")
+def api_empresas():
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            cempre,
+            dempre
+        FROM empresa
+        WHERE estado = true
+        ORDER BY dempre
+    """)
+
+    filas = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    empresas = []
+
+    for fila in filas:
+        empresas.append({
+            "id": fila[0],
+            "nombre": fila[1]
+        })
+
+    return jsonify(empresas)
+
+@app.route("/api/usuarios/guardar", methods=["POST"])
+def api_guardar_usuario():
+
+    datos = request.get_json()
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+
+        if not datos["id"]:
+
+            cur.execute("""
+                INSERT INTO usuarios
+                (
+                    usuario,
+                    nombre,
+                    apellido,
+                    correo,
+                    password,
+                    rol,
+                    cempre
+                )
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
+            """, (
+                datos["usuario"],
+                datos["nombre"],
+                datos["apellido"],
+                datos["correo"],
+                datos["password"],
+                datos["rol"],
+                datos["cempre"]
+            ))
+
+        conn.commit()
+
+        return jsonify({
+            "ok": True
+        })
+
+    except Exception as e:
+
+        conn.rollback()
+
+        mensaje = "Ocurrió un error al guardar el usuario."
+
+        if "usuarios_usuario_key" in str(e):
+            mensaje = "El nombre de usuario ya existe."
+
+        return jsonify({
+            "ok": False,
+            "mensaje": mensaje
+        }), 400
+
+    finally:
+
+        cur.close()
+        conn.close()
+@app.route("/api/usuarios")
+def api_usuarios():
+
+    # if "usuario" not in session:
+    #     return jsonify([])
+
+    # if session["rol"] != "root":
+    #     return jsonify([])
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            id,
+            usuario,
+            nombre,
+            apellido,
+            correo,
+            rol,
+            cempre
+        FROM usuarios
+        ORDER BY usuario
+    """)
+
+    filas = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    usuarios = []
+
+    for fila in filas:
+        usuarios.append({
+            "id": fila[0],
+            "usuario": fila[1],
+            "nombre": fila[2],
+            "apellido": fila[3],
+            "correo": fila[4],
+            "rol": fila[5],
+            "cempre": fila[6]
+        })
+
+    return jsonify(usuarios)
         
 @app.route('/generar_codigo_unico/<int:id>')
 def generar_codigo(id):
@@ -1845,6 +1988,36 @@ def eliminar_asignacion(id):
     conn.close()
 
     return jsonify({"status": "ok"})
+
+
+@app.route('/buscar_alumnos')
+def buscar_alumnos():
+
+    texto = request.args.get('q', '').strip()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id,
+               dni,
+               nombre,
+               apellido,
+               correo
+        FROM alumnos
+        WHERE
+            dni ILIKE %s
+            OR nombre ILIKE %s
+            OR apellido ILIKE %s
+        ORDER BY apellido, nombre
+        LIMIT 20
+    """, (
+        f"%{texto}%",
+        f"%{texto}%",
+        f"%{texto}%"
+    ))
+
+    return jsonify(cursor.fetchall())
 
 @app.route('/buscar_alumnos_por_salon')
 def buscar_alumnos_por_salon():
@@ -2154,7 +2327,7 @@ def resolver_quiz(quiz_id, alumno_id):
 
     row = cur.fetchone()
 
-    config_json = row[0] if row else "{}"
+    config_json = json.loads(row[0]) if row and row[0] else {}
     multiple_intentos = row[1] if row else False
     titulo=row[2] if row else "Titulo del quiz"
 
@@ -2195,6 +2368,10 @@ def resolver_quiz(quiz_id, alumno_id):
 
     cur.close()
     conn.close()
+    
+    print("quiz_id:", quiz_id)
+    print("config_json:", config_json)
+    print("tipo:", type(config_json))
 
     return render_template(
         'resolver_quiz.html',
@@ -4385,19 +4562,41 @@ def endpoint_enviar_codigo_quiz():
         alumno_id, nombre, apellido, correo = a
         nombre_completo = f"{nombre} {apellido}"
 
-        enviar_codigo_quiz(
+        cur.execute("""
+            INSERT INTO cola_email
+            (
+                destinatario,
+                nombre,
+                titulo_quiz,
+                codigo_quiz
+            )
+            VALUES
+            (
+                %s,
+                %s,
+                %s,
+                %s
+            )
+        """, (
             correo,
             nombre_completo,
             titulo_quiz,
             codigo_quiz
-        )
+        ))
 
         enviados += 1
+        
+    conn.commit()
+
+    cur.close()
+    conn.close()    
 
     return jsonify({
         "ok": True,
-        "enviados": enviados
-    })    
+        "enviados": enviados,
+        "mensaje": f"{enviados} correos agregados a la cola de envío."
+    })
+
     
 def enviar_codigo_quiz(correo, nombre_completo, titulo_quiz, codigo_quiz):
     
@@ -4411,9 +4610,6 @@ def enviar_codigo_quiz(correo, nombre_completo, titulo_quiz, codigo_quiz):
         banner_png = f.read() 
     banner_base64 = base64.b64encode(banner_png).decode("utf-8")
 
-
-    print("Banner PNG:", len(banner_png), "bytes")
-    print("Banner Base64:", len(banner_base64), "caracteres")
     try:
         resend.Emails.send({
             "from": "ACAASO <pardoalf@acaaso.com>",
@@ -4469,8 +4665,6 @@ def enviar_codigo_quiz(correo, nombre_completo, titulo_quiz, codigo_quiz):
                         </div>
 
                     </div>
-
-                     
 
                     <!-- BODY -->
                     <div style="padding:25px; color:#333;">
@@ -4576,11 +4770,11 @@ def enviar_codigo_quiz(correo, nombre_completo, titulo_quiz, codigo_quiz):
                 }
             ]
         })
-        print("Resend terminó")
-        print(f"✅ Código enviado con Resend a {correo}")
+         
 
     except Exception as e:
         print("❌ ERROR RESEND:", str(e))
+        raise
         
 def enviar_codigo_quiz_backup(correo, nombre_completo, titulo_quiz, codigo_quiz):
     
