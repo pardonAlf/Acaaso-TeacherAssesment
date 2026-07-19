@@ -983,23 +983,46 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
 
 @app.route('/obtener_asignaciones/<int:salon_id>')
 def obtener_asignaciones(salon_id):
-    
+
     if 'user_id' not in session:
         return jsonify({"error": "No autenticado"}), 401
 
     conn = get_db_connection()
     cur = conn.cursor()
-    
-   
 
-    cur.execute("""
-        SELECT sq.id, q.titulo, q.codigo
-        FROM salon_quiz sq
-        JOIN quiz q ON q.id = sq.quiz_id
-        WHERE sq.salon_id = %s
-        AND q.usuario_id = %s
-        ORDER BY sq.id DESC
-    """, (salon_id,session['user_id'],))
+    if session["rol"] == "admin":
+
+        cur.execute("""
+            SELECT
+                sq.id,
+                q.titulo,
+                q.codigo
+            FROM salon_quiz sq
+            JOIN quiz q ON q.id = sq.quiz_id
+            WHERE sq.salon_id = %s
+              AND q.cempre = %s
+            ORDER BY sq.id DESC
+        """, (
+            salon_id,
+            session["cempre"]
+        ))
+
+    else:   # profesor
+
+        cur.execute("""
+            SELECT
+                sq.id,
+                q.titulo,
+                q.codigo
+            FROM salon_quiz sq
+            JOIN quiz q ON q.id = sq.quiz_id
+            WHERE sq.salon_id = %s
+              AND q.usuario_id = %s
+            ORDER BY sq.id DESC
+        """, (
+            salon_id,
+            session["user_id"]
+        ))
 
     data = cur.fetchall()
 
@@ -1007,7 +1030,11 @@ def obtener_asignaciones(salon_id):
     conn.close()
 
     resultado = [
-        {"id": r[0], "titulo": r[1], "codigo": r[2]}
+        {
+            "id": r[0],
+            "titulo": r[1],
+            "codigo": r[2]
+        }
         for r in data
     ]
 
