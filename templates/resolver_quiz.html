@@ -690,7 +690,7 @@ document.getElementById("btnSiguiente").addEventListener("click", () => {
 document.getElementById("btnComenzar")
     .addEventListener("click", comenzarQuiz);
 
-cargarPregunta();
+//cargarPregunta();
 //iniciarCronometro();
 
 function salir() {
@@ -722,6 +722,8 @@ async function comenzarQuiz() {
 
     document.getElementById("pantallaInicio").style.display = "none";
     document.getElementById("pantallaQuiz").style.display = "block";
+
+    cargarPregunta();
 
     iniciarCronometro();
 

@@ -1202,7 +1202,7 @@ def quiz():
 def crear_quiz():
     if request.method == 'POST':
         titulo = request.form['titulo']
-        config_json = request.form.get("config_json")
+        config_json = request.form.get("config_json") or "{}"
         print("CONFIG JSON RECIBIDO:", config_json)
         usuario = session.get('usuario')
         multiple_intentos = request.form.get('multiple_intentos') in ['true', 'on', '1']
@@ -3667,9 +3667,93 @@ def ver_resultados(quiz_id):
             "correctas": correctas,
             "total": total
         })
+        
+     # 🔥 4. KPI's de tiempo
+    cur.execute("""
+        SELECT
+            ROUND(AVG(tiempo_total_segundos)),
+            MIN(tiempo_total_segundos),
+            MAX(tiempo_total_segundos)
+        FROM intentos_quiz
+        WHERE quiz_id = %s
+          AND tiempo_total_segundos IS NOT NULL
+          AND nota_final IS NOT NULL
+    """, (quiz_id,))
+
+    tiempo_promedio_examen, examen_mas_rapido, examen_mas_lento = cur.fetchone()
+
+    tiempo_promedio_examen = tiempo_promedio_examen or 0
+    examen_mas_rapido = examen_mas_rapido or 0
+    examen_mas_lento = examen_mas_lento or 0 
+    
+    cur.execute("""
+        SELECT
+            COALESCE(SUM(tiempo_total_segundos),0)
+        FROM intentos_quiz
+        WHERE quiz_id = %s
+          AND tiempo_total_segundos IS NOT NULL
+          AND nota_final IS NOT NULL
+    """, (quiz_id,))
+
+    tiempo_total_examenes = cur.fetchone()[0] or 0
+    
+    cur.execute("""
+        SELECT
+            p.id,
+            p.norden,
+            p.texto,
+            ROUND(AVG(ra.tiempo_segundos),1) AS promedio
+        FROM preguntas p
+        JOIN respuestas_alumno ra
+            ON ra.pregunta_id = p.id
+        WHERE p.quiz_id = %s
+        AND ra.tiempo_segundos IS NOT NULL
+        GROUP BY
+            p.id,
+            p.norden,
+            p.texto
+        ORDER BY promedio DESC;
+    """, (quiz_id,))
+
+    tiempo_preguntas = cur.fetchall()
+    tiempo_labels = [f"P{p[1]}" for p in tiempo_preguntas]
+    tiempo_promedios = [float(p[3]) for p in tiempo_preguntas]
+    tiempo_tooltips = [p[2] for p in tiempo_preguntas]
+    
+
+    cur.execute("""
+        SELECT
+            p.norden,
+            p.texto,
+            COUNT(*) AS respuestas,
+            SUM(CASE WHEN o.es_correcta THEN 1 ELSE 0 END) AS correctas,
+            ROUND(
+                100.0 * SUM(CASE WHEN o.es_correcta THEN 1 ELSE 0 END) / COUNT(*),
+                1
+            ) AS porcentaje
+        FROM preguntas p
+        JOIN respuestas_alumno ra
+            ON ra.pregunta_id = p.id
+        JOIN opciones o
+            ON ra.opcion_id = o.id
+        WHERE p.quiz_id = %s
+        GROUP BY
+            p.norden,
+            p.texto
+        ORDER BY porcentaje ASC;
+    """, (quiz_id,))
+    
+    resultados_aciertos = cur.fetchall()
+
+    aciertos_labels = [f"P{r[0]}" for r in resultados_aciertos]
+    aciertos_tooltips = [r[1] for r in resultados_aciertos]
+    aciertos_porcentaje = [float(r[4]) for r in resultados_aciertos]
+    aciertos_respuestas = [int(r[2]) for r in resultados_aciertos]
 
     cur.close()
     conn.close()
+    
+     
 
     return render_template(
         "resultados.html",
@@ -3692,7 +3776,18 @@ def ver_resultados(quiz_id):
         tiempos_promedio=tiempos_promedio,
         promedio=promedio ,
         mayor_nota=mayor_nota,
-        intentos_detalle=intentos_detalle
+        intentos_detalle=intentos_detalle,
+        tiempo_promedio_examen=tiempo_promedio_examen,
+        examen_mas_rapido=examen_mas_rapido,
+        examen_mas_lento=examen_mas_lento,
+        tiempo_total_examenes=tiempo_total_examenes ,
+        tiempo_labels=tiempo_labels,
+        tiempo_tooltips=tiempo_tooltips,
+        tiempo_promedios=tiempo_promedios ,
+        aciertos_labels=aciertos_labels,
+        aciertos_porcentaje=aciertos_porcentaje,
+        aciertos_tooltips=aciertos_tooltips,
+        aciertos_respuestas=aciertos_respuestas 
     )
     
     
