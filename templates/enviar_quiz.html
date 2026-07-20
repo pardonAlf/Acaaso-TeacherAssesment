@@ -29,9 +29,17 @@
 
     </div>
 
-    <button class="btn btn-primary btn-sm" onclick="enviar()">
-        Enviar Código
-    </button>
+    <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-primary btn-sm" onclick="enviar()">
+            Enviar Código
+        </button>
+
+        <button class="btn btn-outline-dark btn-sm"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#panelQR">
+            Ver QR
+        </button>
+    </div>
 
 </div>
 
@@ -54,14 +62,18 @@
                class="form-control form-control-sm"
                placeholder="DNI o nombre...">
 
-        <div id="listaAlumnos" style=" #listaAlumnos{
-                position:absolute;
-                width:450px;
-                max-height:250px;
-                overflow-y:auto;
-                z-index:999;
-                background:white;
-                border:1px solid #ddd; "></div>
+        <div id="listaAlumnos"
+            style="position:absolute;
+                    top:100%;
+                    left:0;
+                    width:500px;
+                    max-height:250px;
+                    overflow-y:auto;
+                    z-index:9999;
+                    background:#fff;
+                    border:1px solid #ddd;
+                    display:none;">
+        </div>
 
     </div>
 
@@ -99,6 +111,42 @@
         Enviar Código
     </button>
 </div>
+<div class="offcanvas offcanvas-end" tabindex="-1" id="panelQR">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Código QR del Quiz</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+
+    <div class="offcanvas-body text-center">
+
+        <div id="qrContainer"></div>
+
+        <div class="mt-3">
+            <small class="text-muted">
+                https://acaaso-teacherassesment.onrender.com/quiz/{{ codigo_quiz }}
+            </small>
+        </div>
+
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+document.getElementById('panelQR').addEventListener('shown.bs.offcanvas', function () {
+
+    const contenedor = document.getElementById("qrContainer");
+
+    if (contenedor.innerHTML.trim() !== "") return;
+
+    const url = "https://acaaso-teacherassesment.onrender.com/quiz/{{ codigo_quiz }}";
+
+    new QRCode(contenedor, {
+        text: url,
+        width: 280,
+        height: 280
+    });
+
+});
+</script>
 <script>
 const alumnosSeleccionados = new Set();
 

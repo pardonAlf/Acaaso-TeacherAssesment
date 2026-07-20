@@ -9,6 +9,7 @@
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 
     <style>
         body {
@@ -847,6 +848,8 @@ function verQuizAlumno() {
 
     window.open(url, "_blank");
 }
+
+Chart.register(ChartDataLabels);
  
 window.onload = function() {
 
@@ -982,7 +985,8 @@ window.onload = function() {
             plugins: {
                 legend: {
                     display: false
-                }
+                } 
+                
             },
             scales: {
                 x: { ticks: { color: textColor }, grid: { color: gridColor } },
@@ -1016,6 +1020,14 @@ window.onload = function() {
                             return tiempoTooltips[context[0].dataIndex];
                         }
                     }
+                },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'top',
+                    rotation: -90,
+                    formatter: function(value) {
+                        return value + " s";
+                    }
                 }
             },
             scales: {
@@ -1044,7 +1056,8 @@ window.onload = function() {
             datasets: [{
                 data: aciertosData,
                 borderRadius: 6,
-                backgroundColor: "#10b981"
+                backgroundColor: "#10b981",
+                 
             }]
         },
         options: {
@@ -1064,7 +1077,16 @@ window.onload = function() {
                 title: {
                     display: true,
                     text: 'Porcentaje de aciertos por pregunta'
+                },
+                datalabels: {
+                     
+                    color: '#ffffff',
+                    rotation: -90,
+                    formatter: function(value) {
+                        return value + " s";
+                    }
                 }
+                 
             },
             scales: {
                 x: {
@@ -1088,6 +1110,7 @@ window.onload = function() {
 
 
 </script>
+
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
