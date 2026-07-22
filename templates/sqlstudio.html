@@ -96,13 +96,12 @@
 
     <button
         id="btnNuevaConsulta"
-        class="btn btn-primary"
+        class="btn btn-success"
         data-bs-toggle="modal"
-        data-bs-target="#modalConsulta">
-
+        data-bs-target="#modalConsulta"
+        {% if session["rol"] != "admin" %}disabled{% endif %}>
         <i class="bi bi-plus-circle"></i>
-        Nueva Consulta
-
+        Nueva consulta
     </button>
 
 </div>
