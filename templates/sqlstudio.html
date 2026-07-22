@@ -259,6 +259,9 @@
                                 Ejecutar
                             </button>
 
+                            {% if session["rol"] == "admin" %}
+
+
                             <button id="btnEditar" class="btn btn-outline-secondary"  disabled>
                                 <i class="bi bi-pencil-square me-2"></i>
                                 Editar  
@@ -291,6 +294,8 @@
                                 Eliminar 
 
                             </button>
+
+                            {% endif %}
 
                         </div>
 
@@ -487,7 +492,6 @@
 
                 </div>
 
- 
 
                 <hr class="mt-3 mb-3">
 
@@ -747,11 +751,16 @@ document.querySelectorAll("tbody tr[data-id]").forEach(fila => {
         this.classList.add("table-active");
         filaSeleccionada = this;
 
-        document.getElementById("btnEditar").disabled = false;
-        document.getElementById("btnEliminar").disabled = false;
-        document.getElementById("btnDuplicar").disabled = false;
-        document.getElementById("btnExportar").disabled = false;
-        document.getElementById("btnImportar").disabled = false;
+        [
+            "btnEditar",
+            "btnEliminar",
+            "btnDuplicar",
+            "btnExportar",
+            "btnImportar"
+        ].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) btn.disabled = false;
+        });
 
         consultaSeleccionada = {
             id: this.dataset.id,
