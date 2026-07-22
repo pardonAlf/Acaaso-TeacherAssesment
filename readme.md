@@ -139,6 +139,22 @@ Generate quizzes from:
 
 ---
 
+### Upcoming Feature – SQL Studio
+
+SQL Studio is an advanced administrative reporting module currently under development.
+
+It allows administrators to build, organize, and execute reusable SQL queries directly from the application, providing instant access to custom reports without requiring direct database access.
+
+Planned capabilities include:
+
+Save reusable SQL queries
+Organize queries by category
+Execute queries safely from the interface
+Display tabular results
+Export reports
+Manage shared institutional reports
+
+---
 ### 🏫 Institution Management
 
 - Multi-tenant architecture
