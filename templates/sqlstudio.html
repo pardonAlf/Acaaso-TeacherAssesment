@@ -1110,14 +1110,18 @@ function abrirModalEjecutar() {
 function aplicarFiltros() {
 
     const texto = document.getElementById("txtBuscar").value.toLowerCase().trim();
-    const categoria = document.getElementById("cmbCategoria").value.toLowerCase();
+    const categoria = document.getElementById("cmbCategoria").value.trim().toLowerCase();
     const estado = document.getElementById("cmbEstado").value.toLowerCase();
+
+    console.log("Categoría seleccionada:", categoria);
 
     document.querySelectorAll("tbody tr[data-id]").forEach(fila => {
 
-        const nombre = fila.dataset.nombre.toLowerCase();
-        const descripcion = fila.dataset.descripcion.toLowerCase();
-        const categoriaFila = fila.dataset.categoria.toLowerCase();
+        const nombre = (fila.dataset.nombre || "").toLowerCase();
+        const descripcion = (fila.dataset.descripcion || "").toLowerCase();
+        const categoriaFila = (fila.dataset.categoria || "").trim().toLowerCase();
+
+        console.log("Fila:", categoriaFila);
 
         const estadoFila = fila.querySelector(".badge").textContent.toLowerCase();
 
@@ -1129,27 +1133,28 @@ function aplicarFiltros() {
 
         const cumpleCategoria =
             categoria === "" ||
-            categoria === "todas" ||
             categoriaFila === categoria;
 
         const cumpleEstado =
             estado === "" ||
-            estado === "todos" ||
+            estado === "todas" ||
             estadoFila === estado;
 
         fila.style.display =
             (cumpleTexto && cumpleCategoria && cumpleEstado)
             ? ""
             : "none";
-
     });
 
-}   
-document
-    .getElementById("txtBuscar")
+}
+document.getElementById("txtBuscar")
     .addEventListener("input", aplicarFiltros);
 
- 
+document.getElementById("cmbCategoria")
+    .addEventListener("change", aplicarFiltros);
+
+document.getElementById("cmbEstado")
+    .addEventListener("change", aplicarFiltros);
 
 </script>
 {% endblock %}
