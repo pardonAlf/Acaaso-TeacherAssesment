@@ -1,0 +1,1155 @@
+{% extends "base.html" %}
+
+{% block title %}SQL Studio{% endblock %}
+
+{% block styles %}
+<style>
+
+.table-sqlstudio * {
+    padding: 0 !important;
+    line-height: 1 !important;
+}
+
+.table-sqlstudio {
+    --bs-table-border-color: #e9ecef;
+    margin-bottom: 0;
+}
+
+.table-sqlstudio > :not(caption) > * > * {
+    padding-top: .15rem;
+    padding-bottom: .15rem;
+    border-bottom-width: 1px;
+}
+
+.table-sqlstudio thead th {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6 !important;
+    font-weight: 600;
+}
+
+.table-sqlstudio th,
+.table-sqlstudio td {
+    padding: 2px 8px !important;
+    line-height: 1.1 !important;
+    vertical-align: middle;
+}
+
+.table-sqlstudio tbody tr {
+    height: 24px;
+}
+
+.card .table.table-sqlstudio > :not(caption) > * > * {
+    padding: 2px 8px !important;
+    line-height: 1.1 !important;
+    height: 24px !important;
+}
+
+.table-sqlstudio .badge {
+    padding: 10px   ;
+    font-size: 10px;
+    width:50px;
+    line-height: 1.2;
+}
+
+/* Tabla de resultados SQL */
+
+#modalEjecutar table {
+    font-size: 13px;
+}
+
+#modalEjecutar .table > :not(caption) > * > * {
+    padding: .28rem .45rem;
+    vertical-align: middle;
+}
+
+#modalEjecutar thead th {
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#modalEjecutar tbody td {
+    font-size: 13px;
+    white-space: nowrap;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+
+    <div class="d-flex align-items-center">
+
+        <div class="me-3">
+            <i class="bi bi-database-fill text-primary" style="font-size:48px;"></i>
+        </div>
+
+        <div>
+            <h2 class="fw-bold mb-1">SQL Studio</h2>
+            <div class="text-muted">
+                Crea, administra y ejecuta consultas SQL para obtener la información que necesitas.
+            </div>
+        </div>
+
+    </div>
+
+    <button
+        id="btnNuevaConsulta"
+        class="btn btn-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#modalConsulta">
+
+        <i class="bi bi-plus-circle"></i>
+        Nueva Consulta
+
+    </button>
+
+</div>
+<div class="card shadow-sm border-0 mb-2">
+
+    <div class="card-body py-2">
+
+        <div class="row g-3 align-items-center">
+
+            <div class="col-md-5">
+                <div class="input-group">
+
+                    <span class="input-group-text bg-white">
+                        <i class="bi bi-search"></i>
+                    </span>
+
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="txtBuscar"
+                        placeholder="Buscar consultas...">
+
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <select id="cmbCategoria" class="form-select">
+
+                    <option value="">Todas las categorías</option>
+
+                    {% for c in categorias %}
+                        <option value="{{ c }}">{{ c }}</option>
+                    {% endfor %}
+
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <select class="form-select" id="cmbEstado">
+                    <option>Todas</option>
+                </select>
+            </div>
+
+            <div class="col-md-1 text-end">
+
+                <button
+                    class="btn btn-outline-secondary w-100"
+                    id="btnRefrescar"
+                    title="Actualizar">
+
+                    <i class="bi bi-arrow-clockwise"></i>
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="card shadow-sm border-0">
+
+    <div class="card-body p-0">
+
+        <div class="row">
+
+            <div class="col-lg-10">
+
+                <table class="table table-hover table-sqlstudio">
+                    <thead>
+
+                        <tr>
+                            <th style="width:60px;">ID</th>
+                            <th>Nombre</th>
+                             <th class="text-end" style="width:140px;">Categoría</th>
+                             
+                            <th class="text-end" style="width:170px;">Fecha Modificación</th>
+                            <th class="text-end" style="width:170px;">Última ejecución</th>
+                            <th class="text-center" style="width:90px;">Estado</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% if consultas %}
+
+                            {% for q in consultas %}
+
+                            <tr
+                                data-id="{{ q[0] }}"
+                                data-nombre="{{ q[1] }}"
+                                data-descripcion="{{ q[2] or '' }}"
+                                data-categoria="{{ q[3] or '' }}"
+                                data-consulta="{{ q[4] or '' }}"
+                                data-usuario="{{ q[8] or '' }}"
+                                data-fecha="{{ q[9].strftime('%d/%m/%Y %H:%M') if q[9] else '' }}">
+
+                                <td>{{ q[0] }}</td>
+
+                                <td>{{ q[1] }}</td>
+
+                                <td>{{ q[3] or "-" }}</td>
+
+                                <td class="text-end">{{ q[5].strftime("%d/%m/%Y %H:%M") if q[5] else "-" }}</td>
+
+                                <td class="text-end">{{ q[6].strftime("%d/%m/%Y %H:%M") if q[6] else "-" }}</td>
+
+                                <td class="text-center">
+                                    {% if q[7] %}
+                                        <span class="badge bg-success">Activa</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactiva</span>
+                                    {% endif %}
+                                </td>
+                                
+
+                            </tr>
+
+                            {% endfor %}
+
+                        {% else %}
+
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <i class="bi bi-database fs-1 d-block mb-3"></i>
+                                No existen consultas registradas
+                            </td>
+                        </tr>
+
+                        {% endif %}
+
+                        </tbody>
+
+                </table>
+            </div>
+            
+            <div class="col-lg-2">
+
+                <div class="card shadow-sm border-0">
+
+                    <div class="card-header bg-white">
+                        <strong>Acciones</strong>
+                    </div>
+
+                    <div class="card-body py-2">
+
+                        <div class="d-grid gap-2">
+
+                            <button class="btn btn-primary" id="btnEjecutar" onclick="abrirModalEjecutar()"">
+                                <i class="bi bi-play-fill me-2"></i>
+                                Ejecutar
+                            </button>
+
+                            <button id="btnEditar" class="btn btn-outline-secondary"  disabled>
+                                <i class="bi bi-pencil-square me-2"></i>
+                                Editar  
+                            </button>
+
+                            <button id="btnDuplicar" class="btn btn-outline-secondary" disabled>
+                                <i class="bi bi-files me-2"></i>
+                                Duplicar
+                            </button>
+
+                            <button  id="btnExportar" class="btn btn-outline-secondary" disabled>
+                                <i class="bi bi-file-earmark-arrow-down me-2"></i>
+                                Exportar
+                            </button>
+                            <button
+                                id="btnImportar"
+                                class="btn btn-outline-primary">
+
+                                <i class="bi bi-upload me-2"></i>
+                                Importar  
+
+                            </button>
+
+                            <button
+                                id="btnEliminar"
+                                class="btn btn-outline-danger"
+                                disabled>
+
+                                <i class="bi bi-trash me-2"></i>
+                                Eliminar 
+
+                            </button>
+
+                        </div>
+
+                        <hr>
+
+                        <small class="text-muted">
+                            Seleccione una consulta de la lista para habilitar las acciones disponibles.
+                        </small>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+        <div class="d-flex justify-content-between align-items-center px-2 py-1 mt-2 border-top">
+
+            <small class="text-muted">
+                <strong>0</strong> consultas registradas
+            </small>
+
+            <small class="text-muted">
+                SQL Studio · ACAASO
+            </small>
+
+        </div>
+</div>
+<!-- Modal Nueva Consulta -->
+<div class="modal fade" id="modalConsulta" tabindex="-1">
+
+    <div class="modal-dialog modal-lg">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h5 class="modal-title" id="tituloModalConsulta">
+                    Nueva Consulta SQL
+                </h5>
+
+                <button class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <div class="mb-3">
+
+                    <input type="hidden" id="txtId" value="">
+
+                    <label class="form-label">
+                        Nombre
+                    </label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="txtNombre">
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Categoría
+                    </label>
+
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="txtCategoria">
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        <h5 class="modal-title" id="tituloModalConsulta">
+                            Nueva Consulta SQL
+                        </h5>
+                    </label>
+
+                    <textarea
+                        id="txtSQL"
+                        class="form-control"
+                        rows="12"></textarea>
+
+                    <!-- AGREGAR AQUÍ -->
+                    <div id="panelSQLMensaje" class="alert alert-danger mt-2 py-2 px-3 d-none">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <span id="txtSQLMensaje"></span>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <div class="me-auto" id="lblEstadoSQL">
+                    <small class="text-warning">
+                        <i class="bi bi-exclamation-circle"></i>
+                        Consulta pendiente de revisión.
+                    </small>
+                </div>
+
+                <button
+                    type="button"
+                    class="btn btn-outline-primary"
+                    id="btnRevisarSQL">
+
+                    <i class="bi bi-check2-circle"></i>
+                    Revisar SQL
+
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="btnGuardarConsulta"
+                    disabled>
+
+                    <i class="bi bi-save"></i>
+                    Guardar
+
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+
+                    Cancelar
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Modal Ejecutar-->
+<div class="modal fade" id="modalEjecutar" tabindex="-1">
+
+    <div class="modal-dialog modal-lg">
+
+        <div class="modal-content">
+
+            <div class="modal-header border-0 pb-2">
+
+                <h5 class="modal-title"></h5>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Cerrar">
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+                <div class="mb-4">
+
+                    <h3 id="lblTituloConsulta"
+                        class="fw-semibold mb-2"
+                        style="font-size:24px;color:#2f3640;">
+                    </h3>
+
+                    <div class="d-flex flex-wrap gap-4"
+                        style="font-size:14px;color:#6c757d;">
+
+                        <div>
+                            <strong>Categoría:</strong>
+                            <span id="lblCategoria"></span>
+                        </div>
+
+                        <div>
+                            <strong>Creado por:</strong>
+                            <span id="lblUsuario"></span>
+                        </div>
+
+                        <div>
+                            <strong>Fecha:</strong>
+                            <span id="lblFecha"></span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+ 
+
+                <hr class="mt-3 mb-3">
+
+                <div class="mt-3 border rounded">
+
+                    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-light">
+
+                        <strong id="lblRegistros">0 registros</strong>
+
+                        <div class="text-muted small">
+                            <i class="bi bi-lightning-charge"></i>
+                            <span id="lblTiempo">0 ms</span>
+                        </div>
+
+                    </div>
+
+                    <div style="max-height:450px; overflow:auto;">
+
+                        <table class="table table-sm table-hover table-bordered mb-0">
+
+                            <thead id="theadResultados" class="table-light sticky-top">
+                                </thead>
+
+                            <tbody id="tbodyResultados"></tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+
+                    Cancelar
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Modal Importar Consulta -->
+<div class="modal fade" id="modalImportar" tabindex="-1">
+
+    <div class="modal-dialog modal-lg">
+
+        <div class="modal-content">
+            <input type="hidden" id="archivoImportacion">
+
+            <div class="modal-header">
+
+                <h5 class="modal-title">
+                    📥 Importar Consulta SQL
+                </h5>
+
+                <button
+                    class="btn-close"
+                    data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <div class="row">
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label">Nombre</label>
+
+                        <input
+                            id="impNombre"
+                            class="form-control"
+                             >
+
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label">Categoría</label>
+
+                        <input
+                            id="impCategoria"
+                            class="form-control"
+                             >
+
+                    </div>
+
+                </div>
+
+                <div class="mb-3 text-muted">
+
+                    <label class="form-label">SQL</label>
+
+                    <textarea
+                        id="impSQL"
+                        class="form-control  "
+                        rows="8"
+                        readonly
+                        style="background:#f3f3f3 !important; color:#495057;"></textarea>
+
+                </div>
+
+                <hr>
+
+                <div class="small text-muted mb-3" style="background:#f3f3f3 !important; color:#495057; padding:10px;">
+
+                    <div>
+                        <strong>Aplicación:</strong>
+                        <span id="impAplicacion"></span>
+                    </div>
+
+                    <div>
+                        <strong>Versión:</strong>
+                        <span id="impVersion"></span>
+                    </div>
+
+                    <div>
+                        <strong>Exportado por:</strong>
+                        <span id="impExportadoPor"></span>
+                    </div>
+
+                    <div>
+                        <strong>Fecha:</strong>
+                        <span id="impFecha"></span>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+
+                    Cancelar
+
+                </button>
+
+                <button
+                    class="btn btn-success"
+                    id="btnConfirmarImportacion">
+
+                    Importar
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+<div class="mt-3 border rounded">
+
+    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-light">
+        <div>
+            <strong id="lblRegistros">0 registros</strong>
+        </div>
+
+        <div class="text-muted small">
+            <i class="bi bi-lightning-charge"></i>
+            <span id="lblTiempo">0 ms</span>
+        </div>
+    </div>
+
+    <div style="max-height:450px; overflow:auto;">
+        <table class="table table-sm table-hover table-bordered mb-0" id="tblResultados">
+            <thead class="table-light sticky-top">
+                <tr id="theadResultados">
+                </tr>
+            </thead>
+
+            <tbody id="tbodyResultados">
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- Controles ocultos -->
+
+<input
+    type="file"
+    id="fileImportar"
+    accept=".sqlstudio,.xml"
+    style="display:none;">
+
+<script>
+
+document.getElementById("btnGuardarConsulta").addEventListener("click", async function () {
+
+    const response = await fetch("/sqlstudio/guardar", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+
+            id: document.getElementById("txtId").value,
+
+            nombre: document.getElementById("txtNombre").value,
+
+            categoria: document.getElementById("txtCategoria").value,
+
+            consulta: document.getElementById("txtSQL").value
+
+        })
+
+    });
+
+    const data = await response.json();
+
+    if (data.ok) {
+
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById("modalConsulta"));
+        modal.hide();
+        
+        alert("Consulta guardada correctamente.");
+        location.reload();
+
+    }
+
+});
+</script>
+<script>
+
+let filaSeleccionada = null;
+let consultaSeleccionada = null;
+
+document.querySelectorAll("tbody tr[data-id]").forEach(fila => {
+
+    fila.addEventListener("click", function () {
+
+        if (filaSeleccionada) {
+            filaSeleccionada.classList.remove("table-active");
+        }
+
+        this.classList.add("table-active");
+        filaSeleccionada = this;
+
+        document.getElementById("btnEditar").disabled = false;
+        document.getElementById("btnEliminar").disabled = false;
+        document.getElementById("btnDuplicar").disabled = false;
+        document.getElementById("btnExportar").disabled = false;
+        document.getElementById("btnImportar").disabled = false;
+
+        consultaSeleccionada = {
+            id: this.dataset.id,
+            nombre: this.dataset.nombre,
+            descripcion: this.dataset.descripcion,
+            categoria: this.dataset.categoria,
+            consulta: this.dataset.consulta,
+            usuario: this.dataset.usuario,
+            fecha: this.dataset.fecha
+        };
+
+    });
+
+});
+
+document.getElementById("btnEditar").addEventListener("click", function () {
+
+    if (!consultaSeleccionada)
+        return;
+
+    document.getElementById("txtId").value = consultaSeleccionada.id;
+    document.getElementById("txtNombre").value = consultaSeleccionada.nombre;
+    document.getElementById("txtCategoria").value = consultaSeleccionada.categoria;
+    document.getElementById("txtSQL").value = consultaSeleccionada.consulta;
+
+    document.getElementById("tituloModalConsulta").innerText = "Editar Consulta SQL";
+
+    new bootstrap.Modal(document.getElementById("modalConsulta")).show();
+
+});
+
+document.getElementById("btnNuevaConsulta").addEventListener("click", function () {
+
+    document.getElementById("txtId").value = "";
+    document.getElementById("txtNombre").value = "";
+    document.getElementById("txtCategoria").value = "";
+    document.getElementById("txtSQL").value = "";
+
+    document.getElementById("tituloModalConsulta").innerText = "Nueva Consulta SQL";
+
+});
+
+document.getElementById("btnEliminar").addEventListener("click", async function () {
+
+    if (!consultaSeleccionada)
+        return;
+
+    if (!confirm("¿Desea desactivar esta consulta?"))
+        return;
+
+    const response = await fetch("/sqlstudio/eliminar", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+            id: consultaSeleccionada.id
+        })
+
+    });
+
+    const data = await response.json();
+
+    if (data.ok) {
+
+        alert("Consulta desactivada correctamente.");
+
+        location.reload();
+
+    }
+
+});
+
+ 
+
+document.getElementById("btnDuplicar").addEventListener("click", async function () {
+
+    if (!consultaSeleccionada)
+        return;
+
+    const response = await fetch("/sqlstudio/duplicar", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+            id: consultaSeleccionada.id
+        })
+
+    });
+
+    const data = await response.json();
+
+
+    if (data.ok) {
+
+        alert("Consulta duplicada correctamente.");
+
+        location.reload();
+
+    }
+
+});
+
+document.getElementById("btnImportar").addEventListener("click", function () {
+
+    document.getElementById("fileImportar").click();
+
+});
+
+document.getElementById("fileImportar").addEventListener("change", async function () {
+
+    if (this.files.length === 0)
+        return;
+
+    const archivo = this.files[0];
+
+    const formData = new FormData();
+    formData.append("archivo", archivo);
+
+    const response = await fetch("/sqlstudio/importar", {
+        method: "POST",
+        body: formData
+    });
+
+    const data = await response.json();
+
+     
+    document.getElementById("impNombre").value = data.nombre;
+    document.getElementById("impCategoria").value = data.categoria;
+    //document.getElementById("impDescripcion").value = data.descripcion;
+    document.getElementById("impSQL").value = data.sql;
+
+    document.getElementById("impExportadoPor").textContent = data.exported_by;
+    document.getElementById("impVersion").textContent = data.application_version; 
+    document.getElementById("impAplicacion").textContent = data.application;
+    document.getElementById("impFecha").textContent = data.export_date;
+
+    new bootstrap.Modal(document.getElementById("modalImportar")).show();
+
+    this.value = "";
+
+});
+document.getElementById("btnConfirmarImportacion").addEventListener("click", async function () {
+
+    const response = await fetch("/sqlstudio/importar_confirmar", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+
+            nombre: document.getElementById("impNombre").value,
+            categoria: document.getElementById("impCategoria").value,
+            sql: document.getElementById("impSQL").value
+
+        })
+
+    });
+
+    const data = await response.json();
+
+    if (data.ok) {
+
+        bootstrap.Modal
+            .getInstance(document.getElementById("modalImportar"))
+            .hide();
+
+        location.reload();
+
+    }
+    else {
+
+        alert(data.mensaje);
+
+    }
+
+});
+document.getElementById("txtSQL").addEventListener("input", function () {
+
+    console.log("INPUT DETECTADO");
+  
+
+    document.getElementById("panelSQLMensaje").classList.add("d-none");
+    document.getElementById("txtSQLMensaje").textContent = "";
+
+    document.getElementById("btnGuardarConsulta").disabled = true;
+
+    document.getElementById("lblEstadoSQL").innerHTML = `
+        <small class="text-warning">
+            <i class="bi bi-exclamation-circle"></i>
+            Consulta pendiente de revisión.
+        </small>
+    `;
+
+});
+document.getElementById("btnRevisarSQL").addEventListener("click", async function () {
+
+    const sql = document.getElementById("txtSQL").value;
+
+    const response = await fetch("/sqlstudio/revisar_sql", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            sql: sql
+        })
+    });
+
+    const data = await response.json();
+
+    if (data.ok) {
+
+        document.getElementById("lblEstadoSQL").innerHTML = `
+            <small class="text-success">
+                <i class="bi bi-check-circle-fill"></i>
+                ${data.mensaje}
+            </small>
+        `;
+
+        document.getElementById("btnGuardarConsulta").disabled = false;
+
+        }else {
+
+        document.getElementById("btnGuardarConsulta").disabled = true;
+
+        /*Swal.fire({
+            title: "Validación SQL",
+            html: `
+                <div class="text-start">
+                    <div class="text-danger mb-2">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <strong>Error de validación</strong>
+                    </div>
+                    <small>${data.mensaje}</small>
+                </div>
+            `,
+            icon: undefined,
+            width: 450,
+            padding: "1rem",
+            confirmButtonText: "Cerrar",
+            confirmButtonColor: "#0d6efd",
+            showCloseButton: true
+        });*/
+        document.getElementById("txtSQLMensaje").textContent = data.mensaje;
+        document.getElementById("panelSQLMensaje").classList.remove("d-none");
+
+
+    }
+
+});
+
+async function ejecutarConsulta() {
+
+    const sql = consultaSeleccionada.consulta;
+
+    const response = await fetch("/sqlstudio/ejecutar", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            sql: sql
+        })
+    });
+
+    const data = await response.json();
+
+    document.getElementById("lblRegistros").textContent =
+        data.registros + " registros";
+
+    document.getElementById("lblTiempo").textContent =
+        data.tiempo + " ms";
+        
+
+    const thead = document.getElementById("theadResultados");
+    const tbody = document.getElementById("tbodyResultados");
+
+    thead.innerHTML = "";
+    tbody.innerHTML = "";
+
+    const filaCabecera = document.createElement("tr");
+
+    data.columnas.forEach(columna => {
+
+        const th = document.createElement("th");
+        th.textContent = columna;
+
+        filaCabecera.appendChild(th);
+
+    });
+
+    thead.appendChild(filaCabecera);
+
+    data.filas.forEach(fila => {
+
+        const tr = document.createElement("tr");
+
+        fila.forEach(valor => {
+
+            const td = document.createElement("td");
+
+            td.textContent = valor === null ? "" : valor;
+
+            tr.appendChild(td);
+
+        });
+
+        tbody.appendChild(tr);
+
+    });
+
+}
+
+function abrirModalEjecutar() {
+
+    if (!consultaSeleccionada) {
+        alert("Seleccione una consulta.");
+        return;
+    }
+
+    const sql = consultaSeleccionada.consulta;
+
+    console.log(consultaSeleccionada);
+
+    document.getElementById("lblTituloConsulta").textContent =
+    consultaSeleccionada.nombre;
+
+    document.getElementById("lblCategoria").textContent =
+        consultaSeleccionada.categoria;
+
+    document.getElementById("lblUsuario").textContent =
+        consultaSeleccionada.usuario;
+
+    document.getElementById("lblFecha").textContent =
+        consultaSeleccionada.fecha;
+
+    new bootstrap.Modal(
+        document.getElementById("modalEjecutar")
+    ).show();
+
+    ejecutarConsulta();
+
+}
+
+function aplicarFiltros() {
+
+    const texto = document.getElementById("txtBuscar").value.toLowerCase().trim();
+    const categoria = document.getElementById("cmbCategoria").value.toLowerCase();
+    const estado = document.getElementById("cmbEstado").value.toLowerCase();
+
+    document.querySelectorAll("tbody tr[data-id]").forEach(fila => {
+
+        const nombre = fila.dataset.nombre.toLowerCase();
+        const descripcion = fila.dataset.descripcion.toLowerCase();
+        const categoriaFila = fila.dataset.categoria.toLowerCase();
+
+        const estadoFila = fila.querySelector(".badge").textContent.toLowerCase();
+
+        const cumpleTexto =
+            texto === "" ||
+            nombre.includes(texto) ||
+            descripcion.includes(texto) ||
+            categoriaFila.includes(texto);
+
+        const cumpleCategoria =
+            categoria === "" ||
+            categoria === "todas" ||
+            categoriaFila === categoria;
+
+        const cumpleEstado =
+            estado === "" ||
+            estado === "todos" ||
+            estadoFila === estado;
+
+        fila.style.display =
+            (cumpleTexto && cumpleCategoria && cumpleEstado)
+            ? ""
+            : "none";
+
+    });
+
+}   
+document
+    .getElementById("txtBuscar")
+    .addEventListener("input", aplicarFiltros);
+
+ 
+
+</script>
+{% endblock %}

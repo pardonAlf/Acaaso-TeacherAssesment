@@ -49,6 +49,9 @@ client = OpenAI()
 app = Flask(__name__)
 app.secret_key = "clave_secreta_super_segura"
 
+from modules.sqlstudio import sqlstudio_bp
+app.register_blueprint(sqlstudio_bp)
+
 # Usuario de prueba
 USUARIO_TEST = "admin"
 PASSWORD_TEST = "1234"
