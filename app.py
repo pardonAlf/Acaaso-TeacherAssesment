@@ -96,6 +96,25 @@ def home():
         ORDER BY orden
     """)
     planes_empresarial = cur.fetchall()
+    
+    # ==========================
+    # KPIs
+    # ==========================
+
+    cur.execute("SELECT COUNT(*) FROM quiz")
+    total_quizzes = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM respuestas_alumno")
+    total_respuestas = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM usuarios WHERE rol='profesor'")
+    total_profesores = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM alumnos")
+    total_alumnos = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM empresa")
+    total_empresas = cur.fetchone()[0]
 
     cur.close()
     conn.close()
@@ -103,7 +122,12 @@ def home():
     return render_template(
         'index.html',
         planes_individual=planes_individual,
-        planes_empresarial=planes_empresarial
+        planes_empresarial=planes_empresarial,
+        total_quizzes=total_quizzes,
+        total_respuestas=total_respuestas,
+        total_profesores=total_profesores,
+        total_alumnos=total_alumnos,
+        total_empresas=total_empresas
     )
 
 def es_admin():
@@ -450,6 +474,8 @@ def obtener_intentos(alumno_id, quiz_id):
 
 @app.route('/reporte_quiz/<int:quiz_id>')
 def reporte_quiz(quiz_id):
+    
+    con_sol = request.args.get("solucion", "true").lower() == "true"
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -468,6 +494,7 @@ def reporte_quiz(quiz_id):
         WHERE p.quiz_id = %s
         ORDER BY p.id, o.id
     """, (quiz_id,))
+    
 
     data = cur.fetchall()
     
@@ -543,8 +570,8 @@ def reporte_quiz(quiz_id):
         tabla_data = []
 
         for op_texto, correcta in pregunta["opciones"]:
-
-            if correcta:
+    
+            if correcta and con_sol:
                 texto = f"✔ {op_texto}"
             else:
                 texto = op_texto
@@ -561,14 +588,14 @@ def reporte_quiz(quiz_id):
         elements.append(tabla)
 
         # 🔹 EXPLICACIÓN
-        if pregunta["explicacion"]:
+        if con_sol and pregunta["explicacion"]:
             elements.append(Spacer(1, 4))
             elements.append(
-                Paragraph(
-                    f"<b>Explicación:</b> {pregunta['explicacion']}",
-                    styles["Normal"]
-                )
+            Paragraph(
+                f"<b>Explicación:</b> {pregunta['explicacion']}",
+                styles["Normal"]
             )
+        )
 
         elements.append(Spacer(1, 10))
 
@@ -2653,12 +2680,20 @@ def enviar_reporte_manual():
 @app.route('/exportar_quiz_excel/<int:quiz_id>')
 def exportar_quiz_excel(quiz_id):
 
+    con_sol = request.args.get("solucion", "true").lower() == "true"
+    titulo=""
+
     conn = get_db_connection()
     cur = conn.cursor()
     
     # 🔹 título
     cur.execute("SELECT titulo FROM quiz WHERE id = %s", (quiz_id,))
     titulo_quiz = cur.fetchone()[0]
+    
+    if con_sol:
+        titulo = titulo_quiz + " - Con Solución"
+    else:
+        titulo = titulo_quiz + " - Sin Solución"
 
     # 🔹 preguntas + opciones
     cur.execute("""
@@ -2744,7 +2779,7 @@ def exportar_quiz_excel(quiz_id):
             letra = letras[i] if i < len(letras) else f"{i})"
             texto_op = f"   {letra}) {op['opcion']}"
 
-            if op["correcta"]:
+            if con_sol and op["correcta"]:
                 texto_op += "  ✔"
 
             ws.merge_cells(start_row=fila, start_column=1, end_row=fila, end_column=2)
@@ -2765,7 +2800,7 @@ def exportar_quiz_excel(quiz_id):
     return send_file(
         buffer,
         as_attachment=True,
-        download_name=f"quiz_{quiz_id}.xlsx",
+        download_name=f"{titulo}.xlsx",
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )   
 

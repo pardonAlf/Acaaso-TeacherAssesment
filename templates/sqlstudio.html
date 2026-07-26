@@ -11,7 +11,7 @@
 }
 
 .table-sqlstudio {
-    --bs-table-border-color: #e9ecef;
+    --bs-table-border-color: #6d8aa6;
     margin-bottom: 0;
 }
 
@@ -22,8 +22,8 @@
 }
 
 .table-sqlstudio thead th {
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6 !important;
+    background: #a4c4e4;
+    border-bottom: 1px solid #707579 !important;
     font-weight: 600;
 }
 
@@ -45,12 +45,39 @@
 }
 
 .table-sqlstudio .badge {
-    padding: 10px   ;
-    font-size: 10px;
-    width:50px;
-    line-height: 1.2;
+    
+    font-size: 12px;
+    width:60px;
+    height: 20px;
+    
+    line-height: 20px;
 }
 
+/* Fila seleccionada */
+.table-sqlstudio tbody tr.table-active,
+.table-sqlstudio tbody tr.selected {
+    background: #3177b8 !important;
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+.table-sqlstudio tbody tr.table-active td,
+.table-sqlstudio tbody tr.selected td {
+    background: #3177b8 !important;
+    color: #ffffff !important;
+}
+
+.table-sqlstudio tbody tr.table-active:hover,
+.table-sqlstudio tbody tr.selected:hover {
+    background: #3177b8 !important;
+}
+
+
+
+#tituloModalConsulta{
+    color:rgb(1, 1, 62);
+
+}
 /* Tabla de resultados SQL */
 
 #modalEjecutar table {
@@ -72,25 +99,80 @@
     font-size: 13px;
     white-space: nowrap;
 }
+
+.panel-consultas {
+    height: 355px;
+    overflow-y: auto;
+}
+
+/* Monitores grandes */
+@media (min-width: 1600px) {
+    .panel-consultas {
+        height: 620px;
+    }
+}
+
+.form-control{
+    background-color: #c0d1e1;
+    border:2px solid rgb(216, 206, 206);
+}
+
+ 
+
+#modalEjecutar #lblTituloConsulta{
+    background:#1f4e79;
+    color:#fff !important;
+    padding:10px 15px;
+    margin:-16px -16px 12px -16px;
+    border-radius:.3rem .3rem 0 0;
+    font-size:22px;
+    font-weight:600;
+}
+
+ 
+#modalEjecutar .d-flex.flex-wrap{
+    background:#eef5fc;
+    padding:10px 14px;
+    border-radius:6px;
+}
+#modalEjecutar .info-consulta > div{
+    min-width:220px;
+}
+
+#modalEjecutar .info-consulta strong{
+    display:inline-block;
+    width:90px;
+    color:#495057;
+}
+
+/* Encabezado de la tabla de resultados */
+#modalEjecutar .encabezado-resultados th{
+    background:#bec8d5 !important;
+    color:#212529;
+    font-weight:600;
+    border-bottom:1px solid #97a7b8;
+}
+
+ 
 </style>
 {% endblock %}
 
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-2">
+<div class="d-flex justify-content-between align-items-center mb-1">
 
     <div class="d-flex align-items-center">
 
-        <div class="me-3">
-            <i class="bi bi-database-fill text-primary" style="font-size:48px;"></i>
-        </div>
+        <div class="me-2">
+    <i class="bi bi-database-fill text-primary" style="font-size:38px;"></i>
+</div>
 
-        <div>
-            <h2 class="fw-bold mb-1">SQL Studio</h2>
-            <div class="text-muted">
-                Crea, administra y ejecuta consultas SQL para obtener la información que necesitas.
-            </div>
-        </div>
+<div>
+    <h4 class="fw-bold mb-0">SQL Studio</h4>
+    <small class="text-muted">
+        Crea, administra y ejecuta consultas SQL para obtener la información que necesitas.
+    </small>
+</div>
 
     </div>
 
@@ -171,74 +253,77 @@
         <div class="row">
 
             <div class="col-lg-10">
+                
+                <div class="table-responsive panel-consultas">                
+                    <table class="table table-hover table-sqlstudio">
+                        <thead>
 
-                <table class="table table-hover table-sqlstudio">
-                    <thead>
-
-                        <tr>
-                            <th style="width:60px;">ID</th>
-                            <th>Nombre</th>
-                             <th class="text-end" style="width:140px;">Categoría</th>
-                             
-                            <th class="text-end" style="width:170px;">Fecha Modificación</th>
-                            <th class="text-end" style="width:170px;">Última ejecución</th>
-                            <th class="text-center" style="width:90px;">Estado</th>
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        {% if consultas %}
-
-                            {% for q in consultas %}
-
-                            <tr
-                                data-id="{{ q[0] }}"
-                                data-nombre="{{ q[1] }}"
-                                data-descripcion="{{ q[2] or '' }}"
-                                data-categoria="{{ q[3] or '' }}"
-                                data-consulta="{{ q[4] or '' }}"
-                                data-usuario="{{ q[8] or '' }}"
-                                data-fecha="{{ q[9].strftime('%d/%m/%Y %H:%M') if q[9] else '' }}">
-
-                                <td>{{ q[0] }}</td>
-
-                                <td>{{ q[1] }}</td>
-
-                                <td>{{ q[3] or "-" }}</td>
-
-                                <td class="text-end">{{ q[5].strftime("%d/%m/%Y %H:%M") if q[5] else "-" }}</td>
-
-                                <td class="text-end">{{ q[6].strftime("%d/%m/%Y %H:%M") if q[6] else "-" }}</td>
-
-                                <td class="text-center">
-                                    {% if q[7] %}
-                                        <span class="badge bg-success">Activa</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Inactiva</span>
-                                    {% endif %}
-                                </td>
+                            <tr>
+                                <th style="width:60px;">ID</th>
+                                <th>Nombre</th>
+                                <th class="text-end" style="width:140px;">Categoría</th>
                                 
-
+                                <th class="text-end" style="width:170px;">Fecha Modificación</th>
+                                <th class="text-end" style="width:170px;">Última ejecución</th>
+                                <th class="text-center" style="width:90px;">Estado</th>
                             </tr>
 
-                            {% endfor %}
+                        </thead>
 
-                        {% else %}
+                        <tbody>
 
-                        <tr>
-                            <td colspan="8" class="text-center text-muted py-5">
-                                <i class="bi bi-database fs-1 d-block mb-3"></i>
-                                No existen consultas registradas
-                            </td>
-                        </tr>
+                            {% if consultas %}
 
-                        {% endif %}
+                                {% for q in consultas %}
+
+                                <tr
+                                    data-id="{{ q[0] }}"
+                                    data-nombre="{{ q[1] }}"
+                                    data-descripcion="{{ q[2] or '' }}"
+                                    data-categoria="{{ q[3] or '' }}"
+                                    data-consulta="{{ q[4] or '' }}"
+                                    data-usuario="{{ q[8] or '' }}"
+                                    data-fecha="{{ q[9].strftime('%d/%m/%Y %H:%M') if q[9] else '' }}">
+
+                                    <td>{{ q[0] }}</td>
+
+                                    <td>{{ q[1] }}</td>
+
+                                    <td>{{ q[3] or "-" }}</td>
+
+                                    <td class="text-end">{{ q[5].strftime("%d/%m/%Y %H:%M") if q[5] else "-" }}</td>
+
+                                    <td class="text-end">{{ q[6].strftime("%d/%m/%Y %H:%M") if q[6] else "-" }}</td>
+
+                                    <td class="text-center">
+                                        {% if q[7] %}
+                                            <span class="badge bg-success">Activa</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactiva</span>
+                                        {% endif %}
+                                    </td>
+                                    
+
+                                </tr>
+
+                                {% endfor %}
+
+                            {% else %}
+
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-5">
+                                    <i class="bi bi-database fs-1 d-block mb-3"></i>
+                                    No existen consultas registradas
+                                </td>
+                            </tr>
+
+                            {% endif %}
 
                         </tbody>
 
-                </table>
+                    </table>
+                </div>
+                
             </div>
             
             <div class="col-lg-2">
@@ -319,7 +404,7 @@
         <div class="d-flex justify-content-between align-items-center px-2 py-1 mt-2 border-top">
 
             <small class="text-muted">
-                <strong>0</strong> consultas registradas
+                <strong>{{ consultas|length }}</strong> consultas registradas
             </small>
 
             <small class="text-muted">
@@ -474,10 +559,10 @@
                         style="font-size:24px;color:#2f3640;">
                     </h3>
 
-                    <div class="d-flex flex-wrap gap-4"
+                    <div class="d-flex justify-content-start align-items-center gap-5 info-consulta"
                         style="font-size:14px;color:#6c757d;">
 
-                        <div>
+                        <div id="lblcategoria">
                             <strong>Categoría:</strong>
                             <span id="lblCategoria"></span>
                         </div>
@@ -499,9 +584,9 @@
 
                 <hr class="mt-3 mb-3">
 
-                <div class="mt-3 border rounded">
+               <div id="panelResultados" class="mt-3 border rounded d-none">
 
-                    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-light">
+                    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-light  ">
 
                         <strong id="lblRegistros">0 registros</strong>
 
@@ -516,7 +601,7 @@
 
                         <table class="table table-sm table-hover table-bordered mb-0">
 
-                            <thead id="theadResultados" class="table-light sticky-top">
+                            <thead id="theadResultados" class="sticky-top encabezado-resultados">
                                 </thead>
 
                             <tbody id="tbodyResultados"></tbody>
@@ -663,6 +748,7 @@
     </div>
 
 </div>
+<!--
 <div class="mt-3 border rounded">
 
     <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-light">
@@ -689,6 +775,7 @@
     </div>
 
 </div>
+-->
 
 <!-- Controles ocultos -->
 
@@ -725,6 +812,7 @@ document.getElementById("btnGuardarConsulta").addEventListener("click", async fu
     });
 
     const data = await response.json();
+    console.log(data);
 
     if (data.ok) {
 
@@ -781,10 +869,6 @@ document.querySelectorAll("tbody tr[data-id]").forEach(fila => {
     });
 
 });
-
-console.log("btnEditar:", document.getElementById("btnEditar"));
-console.log("btnNuevaConsulta:", document.getElementById("btnNuevaConsulta"));
-console.log("btnEliminar:", document.getElementById("btnEliminar"));
 
 document.getElementById("btnEditar").addEventListener("click", function () {
 
@@ -986,6 +1070,7 @@ document.getElementById("btnRevisarSQL").addEventListener("click", async functio
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
+            id: consultaSeleccionada.id,
             sql: sql
         })
     });
@@ -1003,7 +1088,7 @@ document.getElementById("btnRevisarSQL").addEventListener("click", async functio
 
         document.getElementById("btnGuardarConsulta").disabled = false;
 
-        }else {
+     }else {
 
         document.getElementById("btnGuardarConsulta").disabled = true;
 
@@ -1043,11 +1128,17 @@ async function ejecutarConsulta() {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
+            id: consultaSeleccionada.id,
             sql: sql
         })
     });
 
     const data = await response.json();
+
+    document.getElementById("panelResultados").classList.remove("d-none");
+
+
+    console.log(data);
 
     document.getElementById("lblRegistros").textContent =
         data.registros + " registros";
@@ -1058,6 +1149,8 @@ async function ejecutarConsulta() {
 
     const thead = document.getElementById("theadResultados");
     const tbody = document.getElementById("tbodyResultados");
+
+    console.log("TBODY:", tbody);
 
     thead.innerHTML = "";
     tbody.innerHTML = "";
@@ -1089,9 +1182,14 @@ async function ejecutarConsulta() {
 
         });
 
+        
+
         tbody.appendChild(tr);
+        console.log("Filas en la tabla:", tbody.rows.length);
 
     });
+
+    
 
 }
 
@@ -1104,7 +1202,9 @@ function abrirModalEjecutar() {
 
     const sql = consultaSeleccionada.consulta;
 
-    console.log(consultaSeleccionada);
+   
+    console.log("consultaSeleccionada:", consultaSeleccionada);
+    console.log("consulta:", consultaSeleccionada.consulta);   
 
     document.getElementById("lblTituloConsulta").textContent =
     consultaSeleccionada.nombre;
@@ -1123,6 +1223,7 @@ function abrirModalEjecutar() {
     ).show();
 
     ejecutarConsulta();
+
 
 }
 
@@ -1191,6 +1292,10 @@ document.getElementById("cmbCategoria")
 
 document.getElementById("cmbEstado")
     .addEventListener("change", aplicarFiltros);
+
+document.getElementById("modalEjecutar").addEventListener("hidden.bs.modal", function () {
+    location.reload();
+}); 
 
 </script>
 {% endblock %}

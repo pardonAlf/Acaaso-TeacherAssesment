@@ -17,8 +17,9 @@
             <button onclick="generarCodigo()" >Código</button>
             <button onclick="verResultados()">Resultados</button>
             <button class="danger" onclick="eliminarQuiz()">Eliminar</button>
-            <button onclick="generarReporte()">Exportar Quiz</button>
-            <button onclick="exportarExcelSeleccionado()">Exportar Excel</button>
+            <!--<button onclick="generarReporte()">Exportar Quiz</button>-->
+            <!--<button onclick="exportarExcelSeleccionado()">Exportar Excel</button>-->
+            <button onclick="abrirExportarQuiz()">Exportar</button>
             <button onclick="irEnviarQuiz()" id="btnEnviarQuiz" disabled>Enviar Quiz</button>
             <button  onclick="activarFiltro()" >Filtrar</button>
 
@@ -178,6 +179,64 @@
         </div>
 
     </div>
+    <!-- Modal Exportar Quiz -->
+<div class="modal fade" id="modalExportarQuiz" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-download"></i> Exportar Quiz
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <p class="text-muted mb-3">
+                    Seleccione el formato de exportación.
+                </p>
+
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="tipoExportacion" id="expPdfSol" value="pdf_sol" checked>
+                    <label class="form-check-label" for="expPdfSol">
+                        📄 PDF con solución
+                    </label>
+                </div>
+
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="tipoExportacion" id="expPdfSin" value="pdf_sin">
+                    <label class="form-check-label" for="expPdfSin">
+                        📄 PDF sin solución
+                    </label>
+                </div>
+
+                <hr>
+
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="tipoExportacion" id="expExcelSol" value="excel_sol">
+                    <label class="form-check-label" for="expExcelSol">
+                        📊 Excel con solución
+                    </label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="tipoExportacion" id="expExcelSin" value="excel_sin">
+                    <label class="form-check-label" for="expExcelSin">
+                        📊 Excel sin solución
+                    </label>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="exportarQuizSeleccionado()">Exportar</button>
+            </div>
+
+        </div>
+    </div>
+</div>
     <script>
     function irEnviarQuiz() {
 
@@ -220,7 +279,7 @@
     // 🔥 cuando carga la página
     window.addEventListener('load', actualizarBoton);
     
-    function exportarExcelSeleccionado() {
+    function exportarExcelSeleccionado(conSolucion = true) {
 
         let seleccionado = document.querySelector('input[name="quiz_id"]:checked');
 
@@ -231,7 +290,7 @@
 
         let quiz_id = seleccionado.value;
 
-        window.location.href = `/exportar_quiz_excel/${quiz_id}`;
+        window.location.href = `/exportar_quiz_excel/${quiz_id}?solucion=${conSolucion}`;
     }
     </script>
 
@@ -280,10 +339,10 @@
 
     <script>
 
-        function generarReporte() {
+        function generarReporte(conSolucion = true) {
             let id = obtenerSeleccionado();
             if (id) {
-                window.open("/reporte_quiz/" + id, "_blank");
+                window.open("/reporte_quiz/" + id + "?solucion=" + conSolucion, "_blank");
             }
         }
 
@@ -419,6 +478,40 @@
             }
 
         }, 3000);
+    }
+
+    function abrirExportarQuiz() {
+        const modal = new bootstrap.Modal(document.getElementById('modalExportarQuiz'));
+        modal.show();
+    }
+    function exportarQuizSeleccionado() {
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalExportarQuiz'));
+        const opcion = document.querySelector('input[name="tipoExportacion"]:checked').value;
+
+        if (modal) {
+            modal.hide();
+        }
+
+        switch (opcion) {
+
+            case "pdf_sol":
+                generarReporte(true);
+                break;
+
+            case "excel_sol":
+                exportarExcelSeleccionado(true);
+                break;
+
+            case "pdf_sin":
+                generarReporte(false);
+                break;
+
+            case "excel_sin":
+                exportarExcelSeleccionado(false);
+                break;
+        }
+
     }
     </script>
 

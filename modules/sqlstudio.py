@@ -8,6 +8,8 @@ import xml.etree.ElementTree as ET
 import os
 import xml.etree.ElementTree as ET
 import io   
+import re
+
 import psycopg2
 import os
 import xml.etree.ElementTree as ET
@@ -469,9 +471,12 @@ def importar_confirmar():
 def revisar_sql():
 
     datos = request.get_json()
+    id_consulta = datos.get("id")
     sql = datos.get("sql", "").strip()
 
     sql_upper = sql.upper()
+    
+    print("ID CONSULTA:", id_consulta)  
 
     # Debe comenzar con SELECT o WITH
     if not (sql_upper.startswith("SELECT") or sql_upper.startswith("WITH")):
@@ -507,6 +512,22 @@ def revisar_sql():
         cur = conn.cursor()
 
         cur.execute("EXPLAIN " + sql)
+        
+        # Primera versión del compilador:
+        # Por ahora el SQL compilado es igual al SQL original.
+        consulta_compilada = compilar_sql(sql)
+        
+     
+
+        if id_consulta:
+
+            cur.execute("""
+                UPDATE sqlstudio_queries
+                SET consulta_compilada = %s
+                WHERE id = %s
+            """, (consulta_compilada, id_consulta))
+
+            conn.commit()
 
         cur.close()
         conn.close()
@@ -545,11 +566,190 @@ def revisar_sql():
             "ok": False,
             "mensaje": mensaje
         })
+        
+TABLAS_PROTEGIDAS = {
+
+    "usuarios": {
+        "campo": "cempre"
+    },
+
+    "alumnos": {
+        "campo": "cempre"
+    },
+
+    "salon": {
+        "campo": "cempre"
+    },
+
+    "quiz": {
+        "campo": "cempre"
+    },
+
+    "salon_quiz": {
+        "campo": "cempre"
+    }
+
+}
+
+def compilar_sql(sql):
+    """
+    Compila el SQL ingresado por el usuario agregando las restricciones
+    de seguridad necesarias.
+    """
+
+    # ------------------------------------------------------------
+    # Preparación
+    # ------------------------------------------------------------
+    sql_original = sql
+  
+    sql_upper = re.sub(r"\s+", " ", sql.upper()).strip()
+
+    # Detectar cláusulas
+    tiene_where = " WHERE " in f" {sql_upper} "
+
+     
+    
+    # ------------------------------------------------------------
+    # Detectar tabla protegida (FROM + JOIN)
+    # ------------------------------------------------------------
+
+    tabla_principal = None
+    alias_principal = None
+
+    PALABRAS_SQL = {    
+        "WHERE",
+        "GROUP",
+        "ORDER",
+        "HAVING",
+        "LIMIT",
+        "OFFSET",
+        "INNER",
+        "LEFT",
+        "RIGHT",
+        "FULL",
+        "JOIN",
+        "UNION",
+        "ON"
+    }
+
+    # Buscar todas las tablas del FROM y los JOIN
+    tablas = re.findall(
+        r"\b(?:FROM|JOIN)\s+([A-Z0-9_]+)(?:\s+(?:AS\s+)?([A-Z0-9_]+))?",
+        sql_upper,
+        re.IGNORECASE
+    )
+
+    for tabla, alias in tablas:
+
+        tabla = tabla.lower()
+
+        if alias and alias.upper() not in PALABRAS_SQL:
+            alias = alias
+        else:
+            alias = tabla
+
+        print(f"Tabla encontrada: {tabla}  Alias: {alias}")
+
+        if tabla in TABLAS_PROTEGIDAS:
+            tabla_principal = tabla
+            alias_principal = alias
+            print(f">>> Tabla protegida seleccionada: {tabla_principal}")
+            break
+    # ------------------------------------------------------------
+    # Verificar si la tabla está protegida
+    # ------------------------------------------------------------
+
+    if tabla_principal in TABLAS_PROTEGIDAS:
+
+        regla = TABLAS_PROTEGIDAS[tabla_principal]
+
+        print(">>> TABLA PROTEGIDA")
+        print(f"Campo de seguridad : {regla['campo']}")
+        campo_seguridad = regla["campo"]
+
+        filtro_seguridad = (
+            f"{alias_principal}.{campo_seguridad} = :{campo_seguridad}"
+        )
+
+        print("Filtro generado:")
+        print(filtro_seguridad)
+
+         
+
+    else:
+
+        print(">>> TABLA NO PROTEGIDA")
+    # ------------------------------------------------------------
+    # A partir de aquí continuará la compilación
+    # ------------------------------------------------------------
+
+    sql_compilado = sql
+
+    if tabla_principal not in TABLAS_PROTEGIDAS:
+        return sql
+
+    if tiene_where:
+
+        sql_compilado = re.sub(
+            r"\bWHERE\b",
+            f"WHERE {filtro_seguridad} AND ",
+            sql_compilado,
+            count=1,
+            flags=re.IGNORECASE
+        )
+
+    else:
+
+        patron = re.compile(
+            r"\b(GROUP\s+BY|HAVING|ORDER\s+BY|LIMIT|OFFSET|UNION)\b",
+            re.IGNORECASE
+        )
+
+        m = patron.search(sql_compilado)
+
+        if m:
+
+            sql_compilado = (
+                sql_compilado[:m.start()]
+                + f"WHERE {filtro_seguridad}\n"
+                + sql_compilado[m.start():]
+            )
+
+        else:
+
+            sql_compilado += f"\nWHERE {filtro_seguridad}"
+
+    return sql_compilado
+     
+  
+
 @sqlstudio_bp.route("/sqlstudio/ejecutar", methods=["POST"])
 def ejecutar_sql():
 
     data = request.get_json()
-    sql = data.get("sql", "").strip()
+    id_consulta = data.get("id")
+
+    sql = None
+
+    if id_consulta:
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT consulta_compilada
+            FROM sqlstudio_queries
+            WHERE id = %s
+        """, (id_consulta,))
+
+        fila = cur.fetchone()
+
+        if fila:
+            sql = fila[0]
+
+    else:
+
+        sql = data.get("sql", "").strip()
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -557,13 +757,37 @@ def ejecutar_sql():
     try:
 
         inicio = time.perf_counter()
+        
+        print("SQL A EJECUTAR:")
+        print(sql)
+        
+        sql_driver = sql.replace(":cempre", "%(cempre)s")
 
-        cur.execute(sql)
+        print("SQL DRIVER:")
+        print(sql_driver)
 
+        cur.execute(
+            sql_driver,
+            {"cempre": session["cempre"]}
+        )
+        
         columnas = [desc[0] for desc in cur.description]
         filas = cur.fetchall()
+        
+        print("FILAS:", len(filas))
 
         tiempo = round((time.perf_counter() - inicio) * 1000)
+        
+        
+        
+        
+        if id_consulta:
+            cur.execute("""
+            UPDATE sqlstudio_queries
+            SET ultima_ejecucion = NOW()
+            WHERE id = %s
+        """, (id_consulta,))
+        conn.commit()
 
         resultado = {
             "ok": True,
