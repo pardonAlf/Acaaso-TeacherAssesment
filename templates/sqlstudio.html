@@ -1296,6 +1296,11 @@ document.getElementById("cmbEstado")
 document.getElementById("modalEjecutar").addEventListener("hidden.bs.modal", function () {
     location.reload();
 }); 
+document.getElementById("btnRefrescar").addEventListener("click", function () {
+
+    window.location.reload();
+
+});
 
 </script>
 {% endblock %}

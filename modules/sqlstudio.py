@@ -746,6 +746,15 @@ def ejecutar_sql():
 
         if fila:
             sql = fila[0]
+            
+        if not sql or ":cempre" not in sql:
+            return jsonify({
+                "ok": False,
+                "mensaje": (
+                    "La consulta no ha sido revisada correctamente. "
+                    "Debe presionar 'Revisar SQL' antes de ejecutarla."
+                )
+            })
 
     else:
 
@@ -777,10 +786,7 @@ def ejecutar_sql():
         print("FILAS:", len(filas))
 
         tiempo = round((time.perf_counter() - inicio) * 1000)
-        
-        
-        
-        
+          
         if id_consulta:
             cur.execute("""
             UPDATE sqlstudio_queries
