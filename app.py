@@ -1232,13 +1232,14 @@ def quiz():
 def crear_quiz():
     if request.method == 'POST':
         titulo = request.form['titulo']
-        config_json = request.form.get("config_json") or "{}"
-        print("CONFIG JSON RECIBIDO:", config_json)
+        config_json = request.form.get("config_json")
         usuario = session.get('usuario')
         multiple_intentos = request.form.get('multiple_intentos') in ['true', 'on', '1']
         enviar_solucionario = request.form.get("enviar_solucionario") in ['true', 'on', '1']
         publico = not (request.form.get("privado") in ['true', 'on', '1'])
         
+        if not config_json or config_json=='':
+            config_json = json.dumps(obtener_config_default())
         
         if not usuario:
             return redirect('/login')
@@ -1248,8 +1249,33 @@ def crear_quiz():
 
         # crear quiz
         cur.execute(
-            "INSERT INTO quiz (titulo,cempre,usuario_id, usuario, estado, multiple_intentos,enviar_solucionario,publico, config_json) VALUES (%s,%s,%s, %s, %s, %s, %s, %s) RETURNING id",
-            (titulo,session['cempre'],session['user_id'], usuario, 'A', multiple_intentos,enviar_solucionario,publico, config_json)
+            """
+            INSERT INTO quiz
+            (
+                titulo,
+                cempre,
+                usuario_id,
+                usuario,
+                estado,
+                multiple_intentos,
+                enviar_solucionario,
+                publico,
+                config_json
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
+            """,
+            (
+                titulo,
+                session['cempre'],
+                session['user_id'],
+                usuario,
+                'A',
+                multiple_intentos,
+                enviar_solucionario,
+                publico,
+                config_json
+            )
         )
         quiz_id = cur.fetchone()[0]
         
@@ -1632,8 +1658,13 @@ def editar_quiz(quiz_id):
         titulo = request.form['titulo']
         multiple_intentos = request.form.get("multiple_intentos") == "on"
         enviar_solucionario = bool(request.form.get("enviar_solucionario"))
-        publico = not (request.form.get("privado") == "on")
+        publico = not (request.form.get("privado") == "off")
         config_json = request.form.get("config_json")
+        
+        if not config_json or config_json=='':
+            config_json = json.dumps(obtener_config_default())
+        
+        print(config_json)
         
         # actualizar título
         cur.execute(
@@ -5993,6 +6024,14 @@ def login_alumno():
         )
 
     return render_template("login_alumno.html")
+
+
+def obtener_config_default():
+    return {
+        "tiempo_minutos": None,
+        "comodin": False,
+        "modo": "normal"
+    }
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
