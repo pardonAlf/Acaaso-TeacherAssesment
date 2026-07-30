@@ -22,7 +22,7 @@ from datetime import datetime
 from flask import session, redirect, url_for 
 import threading
 from dotenv import load_dotenv
-import os
+import os,uuid
 import json
 from flask import make_response
 
@@ -1658,7 +1658,7 @@ def editar_quiz(quiz_id):
         titulo = request.form['titulo']
         multiple_intentos = request.form.get("multiple_intentos") == "on"
         enviar_solucionario = bool(request.form.get("enviar_solucionario"))
-        publico = not (request.form.get("privado") == "off")
+        publico = not (request.form.get("privado") == "on")
         config_json = request.form.get("config_json")
         
         if not config_json or config_json=='':
@@ -1721,18 +1721,32 @@ def editar_quiz(quiz_id):
                     ))
 
                 else:
+                    
+                    cur.execute("""
+                            SELECT COALESCE(MAX(norden), 0) + 1
+                            FROM preguntas
+                            WHERE quiz_id = %s
+                        """, (quiz_id,))
+
+                    nuevo_orden = cur.fetchone()[0]
 
                     cur.execute("""
-                        INSERT INTO preguntas (quiz_id, texto, tipo, explicacion)
-                        VALUES (%s, %s, %s, %s)
+                        INSERT INTO preguntas (
+                            quiz_id,
+                            texto,
+                            tipo,
+                            explicacion,
+                            norden
+                        )
+                        VALUES (%s, %s, %s, %s, %s)
                         RETURNING id
                     """, (
                         quiz_id,
                         texto,
                         tipo,
-                        request.form.get(f"explicacion_{num}")
+                        request.form.get(f"explicacion_{num}"),
+                        nuevo_orden
                     ))
-
                     pregunta_id = cur.fetchone()[0]
 
                 if tipo == "vf":
@@ -1858,9 +1872,10 @@ def editar_quiz(quiz_id):
     }
 
     cur.execute("""
-        SELECT id, texto, tipo,explicacion
+        SELECT id, texto, tipo, explicacion
         FROM preguntas
         WHERE quiz_id=%s
+        ORDER BY norden
     """, (quiz_id,))
     preguntas = cur.fetchall()
 
@@ -1891,6 +1906,93 @@ def editar_quiz(quiz_id):
     
 import random
 import string
+
+
+@app.route("/generar_quiz_desde_imagen", methods=["POST"])
+def generar_quiz_desde_imagen():
+
+    if "imagen" not in request.files:
+        return jsonify({"error": "No se recibió imagen"}), 400
+
+    imagen = request.files["imagen"]
+    prompt = request.form["prompt"]
+    titulo = request.form["titulo"]
+    config_json = request.form.get("config_json") or json.dumps(obtener_config_default())
+    multiple_intentos = str(request.form.get("multiple_intentos")).lower() in ["true", "1", "on"]
+    enviar_solucionario = str(request.form.get("enviar_solucionario")).lower() in ["true", "1", "on"]
+    publico = str(request.form.get("publico")).lower() in ["true", "1", "on"]
+     
+
+    tmp_dir = os.path.abspath(os.path.join("tmp", "ia"))
+    os.makedirs(tmp_dir, exist_ok=True)
+
+    extension = os.path.splitext(imagen.filename)[1].lower()
+    nombre = f"{uuid.uuid4()}{extension}"
+
+    ruta = os.path.join(tmp_dir, nombre)
+
+    imagen.save(ruta)
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO cola_ia (
+            prompt,
+            estado,
+            usuario_id,
+            usuario,
+            cempre,
+            titulo,
+            origen,
+            contenido_extra,
+            config_json,
+            multiple_intentos, 
+            enviar_solucionario, 
+            publico
+            
+        )
+        VALUES (
+            %s,
+            'pendiente',
+            %s,
+            %s,
+            %s,
+            %s,
+            'imagen',
+            %s,
+            %s,
+            %s,
+            %s,
+            %s
+        )
+       RETURNING id
+    """, (
+        prompt,
+        session["user_id"],
+        session["usuario"],
+        session["cempre"],
+        titulo,
+        ruta,
+        config_json,
+        multiple_intentos, 
+        enviar_solucionario, 
+        publico
+    ))
+    
+    cola_id = cur.fetchone()[0]
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+
+    return jsonify({
+        "status": "encolado",
+        "cola_id": cola_id
+    })
+
+   
 
 def generar_codigo_unico(cur):
     while True:

@@ -8,7 +8,7 @@
     <style>
         /* 🎯 BASE */
 body {
-    background: #f5f7fa;
+    background: #d2e0f5;
     font-family: 'Inter', sans-serif;
     font-size: 11px;
     color: #2e2e2e;
@@ -234,7 +234,289 @@ input.form-control {
     cursor: not-allowed;
     opacity: 0.6;
 }
-    </style>
+
+.thead-salesforce th{
+
+    background:linear-gradient(
+        180deg,
+        #2B7CD3 0%,
+        #1B5FBF 100%
+    );
+
+    color:white;
+
+    border:none;
+
+    font-size:.90rem;
+
+    font-weight:600;
+
+    letter-spacing:.3px;
+
+    padding:14px;
+
+}
+
+.thead-salesforce th:first-child{
+    border-top-left-radius:10px;
+}
+
+.thead-salesforce th:last-child{
+    border-top-right-radius:10px;
+}
+
+.card{
+
+    border:none;
+
+    border-radius:12px;
+
+    box-shadow:0 4px 18px rgba(0,0,0,.08);
+
+}
+
+.table tbody tr:hover{
+
+    background:#c5ced6;
+
+    transition:.2s;
+
+}
+.btn-primary{
+
+    background:#0176D3;
+
+    border-color:#0176D3;
+
+    border-radius:8px;
+
+    font-weight:600;
+
+    padding:10px 18px;
+
+}
+
+.btn-primary:hover{
+
+    background:#015FB2;
+
+    border-color:#015FB2;
+
+}
+
+/* ================================
+   Modal Salesforce
+================================ */
+
+.modal-salesforce{
+
+    height:90vh;
+
+    border:none;
+
+    border-radius:12px;
+
+    overflow:hidden;
+
+    box-shadow:0 20px 50px rgba(0,0,0,.18);
+    padding:5px;
+
+}
+
+
+.modal-salesforce-header{
+
+    background:linear-gradient(
+        180deg,
+        #2B7CD3,
+        #1B5FBF
+    );
+
+    color:white;
+
+    border:none;
+
+    padding:10px 10px;
+
+}
+
+.modal-salesforce-header .modal-title{
+
+    font-weight:600;
+
+    font-size:18px;
+
+    color:white;
+
+}
+
+.modal-salesforce-header .btn-close{
+
+    filter:brightness(0) invert(1);
+
+    opacity:.9;
+
+}
+
+
+.modal-body{
+
+    background:#c9c9ca;
+
+    padding:10px;
+
+}
+
+
+.modal-body label{
+
+    display:block;
+
+    margin-bottom:8px;
+
+    color:#28323e;
+
+    font-size:13px;
+
+    font-weight:600;
+
+}
+
+.modal-body .form-control{
+
+    border-radius:8px;
+
+    border:1px solid #a7aebb;
+
+    min-height:10px;
+
+    box-shadow:none;
+
+}
+
+
+.modal-body .form-control:focus{
+
+    border:2px solid #0176D3;
+
+    box-shadow:0 0 0 3px rgba(1,118,211,.15);
+
+}
+
+
+.modal-salesforce-footer{
+
+    background:white;
+
+    border-top:1px solid #bec2c8;
+
+    padding:4px 10px;
+
+}
+
+
+.btn-salesforce{
+
+    background:#0176D3;
+
+    color:white;
+
+    border:none;
+
+    border-radius:8px;
+
+    font-weight:600;
+
+    padding:9px 10px;
+
+}
+
+
+.btn-salesforce:hover{
+
+    background:#015FB2;
+
+    color:white;
+
+}
+
+
+.btn-salesforce-light{
+
+    background:#EEF2F7;
+
+    border:1px solid #bdcce4;
+
+    color:#4B5563;
+
+    border-radius:8px;
+
+    font-weight:600;
+
+}
+
+
+.btn-salesforce-light:hover{
+
+    background:#E3E8EF;
+
+}
+
+.ia-section{
+    background:white;
+    border:1px solid #D8E2EE;
+    border-radius:10px;
+    padding:8px;
+    margin-bottom:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,.04);
+
+}
+#promptIA_modal{
+    white-space:pre-wrap;
+    line-height:1.6;
+    font-family:Segoe UI, sans-serif;
+}
+
+/* Laptop (1366x768 aprox.) */
+@media (max-width: 1400px) {
+
+    .modal-salesforce{
+        max-height:100vh;
+    }
+
+    .modal-body{
+        padding:2px;
+    }
+
+    .modal-header{
+        padding:5px 5px;
+    }
+    .modal-footer{
+        padding:5px 5px;
+    }
+
+    .modal-body label{
+        font-size:8px;
+        margin-bottom:4px;
+    }
+
+    .modal-body .form-control{
+        min-height:20px;
+        font-size:11px;
+    }
+
+    #promptIA_modal{
+        font-size:10px;
+        line-height:1.1;
+    }
+
+    .btn-sm-custom{
+        padding:5px 5px;
+        font-size:10px;
+    }
+
+}
+</style>
 </head>
 
 <body>
@@ -255,7 +537,7 @@ input.form-control {
             <!-- HEADER -->
             <div class="card p-3 mb-3 shadow-sm">
                 <div class="header-quiz d-flex flex-column gap-2">
-                    <div class="d-flex justify-content-between align-items-start w-100">
+                    <div class="d-flex justify-content-between align-items-center w-100">
 
                         <!-- 🔹 izquierda -->
                         <input type="text" id="titulo" name="titulo"
@@ -264,12 +546,23 @@ input.form-control {
 
                         <!-- 🔥 derecha: bloque profesional -->
                         <!-- 🔥 BOTÓN CONFIGURACIÓN -->
-                        <button type="button"
-                            class="btn btn-light btn-sm-custom border"
-                            onclick="abrirConfig()"
-                            style="font-size:11px;">
-                            ⚙️ Configuración
-                        </button>
+                       <div class="d-flex gap-2">
+
+                            <button type="button"
+                                class="btn btn-outline-secondary btn-sm-custom"
+                                onclick="abrirConfig()">
+                                <i class="fas fa-cog"></i>
+                                Configuración
+                            </button>
+
+                            <button type="button"
+                                class="btn btn-primary btn-sm-custom"
+                                onclick="guardarQuiz()">
+                                <i class="fas fa-save"></i>
+                                Guardar Quiz
+                            </button>
+
+                        </div>
 
                     </div>
 
@@ -332,7 +625,7 @@ input.form-control {
                 <div class="card-body p-2">
 
                     <table class="table table-hover align-middle mb-0">
-                        <thead>
+                        <thead class="thead-salesforce">
                             <tr>
                                 <th style="width:40px">#</th>
                                 <th style="width:90px">Tipo</th>
@@ -371,7 +664,12 @@ input.form-control {
 
             <!-- GUARDAR -->
             <div class="mt-3 text-end">
-                <button type="button" class="btn btn-dark btn-sm-custom" onclick="guardarQuiz()">Guardar Quiz</button>
+                <button type="button"
+                    class="btn btn-primary btn-sm-custom"
+                    onclick="guardarQuiz()">
+                    <i class="fas fa-save"></i>
+                    Guardar Quiz
+                </button>
             </div>
 
         </div>
@@ -399,8 +697,8 @@ input.form-control {
     </div>
 </div>
 <div class="modal fade" id="modalIA" tabindex="-1">
-    <div class="modal-dialog modal-dialog-end" style="max-width:420px;">
-        <div class="modal-content" style="height:70vh; border-radius:0;">
+    <div class="modal-dialog modal-dialog-end" style="max-width:700px;">
+        <div class="modal-content modal-salesforce">
 
             <!-- header -->
             <div class="modal-header">
@@ -409,57 +707,130 @@ input.form-control {
             </div>
 
             <!-- body -->
-            <div class="modal-body">
+            <div class="modal-body" style="max-height:75vh; overflow-y:auto;">
 
                 <!-- 🔹 tipo de entrada -->
-                <label class="mb-1">Fuente</label>
-                <select id="tipoIA" class="form-control mb-3">
-                    <option value="generar_prompt">Generar desde prompt</option>
-                    <option value="generar_archivo">Generar desde archivo</option>
-                    <option value="importar">Importar quiz (leer archivo)</option>
-                </select>
-
-                <!-- 🔹 prompt -->
-                <div id="bloquePrompt">
-                    <label>Instrucción</label>
-                    <textarea id="promptIA_modal" class="form-control mb-3"
-                        placeholder="Ej: 5 preguntas VF de historia"></textarea>
+                <div class="ia-section"> 
+                    <label class="mb-1">Fuente</label>
+                    <select id="tipoIA" class="form-control mb-3">
+                        <option value="generar_prompt">Generar desde prompt</option>
+                        <option value="generar_archivo">Generar desde archivo</option>
+                        <option value="importar">Importar quiz (leer archivo)</option>
+                        <option value="generar_imagen">Generar desde imagen</option>
+                    </select>
                 </div>
 
-                <!-- 🔹 archivo -->
-                <div id="bloqueArchivo" style="display:none;">
-                    <label>Subir archivo</label>
-                    <input type="file" id="archivoIA_modal" class="form-control mb-3">
+                <!-- 🔹 prompt -->
+                <div class="ia-section"> 
+                    <div id="bloquePrompt">
+                        <label>Instrucción</label>
+                        <textarea id="promptIA_modal" class="form-control mb-3"
+                            placeholder="Ej: 5 preguntas VF de historia"></textarea>
+                    </div>
+                
+
+                    <!-- 🔹 archivo -->
+                    <div id="bloqueArchivo" style="display:none;">
+                        <label>Subir archivo</label>
+                        <input type="file" id="archivoIA_modal" class="form-control mb-3">
+                    </div>
+
+                    <!-- 🔹 imagen -->
+                    <div id="bloqueImagen" style="display:none;">
+
+                        <div id="selectorImagen">
+
+                            <label>Subir imagen</label>
+
+                            <input
+                                type="file"
+                                id="imagenIA_modal"
+                                class="form-control mb-3"
+                                accept=".jpg,.jpeg,.png,.webp">
+
+                            <small class="text-muted">
+                                Formatos permitidos: JPG, PNG y WEBP.
+                            </small>
+
+                        </div>
+
+                        <div id="previewImagenContainer" class="mt-3" style="display:none;">
+
+                            <label class="form-label fw-semibold">Vista previa</label>
+
+                            <div class="border rounded bg-white p-3 text-center">
+
+                                <img
+                                    id="previewImagen"
+                                    src=""
+                                    class="img-fluid rounded shadow-sm"
+                                    style="
+                                        max-height:650px;
+                                        width:auto;
+                                        display:block;
+                                        margin:auto;
+                                        object-fit:contain;
+                                    ">
+
+                            </div>
+
+                        </div>
+                        <div class="text-center mt-3" id="cambiarImagenContainer" style="display:none;">
+
+                        <button
+                            type="button"
+                            class="btn btn-outline-primary"
+                            id="btnCambiarImagen">
+
+                            <i class="bi bi-arrow-repeat"></i>
+                            Cambiar imagen
+
+                        </button>
+
+                    </div>
+
+                    </div>
                 </div>
 
                 <!-- 🔹 configuración (SOLO para generación) -->
-                <div id="bloqueConfigIA">
+                <div class="ia-section"> 
+                    <div id="bloqueConfigIA">
 
-                    <label>Configuración</label>
+                        <label>Configuración</label>
 
-                    <div class="d-flex gap-2 mb-2">
-                        <input type="number" id="cantidadIA" class="form-control" placeholder="Cantidad">
+                        <div class="d-flex gap-2 mb-2">
+                            <input type="number" id="cantidadIA" class="form-control" placeholder="Cantidad">
 
-                        <select id="tipoPreguntasIA" class="form-control">
-                            <option value="vf">VF</option>
-                            <option value="multiple">Múltiple</option>
-                            <option value="mixto">Mixto</option>
-                        </select>
-                    </div>  
+                            <select id="tipoPreguntasIA" class="form-control">
+                                <option value="vf">VF</option>
+                                <option value="multiple">Múltiple</option>
+                                <option value="mixto">Mixto</option>
+                            </select>
+                        </div>  
+                    </div>
                 </div>
             </div>
 
             <!-- footer -->
-            <div class="modal-footer">
-                <button class="btn btn-secondary btn-sm-custom" data-bs-dismiss="modal">
+            <div class="modal-footer modal-salesforce-footer">
+                <button class="btn btn-salesforce-light btn-sm-custom" data-bs-dismiss="modal">
                     Cancelar
                 </button>
-                <button class="btn btn-dark btn-sm-custom" onclick="ejecutarIA()">
+                <button class="btn btn-salesforce btn-sm-custom" onclick="ejecutarIA()">
                     Generar
                 </button>
             </div>
 
         </div>
+    </div>
+</div>
+<div id="previewImagenContainer" class="mt-3" style="display:none;">
+    <label class="form-label fw-semibold">Vista previa</label>
+
+    <div class="border rounded p-2 text-center bg-light">
+        <img id="previewImagen"
+             src=""
+             style="max-width:100%; max-height:420px; border-radius:8px;">
     </div>
 </div>
 
@@ -480,6 +851,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let bloquePrompt = document.getElementById("bloquePrompt");
         let bloqueArchivo = document.getElementById("bloqueArchivo");
+        let bloqueImagen = document.getElementById("bloqueImagen");
         let bloqueConfig = document.getElementById("bloqueConfigIA");
 
         if (tipo === "generar_prompt") {
@@ -487,19 +859,49 @@ document.addEventListener("DOMContentLoaded", () => {
             bloquePrompt.style.display = "block";
             bloqueArchivo.style.display = "none";
             bloqueConfig.style.display = "block";
+            document.getElementById("promptIA_modal").rows = 4;
 
         } else if (tipo === "generar_archivo") {
 
             bloquePrompt.style.display = "none";
             bloqueArchivo.style.display = "block";
             bloqueConfig.style.display = "block";
+            document.getElementById("promptIA_modal").rows = 4;
 
         } else if (tipo === "importar") {
 
             bloquePrompt.style.display = "none";
             bloqueArchivo.style.display = "block";
             bloqueConfig.style.display = "none";
+           
 
+        } else if (tipo === "generar_imagen") {
+
+            document.getElementById("selectorImagen").style.display = "block";
+            document.getElementById("previewImagenContainer").style.display = "none";
+            document.getElementById("cambiarImagenContainer").style.display = "none";
+            document.getElementById("previewImagen").src = "";
+            document.getElementById("imagenIA_modal").value = "";
+
+            bloqueImagen.style.display = "block";
+            bloqueArchivo.style.display = "none";
+            bloqueConfig.style.display = "none";
+            bloquePrompt.style.display = "block";
+
+            document.getElementById("promptIA_modal").value =
+        `Analiza la imagen y convierte el examen en un quiz editable. Sigue los sigueintes puntos:
+
+        1. Extrae todas las preguntas y conserva la numeración original.
+        2. Extrae todas las alternativas.
+        3. Identifica la respuesta correcta si está marcada.
+        4. Corrige únicamente errores evidentes de OCR.
+        5. No alteres el contenido académico.
+        6. Devuelve el resultado en formato JSON.`;
+
+            document.getElementById("promptIA_modal").rows = 8;
+
+            document.querySelector("#modalIA .modal-title").textContent =
+                "Generar con IA desde Imagen";
         }
 
     });
@@ -671,6 +1073,90 @@ async function ejecutarIA() {
            let data = await response.json();
 
             // 🔥 guardar cola_id
+            localStorage.setItem("cola_id", data.cola_id);
+
+            window.location.href = "/dashboard_profesor?ia=1";
+        }
+
+        // 🔹 GENERAR DESDE IMAGEN
+        else if (tipo === "generar_imagen") {
+
+            setLoaderText("Analizando imagen...");
+
+            let fileInput = document.getElementById("imagenIA_modal");
+
+            if (fileInput.files.length === 0) {
+                alert("Selecciona una imagen");
+                detenerLoader();
+                return;
+            }
+
+            let formData = new FormData();
+
+            formData.append("imagen", fileInput.files[0]);
+
+            const promptUsuario = document.getElementById("promptIA_modal").value.trim();
+
+            const promptCompleto = `
+            ${promptUsuario}
+
+            IMPORTANTE:
+
+            Analiza la imagen y convierte el examen a un cuestionario.
+
+            Devuelve EXCLUSIVAMENTE un JSON válido.
+
+            La respuesta debe ser un arreglo JSON.
+
+            Cada elemento del arreglo representa una pregunta y debe tener esta estructura:
+
+            {
+            "tipo":"",
+            "texto":"",
+            "opciones":[],
+            "correcta":"",
+            "explicacion":""
+            }
+
+            El campo "tipo" debe determinarse automáticamente según la pregunta.
+
+            Valores permitidos:
+
+            - multiple 
+                Deberá devolver 5 opciones "A"..."E"... la respuesta será la que sea correcta en la imagen leída, en las opciones
+                deberá estar con true
+            - vf
+                Deberá devolver 1 opción y decir si es v o f
+            
+
+            Reglas:
+
+            - Conserva la numeración.
+            - No inventes preguntas.
+            - Revisa si la respuesta es correcta,  verifica cual es la respuesta y devuelvela en "correcta:"       
+            - Si no existen opciones, devuelve un arreglo vacío []
+            - Si no existe explicación, creale una de acuerdo a la respuesta
+            - No escribas texto antes ni después del JSON.
+            - No uses Markdown.
+            `;
+
+            formData.append("prompt", promptCompleto);
+
+            formData.append(
+                "titulo",
+                document.getElementById("titulo").value
+            );
+
+            let response = await fetch("/generar_quiz_desde_imagen", {
+                method: "POST",
+                body: formData
+            });
+
+            if (!response.ok)
+                throw new Error("Error generando desde imagen");
+
+            let data = await response.json();
+
             localStorage.setItem("cola_id", data.cola_id);
 
             window.location.href = "/dashboard_profesor?ia=1";
@@ -1174,8 +1660,43 @@ function guardarConfig() {
 
     cerrarConfig();
 }
-</script>
 
+document.addEventListener("DOMContentLoaded", function () {
+
+    const input = document.getElementById("imagenIA_modal");
+
+    if (!input) return;
+
+    input.addEventListener("change", function () {
+
+        const archivo = this.files[0];
+
+        if (!archivo) {
+            document.getElementById("previewImagenContainer").style.display = "none";
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+
+            document.getElementById("previewImagen").src = e.target.result;
+            document.getElementById("previewImagenContainer").style.display = "block";
+            document.getElementById("selectorImagen").style.display = "none";
+            document.getElementById("cambiarImagenContainer").style.display = "block";
+
+        };
+
+        reader.readAsDataURL(archivo);
+
+    });
+
+});
+
+document.getElementById("btnCambiarImagen").addEventListener("click", function () {
+    document.getElementById("imagenIA_modal").click();
+});
+</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <div id="overlayLoader" style="display:none;">

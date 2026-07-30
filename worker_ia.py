@@ -1,6 +1,8 @@
 import time
 import json
-from app import get_db_connection, client  # ajusta si tu app se llama diferente
+import os
+import base64
+from app import get_db_connection, client, obtener_config_default
 
 def procesar_cola():
     
@@ -22,6 +24,9 @@ def procesar_cola():
     if tarea:
         cola_id, prompt, cantidad, tipo, usuario_id, usuario, cempre, multiple_intentos, enviar_solucionario,publico, titulo, origen, contenido_extra,origen, config_json = tarea
 
+
+        print("COLA:", cola_id)
+        print("CONTENIDO_EXTRA BD:", repr(contenido_extra))
         print("🔥 ORIGEN:", origen)
         print(f"Procesando cola ID: {cola_id}")
         multiple_intentos = True if multiple_intentos is True else False
@@ -122,14 +127,88 @@ def procesar_cola():
             No expliques nada.
             Solo JSON.
             """
+            
+        elif origen == "imagen":
+            
+            print("RUTA:", contenido_extra)
+            print("ABS:", os.path.abspath(contenido_extra))
+            print("EXISTE:", os.path.exists(contenido_extra))
+    
+            with open(contenido_extra, "rb") as f:
+                imagen_base64 = base64.b64encode(f.read()).decode("utf-8")
+
+            prompt = [
+                {"type": "text",
+                    "text": f"""
+                    {prompt}
+
+                    Analiza la imagen y genera un cuestionario.
+
+                    RESPONDE ÚNICAMENTE CON UN ARRAY JSON.
+
+                    NO devuelvas un objeto.
+                    NO uses:
+                    - quiz
+                    - questions
+                    - answer
+                    - question
+                    - number
+
+                    Cada elemento debe tener EXACTAMENTE esta estructura:
+
+                    [
+                    {{
+                        "tipo":"multiple",
+                        "texto":"Pregunta",
+                        "opciones":[
+                        "Opción A",
+                        "Opción B",
+                        "Opción C",
+                        "Opción D",
+                        "Opción E"
+                        ],
+                        "correcta":"A",
+                        "explicacion":"Breve explicación."
+                    }}
+                    ]
+
+                    REGLAS:
+
+                    - Usa "texto", nunca "question".
+                    - Usa "opciones", nunca "options".
+                    - Usa "correcta", nunca "answer".
+                    - No agregues un objeto "quiz".
+                    - No agregues un objeto "questions".
+                    - Devuelve SOLO el array JSON.
+                    """
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{imagen_base64}"
+                    }
+                }
+            ]
         try:
             response = client.chat.completions.create(
                 model="gpt-4.1-mini",
-                messages=[{"role": "user", "content": prompt}],
+                messages=[
+                    {
+                    "role": "user", 
+                    "content": prompt
+                    }
+                ],
                 max_completion_tokens=12000
             )
 
             contenido = response.choices[0].message.content
+            
+            if origen == "imagen":
+                try:
+                    os.remove(contenido_extra)
+                    print("🗑 Imagen temporal eliminada:", contenido_extra)
+                except Exception as e:
+                    print("No se pudo eliminar la imagen:", e)
             
             print("========== RESPUESTA IA ==========")
             print(contenido)
@@ -140,11 +219,23 @@ def procesar_cola():
 
             try:
                 preguntas = json.loads(contenido)
+                
+                if isinstance(preguntas, dict):
+                    if "quiz" in preguntas and "questions" in preguntas["quiz"]:
+                        preguntas = preguntas["quiz"]["questions"]
+                        
                 print(type(preguntas))
-                print(preguntas)
+                print(type(preguntas[0]))
+                print(preguntas[0])
+                
+                
             except Exception as e:
-                print("❌ ERROR PARSEANDO JSON")
-                print(contenido[:1000])
+                if origen == "imagen":
+                    try:
+                        os.remove(contenido_extra)
+                        print("🗑 Imagen temporal eliminada:", contenido_extra)
+                    except Exception:
+                        pass
 
                 cur.execute("""
                     UPDATE cola_ia
@@ -155,14 +246,6 @@ def procesar_cola():
 
                 conn.commit()
                 return
-            
-            try:
-                cantidad_int = int(cantidad)
-                if len(preguntas) < cantidad_int:
-                    print(f"⚠️ IA devolvió menos preguntas: {len(preguntas)} de {cantidad_int}")
-                preguntas = preguntas[:cantidad_int]
-            except:
-                pass
 
             # cortar por cantidad
             try:
@@ -173,6 +256,9 @@ def procesar_cola():
             
             # 🔥 CREAR QUIZ AUTOMÁTICO
             titulo = titulo if titulo else f"Quiz IA #{cola_id}"
+
+            if not config_json:
+                config_json = json.dumps(obtener_config_default())
 
             print("CONFIG_JSON WORKER:", config_json)
             # 🔥 guardar resultado
