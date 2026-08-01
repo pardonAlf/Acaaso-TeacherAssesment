@@ -85,11 +85,29 @@
             background-color: #a6bcde;
         }
         .bloque-explicacion{
-            margin-top:18px;
-            padding:16px;
-            background:#c7cee3;
-            border:5px solid #5592ed;
+            margin-top:12px;
+            padding:5px 5px;
+            border:1px solid #d9dee8;
             border-radius:8px;
+            background:#fafbfc;
+            max-height:60px;
+        }
+
+        .bloque-explicacion label{
+            font-size:12px;
+            font-weight:600;
+            color:#495057;
+            margin-bottom:5px;
+            letter-spacing:.2px;
+        }
+
+        .bloque-explicacion textarea{
+            background:#c8d5ef;
+            border:1px solid #0558e9;
+            color:#212529;
+            min-height:20px;
+            resize:vertical;
+            font-size:12px;
         }
     </style>
 </head>
@@ -218,7 +236,7 @@
 
                             {% endfor %}
 
-                            <div class="mt-3 p-3 rounded-3 bg-light border">
+                            <div class="mt-2 p-2 rounded-2 bg-light border bloque-explicacion">
 
                                 <label class="form-label fw-bold text-secondary ">
                                     <i class="fas fa-lightbulb text-warning"></i>
@@ -227,7 +245,7 @@
 
                                 <textarea
                                     name="explicacion_{{ num }}"
-                                    class="form-control bloque-explicacion"
+                                    class="form-control "
                                     rows="1"
                                     placeholder="Explique por qué esta respuesta es la correcta...">{{ p.explicacion or '' }}</textarea>
 
@@ -260,7 +278,7 @@
                             </div>
                             
                             {% endfor %}
-                            <div class="mt-3 p-3 rounded-3 bg-light border">
+                            <div class="mt-3 p-3 rounded-3 bg-light border bloque-explicacion">
 
                                 <label class="form-label fw-bold text-secondary ">
                                     <i class="fas fa-lightbulb text-warning"></i>
@@ -269,7 +287,7 @@
 
                                 <textarea
                                     name="explicacion_{{ num }}"
-                                    class="form-control bloque-explicacion"
+                                    class="form-control "
                                     rows="1"
                                     placeholder="Explique por qué esta respuesta es la correcta...">{{ p.explicacion or '' }}</textarea>
 

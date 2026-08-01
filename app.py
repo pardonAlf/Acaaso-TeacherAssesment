@@ -1692,7 +1692,6 @@ def editar_quiz(quiz_id):
 #        cur.execute("DELETE FROM preguntas WHERE quiz_id=%s", (quiz_id,))
 
         # 🔥 volver a insertar (igual que crear_quiz)
-        print(request.form)   # ← ponlo aquí temporalmente
         
         for key, texto in request.form.items():
             if key.startswith("pregunta_") and not key.startswith("pregunta_id_"):
@@ -2442,7 +2441,7 @@ def acceso_quiz(codigo):
 
         cur.close()
         conn.close()
-        print("DEBUG alumno_id:", alumno_id)
+         
         return redirect(url_for('resolver_quiz', quiz_id=quiz_id, alumno_id=alumno_id))
 
     return render_template('login_quiz.html', codigo=codigo)
@@ -2558,10 +2557,6 @@ def resolver_quiz(quiz_id, alumno_id):
 
     cur.close()
     conn.close()
-    
-    print("quiz_id:", quiz_id)
-    print("config_json:", config_json)
-    print("tipo:", type(config_json))
 
     return render_template(
         'resolver_quiz.html',
@@ -2625,8 +2620,7 @@ def guardar_respuestas():
             row = cur.fetchone()
             quiz_id = row[0] if row else None
         
-    intento_id = data["intento_id"]
-    print("INTENTO RECIBIDO:", intento_id)  
+    intento_id = data["intento_id"] 
 
     # 🔥 fallback de seguridad (NO rompe nada)
     if preguntas:
