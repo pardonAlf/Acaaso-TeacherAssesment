@@ -12,7 +12,7 @@
     
         
         body { 
-            background: #f4f6f9;
+            background: #c6d7f5  !important;
             color: #1f2937;
             font-family: 'Inter', sans-serif;
         }
@@ -35,15 +35,24 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 20px;
-            margin-bottom: 25px;
+             
         }
 
-        .kpi {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        .kpi{
+            background:#ffffff;
+            border:1px solid #dbe3ef;
+            border-radius:12px;
+            padding:16px 18px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            box-shadow:3px 2px 6px #c40a0a0d;
+            transition:.2s;
+        }
+
+        .kpi:hover{
+            transform:translateY(-2px);
+            box-shadow:5px 6px 16px rgba(0,0,0,.08);
         }
 
         /* GRÁFICOS */
@@ -59,8 +68,8 @@
             padding: 20px;
             border-radius: 16px;
             height: 245px;
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
+            background: #f6f2f2;
+            border: 1px solid #a1bff9;
         }
 
         /* TABLA */
@@ -104,9 +113,9 @@
             margin-bottom: 10px;
             color: #374151;
         }
-        canvas {
-            width: 100% !important;
-            height: 180px !important;
+        .chart-card canvas{
+            width:100% !important;
+            height:200px !important;
         }
 
         .top-bar {
@@ -136,7 +145,7 @@
 
         .selector input {
             width: 260px;
-            height:25px;    
+            height:30px;    
             padding: 0 14px;
             border-radius: 10px;
             font-size:14px;
@@ -169,20 +178,21 @@
         
 
         #btnVer{
-            height:25px;
+            height:30px;
             padding:0 20px;
             font-size:14px;
             border-radius:10px;
             font-weight:600;
-            color:white;
+            color:rgb(252, 250, 250);
         }
 
         #btnVer:hover {
             background: #1d4ed8;
+            color:white;
         }
 
         #btnVer:disabled {
-            background: #475569;
+            background: #c1c4c6;
             cursor: not-allowed;
         }
         .tabla-header,
@@ -226,7 +236,7 @@
             text-align: center;
             border-bottom: 1px solid #f1f5f9;
         }
-        .tabla tbody tr:hover {
+        .tabla tbody tr:hover:not(.fila-promedio) {
             background: #f1f5f9;
         }
         
@@ -244,15 +254,17 @@
         }
 
 
-        .tabla {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 11px;
-            
-            table-layout: fixed; /* 🔥 clave */
-            margin-bottom: 40px;
-            color: #1f2937; 
-            background: #ffffff;
+       .tabla{
+            width:100%;
+            border-collapse:separate;
+            border-spacing:0;
+            background:#ffffff;
+            border:2px solid #adc2e2;
+            border-radius:14px;
+            overflow:hidden;
+            font-size:12px;
+            color:#1f2937;
+            margin-bottom:24px;
         }
 
         .tabla-header div 
@@ -610,46 +622,196 @@
             align-items:start;
         }
 
-        .kpis-panel{
+       .kpis-panel{
             display:grid;
-            grid-template-columns:1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap:1px;
-            background:#eef2ff;
-            border-radius:16px;
-            overflow:hidden;
-            width:340px;
+            grid-template-columns: 1fr 1fr 1fr 1fr 2fr;
+           
+            gap:15px;
+            width:100%;
+            margin:0 0 24px 0;
+            background:transparent;
         }
-        
+
+        .fila-promedio{
+            background:#5394db;
+            border-top:2px solid #cbd5e1;
+            font-weight:600;
+        }
+
+        .fila-promedio td{
+            background:#5394db !important;
+            padding:10px 6px;
+            color:#f4f4f6 !important;
+            font-size:12px;
+        }
+
+        .fila-promedio td:first-child{
+            background:#5394db;
+        }
+
+        .fila-promedio td:nth-child(2){
+            text-align:left;
+        }
+        .fila-promedio:hover>td:first-child{
+            background:#0c5aeb !important;
+        }
+        .fila-promedio:hover td{
+            background:#0c5aeb !important;
+        }
+        .titulo-panel{
+            display:flex;
+            align-items:center;
+            gap:18px;
+        }
+
+        .btn-volver{
+            text-decoration:none;
+            color:#2563eb;
+            font-size:13px;
+            font-weight:600;
+            padding:8px 12px;
+            border:1px solid #dbe3ef;
+            border-radius:10px;
+            background:#fff;
+            transition:.2s;
+        }
+
+        .btn-volver:hover{
+            background:#eef4ff;
+        }
+
+        .subtitulo-pagina{
+            font-size:12px;
+            color:#64748b;
+            margin-top:2px;
+        }
+        .btn-secundario{
+            height:30px;
+            padding:0 18px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            border:1px solid #5c6b80;
+            border-radius:12px;
+            background:#ffffff;
+            color:#334155;
+            text-decoration:none;
+            font-weight:600;
+            font-size:13px;
+            transition:.2s;
+        }
+
+        .btn-secundario:hover{
+            background: #1d4ed8;
+            color:white;
+        }
+        #chartSemaforo{
+            width:80px !important;
+            height:80px !important;
+        }
+
+        .estado-card{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    height:100%;
+}
+
+.estado-grafico{
+    width:80px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-shrink:0;
+}
+
+.estado-leyenda{
+    flex:1;
+}
+
+.estado-titulo{
+    font-size:14px;
+    font-weight:600;
+    color:#0351be;
+    margin-bottom:10px;
+}
+
+.estado-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    font-size:13px;
+    margin-bottom:8px;
+}
+
+.estado-item span:nth-child(2){
+    flex:1;
+}
+
+.punto{
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    display:inline-block;
+}
+
+.verde{
+    background:#22c55e;
+}
+
+.amarillo{
+    background:#facc15;
+}
+
+.rojo{
+    background:#ef4444;
+}
+    
     </style>
 
     <div class="dashboard">
 
         <div class="top-bar">
 
+    <div class="titulo-panel">
+
+       
+
+        <div>
             <h2 class="titulo-pagina">
-                Resultados
+                Resultados del Salón
             </h2>
 
-            <div class="acciones-top">
-
-                <div class="selector">
-                    <input
-                        type="text"
-                        id="buscarSalon"
-                        placeholder="Buscar salón..."
-                        autocomplete="off"
-                    >
-                    <div id="listaSalones" class="dropdown"></div>
-                </div>
-
-                <button id="btnVer" disabled>
-                    Ver resultados
-                </button>
-
+            <div class="subtitulo-pagina">
+                Consulte el rendimiento general de un salón.
             </div>
-
         </div>
+
+    </div>
+
+    <div class="acciones-top">
+
+        <div class="selector">
+            <input
+                type="text"
+                id="buscarSalon"
+                placeholder="Buscar salón..."
+                autocomplete="off"
+            >
+            <div id="listaSalones" class="dropdown"></div>
+        </div>
+
+        <button id="btnVer" disabled>
+            Consulta
+        </button>
+        <a href="{{ url_for('splash') }}" class="btn-secundario">
+            ← Volver
+        </a>
+
+    </div>
+
+</div>
 
         <!-- Tabla -->
         <table class="tabla">
@@ -672,9 +834,15 @@
 
             <tbody>
                 {% for fila in resultado %}
-                <tr>
+                <tr {% if fila.es_promedio %}class="fila-promedio"{% endif %}>
                     <td>{{ loop.index }}</td>
-                    <td>{{ fila.alumno }}</td>
+                    <td>
+                        {% if fila.es_promedio %}
+                            📊 <strong>{{ fila.alumno }}</strong>
+                        {% else %}
+                            {{ fila.alumno }}
+                        {% endif %}
+                    </td>
 
                     {% for q in quizzes %}
                         {% set celda = fila[q.id] if q.id in fila else None %}
@@ -711,129 +879,151 @@
                     
                 </tr>
                 {% endfor %}
-            </tbody>
+                <tr class="fila-promedio">
+                    <td></td>
+                    <td> 📊 PROMEDIO </td>
+
+                    {% for q in quizzes %}
+
+                        {% set prom = promedio_quiz | selectattr("id","equalto",q.id) | first %}
+
+                        <td>
+                             
+                                {{ "%.2f"|format(prom.promedio) if prom else "-" }}
+                             
+                        </td>
+
+                    {% endfor %}
+
+                    <td>
+                         
+                            {{
+                                (
+                                    promedio_quiz
+                                    | map(attribute='promedio')
+                                    | sum
+                                    / (promedio_quiz|length)
+                                ) | round(2)
+                                if promedio_quiz else "-"
+                            }}
+                         
+                    </td>
+                </tr>
+             
+            </tbody>    
         </table>
 
-        <div class="dashboard-top"> 
-            <div class="resumen-quizzes">
+         
+            
+        <div class="kpis-panel"> 
+            
 
-                <div class="resumen-titulo">
-                    📈 Promedio por Quiz
+                <div class="kpi">
+                    <div>
+                        <div class="kpi-label"><strong>Alumnos</strong>   </div>
+                        <div class="kpi-value">{{ resultado|length }}</div>
+                    </div>
+                    <div class="kpi-icon">👥</div>
                 </div>
 
-                {% for q in promedio_quiz %}
-
-                <div class="quiz-row">
-                    <div class="quiz-info">
-                        <div class="quiz-codigo">
-                            {{ q.codigo if q.codigo else 'SIN COD.' }}
-                            &nbsp;&nbsp;
-                            <span class="quiz-fecha">
-                                {{ q.fecha }}
-                            </span>
-                        </div>
-                        <div class="quiz-titulo">
-                            {{ q.titulo }}
+                <div class="kpi">
+                    <div>
+                        <div class="kpi-label"><strong>Promedio</strong> </div>
+                        <div class="kpi-value  ">
+                            {{ (notas | sum / notas | length) | round(2) if notas else 0 }}
                         </div>
                     </div>
+                    <div class="kpi-icon">📈</div>
+                </div>
+                <div class="kpi">
 
-                    <div class="quiz-barra">
-                        <div class="barra-fondo">
-                            <div class="barra"
-                                style="
-                                    width: {{ (q.promedio/20*100)|round(1) }}%;
-                                    background: {{ q.color }};
-                                ">
-                            </div>
+                    <div>
+                        <div class="kpi-label">
+                           <strong> Tiempo promedio por Evaluación</strong>
+                        </div>
+
+                       <div class="kpi-value"> 
+                            {{ tiempo_promedio }}
                         </div>
                     </div>
 
-                    <div class="quiz-promedio">
-
-                        {{ "%.2f"|format(q.promedio) }}
-
-                    </div>
-
-                    <div class="quiz-variacion">
-
-                        {% if q.variacion is none %}
-        —
-                        {% elif q.variacion > 0 %}
-                            ▲ {{ "%.2f"|format(q.variacion) }}
-                        {% elif q.variacion < 0 %}
-                            ▼ {{ "%.2f"|format(q.variacion) }}
-                        {% else %}
-                            =
-                        {% endif %}
+                    <div class="kpi-icon">
+                        ⏱
                     </div>
 
                 </div>
-
-                {% endfor %}
-
-            </div>
-
-            <!-- KPIs -->
-            <!-- DERECHA -->
-            <div class="kpis-panel"> 
                 
 
-                    <div class="kpi">
-                        <div>
-                            <div class="kpi-label">Alumnos</div>
-                            <div class="kpi-value">{{ resultado|length }}</div>
+                <div class="kpi">
+                    <div>
+                        <div class="kpi-label"><strong>Evaluaciones</strong> </div>
+                        <div class="kpi-value azul">
+                            {{ quizzes | length }}
                         </div>
-                        <div class="kpi-icon">👥</div>
                     </div>
+                    <div class="kpi-icon">📋</div>
+                </div>
 
-                    <div class="kpi">
-                        <div>
-                            <div class="kpi-label">Promedio</div>
-                            <div class="kpi-value verde">
-                                {{ (notas | sum / notas | length) | round(2) if notas else 0 }}
+                <div class="kpi">
+
+                    <div class="estado-card">
+
+                        <div class="kpi-label" >
+                            <strong>Estado del salón</strong>    
+                        </div>
+
+                        <div class="fila5kpi" style="display:flex;">
+                            <div class="estado-grafico">
+                                <canvas id="chartSemaforo" width="72" height="72"></canvas>
+                            </div>
+
+                            <div class="estado-leyenda" style="padding-left:20px;">
+
+                                <div class="estado-item">
+                                    <span class="punto verde"></span>
+                                    <span>Aprobados (17-20)</span>
+                                    <strong>{{ verdes }}</strong>
+                                </div>
+
+                                <div class="estado-item">
+                                    <span class="punto amarillo"></span>
+                                    <span>Aprobados (11-16.99)  </span>
+                                    <strong>{{ amarillos }}</strong>
+                                </div>
+
+                                <div class="estado-item">
+                                    <span class="punto rojo"></span>
+                                    <span>Desaprobados (0-10.99)</span>
+                                    <strong>{{ rojos }}</strong>
+                                </div>
+
                             </div>
                         </div>
-                        <div class="kpi-icon">📈</div>
+
                     </div>
 
-                    <div class="kpi">
-                        <div>
-                            <div class="kpi-label">Mayor nota</div>
-                            <div class="kpi-value verde">
-                                {{ notas | max if notas else 0 }}
-                            </div>
-                        </div>
-                        <div class="kpi-icon">🏆</div>
-                    </div>
+                </div>
 
-                    <div class="kpi">
-                        <div>
-                            <div class="kpi-label">Quizzes</div>
-                            <div class="kpi-value azul">
-                                {{ quizzes | length }}
-                            </div>
-                        </div>
-                        <div class="kpi-icon">📋</div>
-                    </div>
-
-                 
             </div>
+
+                
         </div>
+         
 
         <!-- Gráficos -->
         <div class="graficos">
 
-            <div class="card">
+            <div class="card chart-card">
                 <div class="card-title">Distribución de puntajes</div>
                 <canvas id="grafico1"></canvas>
             </div>
 
-            <div class="card">
+            <div class="card chart-card">
                 <div class="card-title">Aprobados vs Desaprobados</div>
                 <canvas id="grafico2"></canvas>
             </div>
 
-            <div class="card">
+            <div class="card chart-card">
                 <div class="card-title">Promedios por Quiz</div>
                 <canvas id="grafico3"></canvas>
             </div>
@@ -1206,7 +1396,13 @@
         },
         options: {
             ...opcionesSaaS,
+            layout: {
+                padding: {
+                    bottom: 15
+                        }
+                    },
             plugins: {
+                
                 legend: {
                     display: false
                 },
@@ -1242,7 +1438,7 @@
             responsive: true,
             maintainAspectRatio: false,
             layout: {
-                padding: 10
+                padding: 20
             },
             cutout: '75%',
 
@@ -1301,7 +1497,11 @@
         },
         options: {  
             ...opcionesSaaS,
-            
+            layout: {
+                padding: {
+                    bottom: 15
+                        }
+                    },
             plugins: {
 
                 legend: {
@@ -1340,6 +1540,60 @@
                 }
             }
         }
+    });
+
+    new Chart(document.getElementById('chartSemaforo'), {
+
+        type: 'doughnut',
+
+        data: {
+
+            labels: [
+                'Excelente',
+                'Aprobado',
+                'Desaprobado'
+            ],
+
+            datasets: [{
+
+                data: [
+                    {{ verdes }},
+                    {{ amarillos }},
+                    {{ rojos }}
+                ],
+
+                backgroundColor: [
+                    '#22c55e',
+                    '#facc15',
+                    '#ef4444'
+                ],
+
+                borderWidth: 0
+
+            }]
+
+        },
+
+        options: {
+
+            responsive: false,
+
+            cutout: '62%',
+
+            plugins: {
+
+                legend: {
+                    display: false
+                },
+
+                tooltip: {
+                    enabled: false
+                }
+
+            }
+
+        }
+
     });
 
     </script>

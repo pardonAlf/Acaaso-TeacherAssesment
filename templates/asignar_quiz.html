@@ -51,18 +51,35 @@
 <div style="position:relative; z-index:1;"> 
     <table class="tabla">
         <thead>
+
+            {% if rol == 'admin' %}
+
+            <tr>
+                <th>ID</th>
+                <th>Usuario</th>
+                <th>Quiz</th>
+                <th>Código</th>
+                <th style="width:80px;"></th>
+            </tr>
+
+            {% else %}
+
             <tr>
                 <th>ID</th>
                 <th>Quiz</th>
                 <th>Código</th>
                 <th style="width:80px;"></th>
             </tr>
+
+            {% endif %}
+
         </thead>
         <tbody id="tablaAsignados"></tbody>
     </table>
 </div>
 
 <script>
+const rol = "{{ rol }}";
 let quizzes = {{ quizzes|tojson }};
 
 document.getElementById("buscarQuiz").addEventListener("keyup", function() {
@@ -145,6 +162,11 @@ function cargarAsignados(salon_id) {
                 let tr = `
                     <tr id="fila_${q.id}">
                         <td>${q.id}</td>
+                         ${
+                            rol === "admin"
+                            ? `<td>${q.usuario}</td>`
+                            : ``
+                        }
                         <td>${q.titulo}</td>
                         <td>
                             ${q.codigo 

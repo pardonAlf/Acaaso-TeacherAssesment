@@ -90,7 +90,7 @@
             border:1px solid #d9dee8;
             border-radius:8px;
             background:#fafbfc;
-            max-height:60px;
+            
         }
 
         .bloque-explicacion label{
@@ -104,10 +104,69 @@
         .bloque-explicacion textarea{
             background:#c8d5ef;
             border:1px solid #0558e9;
-            color:#212529;
+            color:#000102;
             min-height:20px;
             resize:vertical;
             font-size:12px;
+        }
+        .config-card{
+            background:#abbfe7;
+            border:1px solid #418ce7;
+            border-radius:10px;
+            padding:14px;
+            margin-bottom:16px;
+            color:#030000;
+        }
+
+        .config-title{
+            font-size:12px;
+            font-weight:700;
+            color:#030911;
+            text-transform:uppercase;
+            letter-spacing:.8px;
+            margin-bottom:12px;
+        }
+
+        .config-card .form-check{
+            padding:8px 0 0 20px;
+            color:#030000;
+        }
+
+        .config-card .form-select{
+            border-radius:8px;
+            border:1px solid #c7d8ef;
+            background:white;
+            color:#030000;
+        }
+
+        .config-card .form-select:focus{
+            border-color:#2b72ed;
+            box-shadow:0 0 0 .18rem rgba(79,142,247,.15);
+        }
+
+        .feature-dev{
+            display:flex;
+            align-items:center;
+            padding:10px 0;
+            font-size:13px;
+            color:#495057;
+            border-bottom:1px solid #e9eef5;
+        }
+
+        .feature-dev:last-child{
+            border-bottom:none;
+        }
+
+        .feature-dev i{
+            color:#198754;
+            margin-right:10px;
+            font-size:14px;
+        }
+
+        .feature-dev .badge{
+            margin-left:auto;
+            font-size:10px;
+            font-weight:600;
         }
     </style>
 </head>
@@ -129,7 +188,7 @@
                                     class="btn btn-light border btn-sm-custom shadow-sm"
                                     onclick="abrirConfig()">
                                 <i class="fas fa-cog"></i>
-                                ⚙️ Configuración
+                                     Configuración
                             </button>
 
                             <button type="button"
@@ -552,109 +611,126 @@
         <!-- contenido (temporal) -->
         <div style="font-size:12px;">
 
-            <!-- 1 -->
-            <div class="form-check mb-2">
-                <input class="form-check-input"
-                    type="checkbox"
-                    id="multiple_intentos_panel"
-                    {% if quiz.multiple_intentos %}checked{% endif %}>
-                <label class="form-check-label">Múltiples intentos</label>
-            </div>
+            <div class="config-card">
 
-            <!-- 2 -->
-            <div class="form-check mb-2">
-                <input class="form-check-input"
-                    type="checkbox"
-                    id="enviar_solucionario_panel"
-                    {% if quiz.enviar_solucionario %}checked{% endif %}>
-                <label class="form-check-label">Enviar solucionario</label>
-            </div>
+                <div class="config-title">
+                    General
+                </div>
+                <!-- 1 -->
+                <div class="form-check mb-2">
+                    <input class="form-check-input"
+                        type="checkbox"
+                        id="multiple_intentos_panel"
+                        {% if quiz.multiple_intentos %}checked{% endif %}>
+                    <label class="form-check-label">Múltiples intentos</label>
+                </div>
 
-            <div class="form-check mb-2">
-                <input class="form-check-input"
-                    type="checkbox"
-                    id="privado_panel"
-                    {% if not quiz.publico %}checked{% endif %}>
-                <label class="form-check-label">
-                    Quiz privado
-                </label>
-            </div>
+                <!-- 2 -->
+                <div class="form-check mb-2">
+                    <input class="form-check-input"
+                        type="checkbox"
+                        id="enviar_solucionario_panel"
+                        {% if quiz.enviar_solucionario %}checked{% endif %}>
+                    <label class="form-check-label">Enviar solucionario</label>
+                </div>
 
-            <hr>
+                <div class="form-check mb-2">
+                    <input class="form-check-input"
+                        type="checkbox"
+                        id="privado_panel"
+                        {% if not quiz.publico %}checked{% endif %}>
+                    <label class="form-check-label">
+                        Quiz privado
+                    </label>
+                </div>
 
-            <!-- 3 -->
-            <div class="mb-2">
-                <select id="tiempo_minutos" class="form-select form-select-sm">
-                    <option value="">Seleccionar minutos</option>
-                   <option value="1"
-                        {% if quiz.config_json.tiempo_minutos == 1 %}selected{% endif %}>
-                        1
-                    </option>
-                    <option value="5"
-                        {% if quiz.config_json.tiempo_minutos ==5 %}selected{% endif %}>
-                       5
-                    </option>
-                    <option value="10"
-                        {% if quiz.config_json.tiempo_minutos == 10 %}selected{% endif %}>
-                        10
-                    </option>
-                    <option value="15"
-                        {% if quiz.config_json.tiempo_minutos == 15 %}selected{% endif %}>
-                        15
-                    </option>
-                    <option value="20"
-                        {% if quiz.config_json.tiempo_minutos == 20 %}selected{% endif %}>
-                        20
-                    </option>
-                    <option value="30"
-                        {% if quiz.config_json.tiempo_minutos == 30 %}selected{% endif %}>
-                        30
-                    </option>
-                    <option value="45"
-                        {% if quiz.config_json.tiempo_minutos == 45 %}selected{% endif %}>
-                        45
-                    </option>
-                    <option value="60"
-                        {% if quiz.config_json.tiempo_minutos == 60 %}selected{% endif %}>
-                        60
-                    </option>
-                </select>
-            </div>
+                <!-- 3 -->
+                <div class="mb-2">
+                    <select id="tiempo_minutos" class="form-select form-select-sm">
+                        <option value="">Seleccionar minutos</option>
+                    <option value="1"
+                            {% if quiz.config_json.tiempo_minutos == 1 %}selected{% endif %}>
+                            1
+                        </option>
+                        <option value="5"
+                            {% if quiz.config_json.tiempo_minutos ==5 %}selected{% endif %}>
+                        5
+                        </option>
+                        <option value="10"
+                            {% if quiz.config_json.tiempo_minutos == 10 %}selected{% endif %}>
+                            10
+                        </option>
+                        <option value="15"
+                            {% if quiz.config_json.tiempo_minutos == 15 %}selected{% endif %}>
+                            15
+                        </option>
+                        <option value="20"
+                            {% if quiz.config_json.tiempo_minutos == 20 %}selected{% endif %}>
+                            20
+                        </option>
+                        <option value="30"
+                            {% if quiz.config_json.tiempo_minutos == 30 %}selected{% endif %}>
+                            30
+                        </option>
+                        <option value="45"
+                            {% if quiz.config_json.tiempo_minutos == 45 %}selected{% endif %}>
+                            45
+                        </option>
+                        <option value="60"
+                            {% if quiz.config_json.tiempo_minutos == 60 %}selected{% endif %}>
+                            60
+                        </option>
+                    </select>
+                </div>
 
-            <hr>
-
-            <!-- 4 -->
-            <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="mantener_ultimo" disabled>
-                <label class="form-check-label">
-                    Mantener último intento <span class="badge-dev">por desarrollar</span>
-                </label>
-            </div>
-
-            <!-- 5 -->
-            <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="mejor_nota" disabled>
-                <label class="form-check-label">
-                    Mantener mejor nota <span class="badge-dev">por desarrollar</span>
-                </label>
+               
             </div>
 
             <hr>
 
-            <!-- 6 -->
-            <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" id="comodin" disabled>
-                <label class="form-check-label">
-                    Activar comodines (3 ayudas) <span class="badge-dev">por desarrollar</span>
-                </label>
+         <!-- PRÓXIMAMENTE -->
+            <div class="config-card">
+
+                <div class="config-title text-success">
+                    Próximamente
+                </div>
+
+                <div class="feature-dev">
+                    <i class="fas fa-check-circle"></i>
+                    Mantener último intento
+                    <span class="badge bg-success-subtle text-success ms-2">
+                        En desarrollo
+                    </span>
+                </div>
+
+                <div class="feature-dev">
+                    <i class="fas fa-check-circle"></i>
+                    Mantener mejor nota
+                    <span class="badge bg-success-subtle text-success ms-2">
+                        En desarrollo
+                    </span>
+                </div>
+
+                <div class="feature-dev">
+                    <i class="fas fa-check-circle"></i>
+                    Sistema de comodines (3 ayudas)
+                    <span class="badge bg-success-subtle text-success ms-2">
+                        En desarrollo
+                    </span>
+                </div>
+
             </div>
 
-            <!-- 🔥 BOTONES -->
-            <div class="d-flex justify-content-end gap-2 mt-3">
-                <button class="btn btn-light btn-sm" onclick="cerrarConfig()">Cancelar</button>
-                <button class="btn btn-primary btn-sm" onclick="guardarConfig()">OK</button>
-            </div>
+            <!-- BOTONES -->
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <button class="btn btn-outline-secondary" onclick="cerrarConfig()">
+                    Cancelar
+                </button>
 
+                <button class="btn btn-primary" onclick="guardarConfig()">
+                    Guardar configuración
+                </button>
+            </div>
         </div>
 
     </div>

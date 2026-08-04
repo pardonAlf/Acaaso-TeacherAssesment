@@ -153,7 +153,7 @@ def login():
         password = request.form['password']
 
         cur.execute("""
-            SELECT id, usuario, password, rol, cempre
+            SELECT id, usuario, password, rol, cempre,usuario
             FROM usuarios
             WHERE usuario = %s
         """, (usuario,))
@@ -170,6 +170,7 @@ def login():
                 session['usuario'] = user[1]
                 session['rol'] = user[3]
                 session['cempre'] = user[4]
+                session['usuario'] = user[5]
 
                 cur.close(); conn.close()
                 return redirect(url_for('splash'))
@@ -959,8 +960,6 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
     if not row:
         return "Error", 404
 
-    quiz_id = row[0]
-
     # 🔍 obtener preguntas (igual que resolver_quiz)
     cur.execute("""
         SELECT id, texto, tipo, explicacion
@@ -1026,9 +1025,11 @@ def obtener_asignaciones(salon_id):
             SELECT
                 sq.id,
                 q.titulo,
-                q.codigo
+                sq.codigo,
+                 s.usuario
             FROM salon_quiz sq
             JOIN quiz q ON q.id = sq.quiz_id
+            JOIN salon s ON s.id=sq.salon_id
             WHERE sq.salon_id = %s
               AND q.cempre = %s
             ORDER BY sq.id DESC
@@ -1043,7 +1044,7 @@ def obtener_asignaciones(salon_id):
             SELECT
                 sq.id,
                 q.titulo,
-                q.codigo
+                sq.codigo
             FROM salon_quiz sq
             JOIN quiz q ON q.id = sq.quiz_id
             WHERE sq.salon_id = %s
@@ -1059,16 +1060,32 @@ def obtener_asignaciones(salon_id):
     cur.close()
     conn.close()
 
-    resultado = [
-        {
-            "id": r[0],
-            "titulo": r[1],
-            "codigo": r[2]
-        }
-        for r in data
-    ]
+    if session["rol"] == "admin":
+    
+        resultado = [
+            {
+                "id": r[0],
+                "titulo": r[1],
+                "codigo": r[2],
+                "usuario": r[3]
+            }
+            for r in data
+        ]
+
+    else:
+
+        resultado = [
+            {
+                "id": r[0],
+                "titulo": r[1],
+                "codigo": r[2]
+            }
+            for r in data
+        ]
 
     return jsonify(resultado)
+
+ 
 
 @app.route('/completar_correo', methods=['GET', 'POST'])
 def completar_correo():
@@ -1994,14 +2011,35 @@ def generar_quiz_desde_imagen():
    
 
 def generar_codigo_unico(cur):
+    
     while True:
-        codigo = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-        
-        cur.execute("SELECT 1 FROM quiz WHERE codigo=%s", (codigo,))
-        existe = cur.fetchone()
-        
-        if not existe:
-            return codigo
+
+        codigo = ''.join(
+            random.choices(
+                string.ascii_uppercase + string.digits,
+                k=6
+            )
+        )
+
+        # 🔍 ¿Existe en quiz?
+        cur.execute(
+            "SELECT 1 FROM quiz WHERE codigo=%s",
+            (codigo,)
+        )
+
+        if cur.fetchone():
+            continue
+
+        # 🔍 ¿Existe en salon_quiz?
+        cur.execute(
+            "SELECT 1 FROM salon_quiz WHERE codigo=%s",
+            (codigo,)
+        )
+
+        if cur.fetchone():
+            continue
+
+        return codigo
 
 
 @app.route("/usuarios")
@@ -2450,9 +2488,16 @@ def acceso_quiz(codigo):
 def iniciar_quiz():
 
     data = request.get_json()
-
+    salon_quiz_id = data.get("salon_quiz_id")
     quiz_id = data["quiz_id"]
     alumno_id = data["alumno_id"]
+    
+    
+    print("===================================")
+    print("QUIZ ID       :", quiz_id)
+    print("ALUMNO ID     :", alumno_id)
+    print("SALON QUIZ ID :", salon_quiz_id)
+    print("===================================")
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -3033,11 +3078,7 @@ def eliminar_salon(id):
     cur.close()
     conn.close()
 
-    return redirect('/salones')
-
-@app.route('/crear_salon')
-def crear_salon():
-    return render_template("crear_salon.html")    
+    return redirect('/salones') 
 
 @app.route('/guardar_salon', methods=['POST'])
 def guardar_salon():
@@ -3047,26 +3088,48 @@ def guardar_salon():
 
     codigo = request.form['codigo']
     descripcion = request.form['descripcion']
-
+    usuario = session['usuario']
     user_id = session['user_id']
     cempre = session['cempre']
+    
+    print ("Empresa:",cempre)
 
     if not codigo or not descripcion:
         return "Campos obligatorios", 400
 
     conn = get_db_connection()
     cur = conn.cursor()
+    
+    # 🔍 Verificar código duplicado
+    cur.execute("""
+        SELECT 1
+        FROM salon
+        WHERE UPPER(codigo)=UPPER(%s)
+    """, (codigo,))
+
+    if cur.fetchone():
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "status": "error",
+            "campo": "codigo",
+            "mensaje": "El código del salón ya existe. Registre otro código."
+        })
 
     cur.execute("""
-        INSERT INTO salon (codigo, descripcion, usuario_id, cempre, estado)
-        VALUES (%s, %s, %s, %s, 'A')
-    """, (codigo, descripcion, user_id, cempre))
+        INSERT INTO salon (codigo, descripcion,usuario, usuario_id, cempre, estado)
+        VALUES (%s, %s, %s, %s, %s,'A')
+    """, (codigo, descripcion,usuario, user_id, cempre))
 
     conn.commit()
     cur.close()
     conn.close()
 
-    return redirect('/salones')
+    return jsonify({
+        "status": "ok"
+    })
 
 @app.route('/asignar_quiz')
 def asignar_quiz():
@@ -3120,7 +3183,7 @@ def asignar_quiz():
     cur.close()
     conn.close()
 
-    return render_template("asignar_quiz.html", salones=salones, quizzes=quizzes)
+    return render_template("asignar_quiz.html", salones=salones, quizzes=quizzes,rol=rol)
 
 from psycopg2 import errors
 
@@ -3131,15 +3194,36 @@ def guardar_asignacion():
 
     salon_id = data['salon_id']
     quiz_id = data['quiz_id']
+    
+    cempre=session['cempre']
 
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
+        codigo = generar_codigo_unico_salon(cur)
+
         cur.execute("""
-            INSERT INTO salon_quiz (salon_id, quiz_id, codigo, estado)
-            VALUES (%s, %s, NULL, 'A')
-        """, (salon_id, quiz_id))
+            INSERT INTO salon_quiz (
+                salon_id,
+                quiz_id,
+                codigo,
+                cempre,
+                estado
+            )
+            VALUES (
+                %s,
+                %s,
+                %s,
+                %s,
+                'A'
+            )
+        """, (
+            salon_id,
+            quiz_id,
+            codigo,
+            cempre
+        ))
 
         conn.commit()
 
@@ -3239,7 +3323,9 @@ def resultados_salon():
     # 🔹 PROCESO SOLO SI ES POST
     if request.method == 'POST' and salon_id:
 
-        # 🔹 RESULTADOS
+# ==========================================================
+# 1. OBTENER RESULTADOS DE LOS ALUMNOS
+# ==========================================================
         cur.execute("""
             WITH ultimo_intento AS (
                 SELECT 
@@ -3293,7 +3379,9 @@ def resultados_salon():
 
         data = cur.fetchall()
 
-        # 🔹 QUIZZES DEL SALON
+# ==========================================================
+# 2. OBTENER QUIZZES DEL SALÓN
+# ==========================================================
         cur.execute("""
             SELECT q.id, q.titulo,q.codigo
             FROM salon_quiz sq
@@ -3305,7 +3393,9 @@ def resultados_salon():
 
         todos_quizzes = cur.fetchall()
 
-        # 🔥 PIVOT (igual que ya lo tienes)
+# ==========================================================
+# 3. CONSTRUIR PIVOT DE RESULTADOS
+# ==========================================================
         resultado = {}
 
         for row in data:
@@ -3334,28 +3424,65 @@ def resultados_salon():
             }
             for q in todos_quizzes
         ]
+# ==========================================================
+# 4. CONSTRUIR TABLA PARA LA VISTA
+# ==========================================================
 
         tabla = []
 
         for alumno_id, fila in resultado.items():
 
             suma = 0
-            count = 0
+            evaluaciones = 0
 
-            for q in quizzes:
-                data = fila.get(q["id"])
+            for quiz in quizzes:
 
-                if isinstance(data, dict):
-                    fila[q["id"]] = data
-                    if data["nota"] > 0:
-                        suma += data["nota"]
-                        count += 1
+                celda = fila.get(quiz["id"])
+
+                if isinstance(celda, dict):
+
+                    fila[quiz["id"]] = celda
+
+                    if celda["nota"] > 0:
+                        suma += celda["nota"]
+                        evaluaciones += 1
+
                 else:
-                    fila[q["id"]] = {"nota": 0, "intento": 0}
 
+                    fila[quiz["id"]] = {
+                        "nota": 0,
+                        "intento": 0
+                    }
 
-            fila["promedio"] = round(suma / count, 2) if count > 0 else 0
+            fila["promedio"] = round(
+                suma / evaluaciones, 2
+            ) if evaluaciones else 0
+
             tabla.append(fila)
+            
+            
+ 
+            
+# ==========================================================
+# 5. CALCULAR KPIs Y GRÁFICOS
+# ==========================================================
+
+        cur.execute("""
+            SELECT
+                ROUND(AVG(iq.tiempo_total_segundos))
+            FROM intentos_quiz iq
+            JOIN salon_quiz sq
+                ON sq.quiz_id = iq.quiz_id
+            WHERE sq.salon_id = %s
+            AND iq.tiempo_total_segundos IS NOT NULL
+            AND iq.nota_final IS NOT NULL
+        """, (salon_id,))
+        
+        tiempo_promedio = cur.fetchone()[0] or 0
+        minutos = int(tiempo_promedio // 60)
+        segundos = int(tiempo_promedio % 60)
+
+        tiempo_promedio = f"{minutos:02d}:{segundos:02d}"
 
         notas = [fila["promedio"] for fila in tabla]
         distribucion = [0, 0, 0, 0]
@@ -3391,6 +3518,10 @@ def resultados_salon():
         aprobados = sum(1 for nota in notas if nota >= 11)
         desaprobados = sum(1 for nota in notas if nota < 11)
         
+        verdes = sum(1 for nota in notas if nota >= 17)
+        amarillos = sum(1 for nota in notas if 11 <= nota < 17)
+        rojos = sum(1 for nota in notas if nota < 11)
+        
         detalle_aprobados = {
             "Aprobados": [],
             "Desaprobados": []
@@ -3407,9 +3538,9 @@ def resultados_salon():
                 
         nombres = [fila["alumno"] for fila in tabla]
         
-        # ===============================
-        # 📊 analisis de quizzes
-        # ===============================
+# ==========================================================
+# 6. CALCULAR ESTADÍSTICAS POR QUIZ
+# ==========================================================
          
         cur.execute("""
             WITH ultimo_intento AS (
@@ -3451,6 +3582,7 @@ def resultados_salon():
 
             SELECT
 
+                q.id,
                 q.codigo,
                 q.titulo,
                 MAX(sq.fecha_asignacion),
@@ -3482,68 +3614,30 @@ def resultados_salon():
 
             ORDER BY promedio DESC
         """, (salon_id,))
-
-       
-        colores = [
-            "#1D4ED8",  # Azul
-            "#10B981",  # Verde
-            "#8B5CF6",  # Morado
-            "#F97316",  # Naranja
-            "#EC4899",  # Rosa
-            "#06B6D4",  # Cian
-            "#84CC16",  # Lima
-            "#F59E0B"   # Ámbar
-        ]
         
+        rows = cur.fetchall()
+
         promedio_quiz = []
 
-        filas = cur.fetchall()
-
-        promedio_anterior = None
-
-        for i, row in enumerate(filas):
-
-            codigo = row[0]
-            titulo = row[1]
-            fecha = row[2]
-            promedio = float(row[3])
-
-            if fecha:
-                fecha = fecha.strftime("%d/%m/%y")
-            else:
-                fecha = ""
-
-            if promedio_anterior is None:
-                variacion = None
-            else:
-                variacion = round(promedio - promedio_anterior, 2)
-
-            promedio_anterior = promedio
+        for row in rows:
 
             promedio_quiz.append({
-
-                "codigo": codigo,
-                "titulo": titulo,
-                "fecha": fecha,
-
-                "promedio": promedio,
-
-                "variacion": variacion,
-
-                "aprobados": row[4],
-                "desaprobados": row[5],
-
-                "maxima": float(row[6]),
-                "minima": float(row[7]),
-
-                "color": colores[i % len(colores)]
-
+                "id": row[0],
+                "codigo": row[1],
+                "titulo": row[2],
+                "fecha": row[3],
+                "promedio": float(row[4]),
+                "aprobados": row[5],
+                "desaprobados": row[6],
+                "maxima": float(row[7]),
+                "minima": float(row[8])
             })
+
+
+       
     cur.close()
     conn.close()
     
-    print(promedio_quiz)
-     
 
     return render_template(
         "resultados_salon.html",
@@ -3555,13 +3649,52 @@ def resultados_salon():
         aprobados=aprobados,
         desaprobados=desaprobados,
         detalle_aprobados=detalle_aprobados,
+        tiempo_promedio=tiempo_promedio,
         nombres=nombres,
         distribucion=distribucion,
         promedio_quiz=promedio_quiz,
         distribucion_detalle=distribucion_detalle,
+        verdes=verdes,
+        amarillos=amarillos,
+        rojos=rojos,
         preguntas_top=preguntas_top
     )
 
+def construir_tabla(resultado, quizzes):
+
+    tabla = []
+
+    for  fila in resultado.values():
+
+        suma = 0
+        evaluaciones = 0
+
+        for quiz in quizzes:
+
+            celda = fila.get(quiz["id"])
+
+            if isinstance(celda, dict):
+
+                fila[quiz["id"]] = celda
+
+                if celda["nota"] > 0:
+                    suma += celda["nota"]
+                    evaluaciones += 1
+
+            else:
+
+                fila[quiz["id"]] = {
+                    "nota": 0,
+                    "intento": 0
+                }
+
+        fila["promedio"] = round(
+            suma / evaluaciones, 2
+        ) if evaluaciones else 0
+
+        tabla.append(fila)
+
+    return tabla
     
 @app.route('/eliminar_respuestas', methods=['POST'])
 def eliminar_respuestas():
@@ -6128,6 +6261,25 @@ def obtener_config_default():
         "comodin": False,
         "modo": "normal"
     }
+    
+def generar_codigo_unico_salon(cur):
+    
+    while True:
+
+        codigo = ''.join(
+            random.choices(
+                string.ascii_uppercase + string.digits,
+                k=6
+            )
+        )
+
+        cur.execute(
+            "SELECT 1 FROM salon_quiz WHERE codigo=%s",
+            (codigo,)
+        )
+
+        if not cur.fetchone():
+            return codigo
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

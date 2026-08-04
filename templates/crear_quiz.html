@@ -15,12 +15,6 @@ body {
 }
 
 /* 🎯 CARD */
-.card {
-    border: 1px solid #e4e7ec;
-    border-radius: 8px;
-    background: #ffffff;
-    box-shadow: none;
-}
 
 /* 🎯 HEADER */
 .header-quiz {
@@ -128,9 +122,7 @@ input.form-control {
     color: #344054;
 }
 
-.modal-body {
-    padding: 16px;
-}
+ 
 
 .modal-footer {
     border-top: 1px solid #eaecf0;
@@ -866,6 +858,7 @@ document.addEventListener("DOMContentLoaded", () => {
             bloquePrompt.style.display = "none";
             bloqueArchivo.style.display = "block";
             bloqueConfig.style.display = "block";
+            bloqueImagen.style.display = "none";
             document.getElementById("promptIA_modal").rows = 4;
 
         } else if (tipo === "importar") {
