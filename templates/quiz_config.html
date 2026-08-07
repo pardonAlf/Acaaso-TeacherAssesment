@@ -1,0 +1,414 @@
+<style>
+          .config-card{
+            background:#abbfe7;
+            border:1px solid #418ce7;
+            border-radius:10px;
+            padding:14px;
+            margin-bottom:16px;
+            color:#030000;
+        }
+
+        .config-title{
+            font-size:12px;
+            font-weight:700;
+            color:#030911;
+            text-transform:uppercase;
+            letter-spacing:.8px;
+            margin-bottom:12px;
+        }
+
+        .config-card .form-check{
+            padding:8px 0 0 20px;
+            color:#030000;
+        }
+
+        .config-card .form-select{
+            border-radius:8px;
+            border:1px solid #c7d8ef;
+            background:white;
+            color:#030000;
+        }
+
+        .config-card .form-select:focus{
+            border-color:#2b72ed;
+            box-shadow:0 0 0 .18rem rgba(79,142,247,.15);
+        }
+
+        .feature-dev{
+            display:flex;
+            align-items:center;
+            padding:10px 0;
+            font-size:13px;
+            color:#495057;
+            border-bottom:1px solid #e9eef5;
+        }
+
+        .feature-dev:last-child{
+            border-bottom:none;
+        }
+
+        .feature-dev i{
+            color:#198754;
+            margin-right:10px;
+            font-size:14px;
+        }
+
+        .feature-dev .badge{
+            margin-left:auto;
+            font-size:10px;
+            font-weight:600;
+        }
+
+        .config-overlay{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,.4);
+            z-index: 1050;
+            display: none;
+        }
+
+        .config-panel{
+            position: fixed;
+            top: 0; 
+            right: -720px;
+            width: 720px;
+            height: auto;
+            max-height:90vh;
+            overflow-y:auto;
+            top:30%;
+            transform:translateY(-30%);
+            background: white;
+            border-left: 1px solid #e4e7ec;
+            box-shadow: -5px 0 15px rgba(0,0,0,.05);
+            z-index: 1051;
+            transition: right .3s ease;
+            padding:16px;
+        }
+        .config-body{
+            font-size:12px;
+        }
+        .config-description{
+            font-size:11px;
+            color:#6b7280;
+            margin-top:2px;
+            margin-bottom:16px;
+        }
+        .config-header-title{
+            font-size:16px;
+            font-weight:700;
+        }
+        .config-item{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:12px 0;
+            border-bottom:1px solid rgba(255,255,255,.45);
+        }
+
+        .config-item:last-child{
+            border-bottom:none;
+        }
+
+        .config-item .form-check{
+            margin:0;
+            display:flex;
+            align-items:center;
+            gap:10px;
+        }
+
+        .config-item .form-check-input{
+            margin-top:0;
+        }
+
+        .config-item .form-check-label{
+            margin-bottom:0;
+            color:#5d6778;
+            font-size:14px;
+        }
+
+        .badge-pro{
+            background:linear-gradient(135deg,#d4af37,#b8860b);
+            color:white;
+            font-weight:700;
+            border-radius:14px;
+            padding:4px 12px;
+            min-width:55px;
+            text-align:center;
+            box-shadow:0 2px 6px rgba(0,0,0,.18);
+        }
+        .config-grid{
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:20px;
+            align-items:start;
+        }
+        .config-subtitle{
+            margin:18px 0 10px;
+            font-size:13px;
+            font-weight:700;
+            color:#173f8a;
+        }
+
+        .config-separator{
+            margin:18px 0;
+            opacity:.25;
+        }
+</style>
+
+<div id="overlayConfig" class="config-overlay"></div>
+    <div id="panelConfig" class="config-panel">
+
+        <!-- header -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <b class="config-header-title">
+                ⚙️ Configuración General del Quiz
+            </b>
+            
+            <button class="btn btn-sm btn-light" onclick="cerrarConfig()">✕</button>
+        </div>
+        <div class="config-description">
+                Todas las opciones se almacenan en la configuración del quiz.
+            </div>
+
+        <!-- contenido (temporal) -->
+        <div class="config-body">
+
+            <div class="config-grid">
+
+                <div class="config-card">
+
+                    <div class="config-title">
+                        ⚙️ ACAASO Essentials
+                    </div>
+
+                    <div class="config-description">
+                        Funciones incluidas en todas las licencias de ACAASO.
+                    </div>
+
+                    <!-- ========================= -->
+                    <!-- Evaluación -->
+                    <!-- ========================= -->
+
+                    <div class="config-subtitle">
+                        📚 Evaluación
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input"
+                            type="checkbox"
+                            id="multiple_intentos_panel"
+                            {% if config.multiple_intentos %}checked{% endif %}>
+                        <label class="form-check-label">
+                            Múltiples intentos
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input"
+                            type="checkbox"
+                            id="enviar_solucionario_panel"
+                            {% if config.enviar_solucionario %}checked{% endif %}>
+                        <label class="form-check-label">
+                            Enviar solucionario
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input"
+                            type="checkbox"
+                            id="privado_panel"
+                            {% if config.privado %}checked{% endif %}>
+                        <label class="form-check-label">
+                            Quiz privado
+                        </label>
+                    </div>
+
+                    <hr class="config-separator">
+
+                    <!-- ========================= -->
+                    <!-- Navegación -->
+                    <!-- ========================= -->
+
+                    <div class="config-subtitle">
+                        🧭 Navegación
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input"
+                            type="checkbox"
+                            id="permitir_retroceder"
+                            disabled>
+                        <label class="form-check-label text-muted">
+                            Permitir volver a preguntas anteriores
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input"
+                            type="checkbox"
+                            id="permitir_sin_contestar"
+                            disabled>
+                        <label class="form-check-label text-muted">
+                            Permitir avanzar sin responder
+                        </label>
+                    </div>
+
+                    <hr class="config-separator">
+
+                    <!-- ========================= -->
+                    <!-- Tiempo -->
+                    <!-- ========================= -->
+
+                    <div class="config-subtitle">
+                        ⏱ Tiempo
+                    </div>
+
+                    <select id="tiempo_minutos" class="form-select form-select-sm">
+                        <option value="">Sin límite de tiempo</option>
+                         
+                        <option value="1"
+                            {% if config.config_json.tiempo_minutos == 1 %}selected{% endif %}>
+                            1
+                        </option>
+                        <option value="5"
+                            {% if config.config_json.tiempo_minutos ==5 %}selected{% endif %}>
+                        5
+                        </option>
+                        <option value="10"
+                            {% if config.config_json.tiempo_minutos == 10 %}selected{% endif %}>
+                            10
+                        </option>
+                        <option value="15"
+                            {% if config.config_json.tiempo_minutos == 15 %}selected{% endif %}>
+                            15
+                        </option>
+                        <option value="20"
+                            {% if config.config_json.tiempo_minutos == 20 %}selected{% endif %}>
+                            20
+                        </option>
+                        <option value="30"
+                            {% if config.config_json.tiempo_minutos == 30 %}selected{% endif %}>
+                            30
+                        </option>
+                        <option value="45"
+                            {% if config.config_json.tiempo_minutos == 45 %}selected{% endif %}>
+                            45
+                        </option>
+                        <option value="60"
+                            {% if config.config_json.tiempo_minutos == 60 %}selected{% endif %}>
+                            60
+                        </option>
+                    </select>
+                </div>
+
+                
+                 
+
+
+            <!-- PRÓXIMAMENTE -->
+                <div class="config-card">
+
+                    <div class="config-title">
+                        👑 ACAASO Professional
+                    </div>
+
+                    <div class="config-description">
+                        Estas funciones requieren una licencia
+                        <b>ACAASO Professional</b>.
+                    </div>
+
+                    <!-- Repetir este bloque -->
+
+                    <div class="config-item">
+
+                        <div class="form-check m-0">
+                            <input class="form-check-input" type="checkbox" disabled>
+                            <label class="form-check-label text-muted">
+                                Mantener mejor nota
+                            </label>
+                        </div>
+
+                        <span class="badge badge-pro">PRO</span>
+
+                    </div>
+                    <div class="config-item">
+
+                        <div class="form-check m-0">
+                            <input class="form-check-input" type="checkbox" disabled>
+                            <label class="form-check-label text-muted">
+                                Mantener último intento
+                            </label>
+                        </div>
+
+                        <span class="badge badge-pro">PRO</span>
+
+                    </div>
+                    <div class="config-item">
+
+                        <div class="form-check m-0">
+                            <input class="form-check-input" type="checkbox" disabled>
+                            <label class="form-check-label text-muted">
+                                Promediar intentos
+                            </label>
+                        </div>
+
+                        <span class="badge badge-pro">PRO</span>
+
+                    </div>
+                    <div class="config-item">
+
+                        <div class="form-check m-0">
+                            <input class="form-check-input" type="checkbox" disabled>
+                            <label class="form-check-label text-muted">
+                                Banco de preguntas
+                            </label>
+                        </div>
+
+                        <span class="badge badge-pro">PRO</span>
+
+                    </div>
+                    <div class="config-item">
+
+                        <div class="form-check m-0">
+                            <input class="form-check-input" type="checkbox" disabled>
+                            <label class="form-check-label text-muted">
+                                Aleatorizar preguntas
+                            </label>
+                        </div>
+
+                        <span class="badge badge-pro">PRO</span>
+
+                    </div>
+                    <div class="config-item">
+
+                        <div class="form-check m-0">
+                            <input class="form-check-input" type="checkbox" disabled>
+                            <label class="form-check-label text-muted">
+                                Aleatorizar opciones
+                            </label>
+                        </div>
+
+                        <span class="badge badge-pro">PRO</span>
+
+                    </div>
+
+                </div>
+            </div>
+            
+
+            <!-- BOTONES -->
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <button class="btn btn-outline-secondary" onclick="cerrarConfig()">
+                    Cancelar
+                </button>
+
+                <button class="btn btn-primary" onclick="guardarConfig()">
+                    Guardar configuración
+                </button>
+            </div>
+        </div>
+
+    </div>

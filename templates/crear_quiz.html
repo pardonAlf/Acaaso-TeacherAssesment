@@ -514,6 +514,7 @@ input.form-control {
 <body>
 
     <form method="POST" id="formQuiz">
+        <input type="hidden" id="config_json" name="config_json" value="">
 
         <div class="container mt-4">
             <div class="mb-3">
@@ -916,8 +917,8 @@ async function ejecutarIA() {
     if (modal) modal.hide();
 
     // 🔥 mostrar overlay + iniciar barra
-    document.getElementById("overlayLoader").style.display = "flex";
-    iniciarLoader();
+    //document.getElementById("overlayLoader").style.display = "flex";
+    //iniciarLoader();
 
     try {
 
@@ -1156,12 +1157,15 @@ async function ejecutarIA() {
         }
 
     } catch (error) {
+
         console.error(error);
-        alert("Ocurrió un error con la IA");
+
+        alert(error.message);
+
     }
 
     // 🔥 cerrar loader (aunque redireccione)
-    detenerLoader();
+    //detenerLoader();
 }
  
 function crearPreguntaVF() {
@@ -1585,11 +1589,9 @@ async function subirExamen() {
     }
         clearInterval(fakeProgress);
     }
-
 function setLoaderText(texto) {
-    document.getElementById("textoLoader").innerText = texto;
+    console.log(texto);
 }
-
 let intervaloLoader;
 
 function iniciarLoader() {
@@ -1621,7 +1623,7 @@ function abrirConfig() {
 }
 
 function cerrarConfig() {
-    document.getElementById("panelConfig").style.right = "-400px";
+    document.getElementById("panelConfig").style.right = "-720px";
     document.getElementById("overlayConfig").style.display = "none";
 }
 
@@ -1650,6 +1652,21 @@ function guardarConfig() {
         originalSolucionario.checked =
             document.getElementById("enviar_solucionario_panel").checked;
     }
+
+    const config = {
+        multiple_intentos: document.getElementById("multiple_intentos_panel").checked,
+        enviar_solucionario: document.getElementById("enviar_solucionario_panel").checked,
+        privado: document.getElementById("privado_panel").checked,
+        tiempo_minutos: document.getElementById("tiempo_minutos").value === ""
+            ? null
+            : parseInt(document.getElementById("tiempo_minutos").value),
+        comodin: false,
+        modo: "normal"
+    };
+
+    document.getElementById("config_json").value = JSON.stringify(config);
+
+    console.log(config);
 
     cerrarConfig();
 }
@@ -1692,124 +1709,8 @@ document.getElementById("btnCambiarImagen").addEventListener("click", function (
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <div id="overlayLoader" style="display:none;">
-        <div class="loader-box">
-            <div id="textoLoader" class="loader-text">Procesando...</div>
-            <div class="progress">
-                <div id="barraReal" class="progress-bar"></div>
-            </div>
-        </div>
-    </div>
-    <div id="overlayConfig" style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.4);
-        z-index: 1050;
-        display: none;
-    "></div>
-    <div id="panelConfig" style="
-        position: fixed;
-        top: 0;
-        right: -400px; /* oculto */
-        width: 400px;
-        height: 100%;
-        background: white;
-        border-left: 1px solid #e4e7ec;
-        box-shadow: -5px 0 15px rgba(0,0,0,0.05);
-        z-index: 1051;
-        transition: right 0.3s ease;
-        padding: 16px;
-    ">
-
-        <!-- header -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <b style="font-size:13px;">Configuración</b>
-            <button class="btn btn-sm btn-light" onclick="cerrarConfig()">✕</button>
-        </div>
-
-        <!-- contenido (temporal) -->
-        <div style="font-size:12px;">
-
-            <!-- 1 -->
-            <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="multiple_intentos_panel" checked>
-                <label class="form-check-label">Múltiples intentos</label>
-            </div>
-
-            <!-- 2 -->
-            <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="enviar_solucionario_panel" checked>
-                <label class="form-check-label">Enviar solucionario</label>
-            </div>
-
-            <div class="form-check mb-2">
-                <input class="form-check-input"
-                    type="checkbox"
-                    id="privado_panel"
-                    checked>
-                <label class="form-check-label">
-                    Quiz privado
-                </label>
-            </div>
-
-            <hr>
-
-            <!-- 3 -->
-
-            <div class="mb-2">
-                <select id="tiempo_minutos" class="form-select form-select-sm">
-                    <option value="">Sin limite de Tiempo (minutos) </option>
-                    <option>1</option>
-                    <option>5</option>
-                    <option>10</option>
-                    <option>15</option>
-                    <option>20</option>
-                    <option>30</option>
-                    <option>45</option>
-                    <option>60</option>
-                </select>
-            </div>
-
-            <hr>
-
-            <!-- 4 -->
-            <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="mantener_ultimo" disabled>
-                <label class="form-check-label">
-                    Mantener último intento <span class="badge-dev">por desarrollar</span>
-                </label>
-            </div>
-
-            <!-- 5 -->
-            <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="mejor_nota" disabled>
-                <label class="form-check-label">
-                    Mantener mejor nota <span class="badge-dev">por desarrollar</span>
-                </label>
-            </div>
-
-            <hr>
-
-            <!-- 6 -->
-            <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" id="comodin" disabled>
-                <label class="form-check-label">
-                    Activar comodines (3 ayudas) <span class="badge-dev">por desarrollar</span>
-                </label>
-            </div>
-
-            <!-- 🔥 BOTONES -->
-            <div class="d-flex justify-content-end gap-2 mt-3">
-                <button class="btn btn-light btn-sm" onclick="cerrarConfig()">Cancelar</button>
-                <button class="btn btn-primary btn-sm" onclick="guardarConfig()">OK</button>
-            </div>
-
-        </div>
-
-    </div>
+ 
+{% include "quiz_config.html" %}
 
 </body>
 </html>

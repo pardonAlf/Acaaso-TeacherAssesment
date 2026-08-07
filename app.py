@@ -15,7 +15,7 @@ from openpyxl.styles import Font
 from collections import defaultdict
 from openpyxl.styles import Font, Alignment, Border, Side
 from openpyxl.drawing.image import Image as XLImage
-from collections import defaultdict
+ 
 from io import BytesIO
 from flask import send_file
 from datetime import datetime
@@ -1251,9 +1251,18 @@ def crear_quiz():
         titulo = request.form['titulo']
         config_json = request.form.get("config_json")
         usuario = session.get('usuario')
+        
         multiple_intentos = request.form.get('multiple_intentos') in ['true', 'on', '1']
         enviar_solucionario = request.form.get("enviar_solucionario") in ['true', 'on', '1']
         publico = not (request.form.get("privado") in ['true', 'on', '1'])
+        
+        config = json.loads(config_json)
+
+        config["multiple_intentos"] = multiple_intentos
+        config["enviar_solucionario"] = enviar_solucionario
+        config["privado"] = not publico
+
+        config_json = json.dumps(config)
         
         if not config_json or config_json=='':
             config_json = json.dumps(obtener_config_default())
@@ -1360,7 +1369,12 @@ def crear_quiz():
 
         return redirect('/dashboard_profesor')
 
-    return render_template('crear_quiz.html')
+    return render_template( 
+        'crear_quiz.html',
+        config={
+            "config_json": obtener_config_default()
+        }
+    )
 
 
 @app.route('/generar_quiz_ia', methods=['POST'])
@@ -1677,6 +1691,19 @@ def editar_quiz(quiz_id):
         enviar_solucionario = bool(request.form.get("enviar_solucionario"))
         publico = not (request.form.get("privado") == "on")
         config_json = request.form.get("config_json")
+
+        print("CONFIG_JSON RECIBIDO:", repr(config_json))
+
+        if config_json:
+            config = json.loads(config_json)
+        else:
+            config = obtener_config_default()
+
+        config["multiple_intentos"] = multiple_intentos
+        config["enviar_solucionario"] = enviar_solucionario
+        config["privado"] = not publico
+
+        config_json = json.dumps(config)
         
         if not config_json or config_json=='':
             config_json = json.dumps(obtener_config_default())
@@ -1878,15 +1905,30 @@ def editar_quiz(quiz_id):
     """, (quiz_id,))
 
     row = cur.fetchone()
+    
+    config_json = json.loads(row[4]) if row[4] else obtener_config_default()
+    
+    print("ROW =", row)
+    print("CONFIG_JSON =", config_json)
+    print("multiple BD =", row[1])
+    print("solucionario BD =", row[2])
+    print("publico BD =", row[3])
+
+   
 
     quiz = {
         "titulo": row[0],
-        "multiple_intentos": row[1],
-        "enviar_solucionario": row[2],
-        "publico": row[3],
-        "config_json": json.loads(row[4]) if row[4] else {}
-    }
 
+        "multiple_intentos": config_json.get("multiple_intentos", row[1]),
+        "enviar_solucionario": config_json.get("enviar_solucionario", row[2]),
+        "publico": not config_json.get("privado", not row[3]),
+        "privado": config_json.get("privado", not row[3]),
+
+        "config_json": config_json
+    }   
+    
+    print("*****",quiz)
+    
     cur.execute("""
         SELECT id, texto, tipo, explicacion
         FROM preguntas
@@ -1917,8 +1959,16 @@ def editar_quiz(quiz_id):
 
     cur.close()
     conn.close()
+    
+    config = quiz
+    
+    print(quiz["config_json"])
 
-    return render_template('editar_quiz.html', quiz=quiz, preguntas=data)
+    return render_template(
+        "editar_quiz.html",
+        quiz=quiz,
+        preguntas=data
+    )
     
 import random
 import string
@@ -2492,13 +2542,6 @@ def iniciar_quiz():
     quiz_id = data["quiz_id"]
     alumno_id = data["alumno_id"]
     
-    
-    print("===================================")
-    print("QUIZ ID       :", quiz_id)
-    print("ALUMNO ID     :", alumno_id)
-    print("SALON QUIZ ID :", salon_quiz_id)
-    print("===================================")
-
     conn = get_db_connection()
     cur = conn.cursor()
 
@@ -3293,6 +3336,24 @@ def resultados_salon():
     promedio_quiz = []
     aprobados = 0
     desaprobados = 0
+    intentos = {}
+    intentos_detalle = {}
+    detalle_intentos = {}
+    
+    tiempo_promedio = "00:00"
+
+    distribucion = [0, 0, 0, 0]
+
+    distribucion_detalle = {
+        "0-10": [],
+        "11-13": [],
+        "14-16": [],
+        "17-20": []
+    }
+
+    verdes = 0
+    amarillos = 0
+    rojos = 0
 
     detalle_aprobados = {
         "Aprobados": [],
@@ -3328,12 +3389,16 @@ def resultados_salon():
 # ==========================================================
         cur.execute("""
             WITH ultimo_intento AS (
-                SELECT 
+                SELECT
                     alumno_id,
                     quiz_id,
+                    salon_quiz_id,
                     MAX(intento_id) AS intento_id
                 FROM respuestas_alumno
-                GROUP BY alumno_id, quiz_id
+                GROUP BY
+                    alumno_id,
+                    quiz_id,
+                    salon_quiz_id
             )
 
             SELECT 
@@ -3342,6 +3407,7 @@ def resultados_salon():
                 a.nombre,
                 a.apellido,
                 a.correo,
+                ra.salon_quiz_id,
                 q.id AS quiz_id,
                 q.titulo,
                 iq.intento_numero,
@@ -3355,52 +3421,147 @@ def resultados_salon():
 
             FROM respuestas_alumno ra
 
-            JOIN ultimo_intento ui 
+            JOIN ultimo_intento ui
                 ON ui.alumno_id = ra.alumno_id
-                AND ui.quiz_id = ra.quiz_id
-                AND ui.intento_id = ra.intento_id
+            AND ui.quiz_id = ra.quiz_id
+            AND ui.salon_quiz_id = ra.salon_quiz_id
+            AND ui.intento_id = ra.intento_id
 
             JOIN alumnos a ON a.id = ra.alumno_id
             JOIN opciones o ON o.id = ra.opcion_id
-            JOIN quiz q ON q.id = ra.quiz_id
-            JOIN salon_quiz sq ON sq.quiz_id = q.id
-            JOIN salon s ON s.id = sq.salon_id
+           JOIN quiz q
+                ON q.id = ra.quiz_id
+
+            JOIN salon_quiz sq
+                ON sq.id = ra.salon_quiz_id
+
+            JOIN salon s
+                ON s.id = sq.salon_id
             LEFT JOIN intentos_quiz iq ON iq.id = ra.intento_id
 
             WHERE sq.salon_id = %s
             AND s.cempre = %s
 
             GROUP BY 
-            a.id, a.dni, a.nombre, a.apellido, 
-            q.id, q.titulo, iq.intento_numero
+            a.id, 
+            a.dni, 
+            a.nombre, 
+            a.apellido, 
+            q.id, 
+            q.titulo, 
+            iq.intento_numero,
+            ra.salon_quiz_id
 
             ORDER BY a.nombre
         """, (salon_id, cempre ))
 
         data = cur.fetchall()
+        
+        cur.execute("""
+            SELECT
+                ra.alumno_id,
+                ra.salon_quiz_id,
+                iq.intento_numero,
+                ROUND(
+                    (
+                        COUNT(CASE WHEN o.es_correcta THEN 1 END)::decimal
+                        / NULLIF(COUNT(*),0)
+                    ) * 20,
+                2) AS nota,
+                iq.fecha_inicio,
+                iq.fecha_fin        
+
+            FROM respuestas_alumno ra
+
+            JOIN intentos_quiz iq
+                ON iq.id = ra.intento_id
+
+            JOIN opciones o
+                ON o.id = ra.opcion_id
+
+            JOIN salon_quiz sq
+                ON sq.id = ra.salon_quiz_id
+
+            WHERE sq.salon_id = %s
+
+            GROUP BY
+                ra.alumno_id,
+                ra.salon_quiz_id,
+                iq.intento_numero,
+                iq.fecha_inicio,
+                iq.fecha_fin
+
+            ORDER BY
+                ra.alumno_id,
+                iq.intento_numero,
+                ra.salon_quiz_id
+        """, (salon_id,))
+        
+       
+
+        data_intentos = cur.fetchall()
+        
+         
+        for r in data_intentos:
+            print(r)
+
+        detalle_intentos = defaultdict(dict)
 
 # ==========================================================
 # 2. OBTENER QUIZZES DEL SALÓN
 # ==========================================================
         cur.execute("""
-            SELECT q.id, q.titulo,q.codigo
+            SELECT
+                sq.id,
+                sq.codigo,
+                q.id,
+                q.titulo
             FROM salon_quiz sq
-            JOIN quiz q ON q.id = sq.quiz_id
-            JOIN salon s ON s.id = sq.salon_id
+            JOIN quiz q
+                ON q.id = sq.quiz_id
+            JOIN salon s
+                ON s.id = sq.salon_id
             WHERE sq.salon_id = %s
-              AND s.cempre = %s
+            AND s.cempre = %s
+            ORDER BY sq.id
         """, (salon_id, cempre))
 
         todos_quizzes = cur.fetchall()
+        
+        print(todos_quizzes)
 
 # ==========================================================
 # 3. CONSTRUIR PIVOT DE RESULTADOS
 # ==========================================================
         resultado = {}
+        
+        for row in data_intentos:
+    
+            alumno_id, salon_quiz_id, intento, nota, fecha_inicio, fecha_fin = row
+            
+            if fecha_inicio and fecha_fin:
+                segundos = int((fecha_fin - fecha_inicio).total_seconds())
+                minutos = segundos // 60
+                segundos = segundos % 60
+                tiempo = f"{minutos:02d}:{segundos:02d}"
+            else:
+                tiempo = "--:--"
+
+            detalle_intentos[alumno_id].setdefault(intento, {})
+
+            detalle_intentos[alumno_id][intento][salon_quiz_id] = {
+                "nota": nota,
+                "fecha_inicio": fecha_inicio,
+                "fecha_fin": fecha_fin,
+                "tiempo": tiempo
+            }
+            
+             
 
         for row in data:
+             
     
-            dni, alumno_id, nombre, apellido, correo, quiz_id, quiz, intento, nota,fecha = row
+            dni, alumno_id, nombre, apellido, correo, salon_quiz_id, quiz_id, quiz, intento, nota, fecha = row
 
             if alumno_id not in resultado:
                 resultado[alumno_id] = {
@@ -3410,20 +3571,28 @@ def resultados_salon():
                     "correo": correo
                 }
 
-            resultado[alumno_id][quiz_id] = {
+            resultado[alumno_id][salon_quiz_id] = {
                 "nota": nota,
                 "intento": intento,
-                "fecha": fecha   # 👈 NUEVO
+                "fecha": fecha,
+                "quiz_id": quiz_id
             }
 
         quizzes = [
             {
-                "id": q[0],
-                "titulo": q[1],
-                "codigo": q[2]
+                "id": q[0],          # 👈 ahora es salon_quiz_id
+                "codigo": q[1],      # 👈 código de salon_quiz
+                "quiz_id": q[2],     # 👈 lo guardamos porque lo necesitaremos
+                "titulo": q[3]
             }
             for q in todos_quizzes
         ]
+        
+# ==========================================================
+# para los intentos por linea
+# ==========================================================
+        intentos = {}
+        intentos_detalle = {}
 # ==========================================================
 # 4. CONSTRUIR TABLA PARA LA VISTA
 # ==========================================================
@@ -3431,6 +3600,19 @@ def resultados_salon():
         tabla = []
 
         for alumno_id, fila in resultado.items():
+            
+            cur.execute("""
+                SELECT COUNT(DISTINCT intento_id)
+                FROM respuestas_alumno
+                WHERE alumno_id = %s
+                AND salon_quiz_id IN (
+                        SELECT id
+                        FROM salon_quiz
+                        WHERE salon_id = %s
+                )
+            """, (alumno_id, salon_id))
+
+            intentos[alumno_id] = cur.fetchone()[0]
 
             suma = 0
             evaluaciones = 0
@@ -3438,6 +3620,19 @@ def resultados_salon():
             for quiz in quizzes:
 
                 celda = fila.get(quiz["id"])
+                notas = []
+
+                if alumno_id in detalle_intentos:
+
+                    for intento in detalle_intentos[alumno_id]:
+
+                        if quiz["id"] in detalle_intentos[alumno_id][intento]:
+                            notas.append(
+                                float(detalle_intentos[alumno_id][intento][quiz["id"]]["nota"])
+                            )
+
+                if notas:
+                    celda["nota"] = round(sum(notas) / len(notas), 2)
 
                 if isinstance(celda, dict):
 
@@ -3547,9 +3742,13 @@ def resultados_salon():
                 SELECT
                     alumno_id,
                     quiz_id,
+                    salon_quiz_id,
                     MAX(intento_id) AS intento_id
                 FROM respuestas_alumno
-                GROUP BY alumno_id, quiz_id
+                GROUP BY
+                    alumno_id,
+                    quiz_id,
+                    salon_quiz_id
             ),
 
             notas_quiz AS (
@@ -3570,6 +3769,7 @@ def resultados_salon():
                 JOIN ultimo_intento ui
                     ON ui.alumno_id = ra.alumno_id
                 AND ui.quiz_id = ra.quiz_id
+                AND ui.salon_quiz_id = ra.salon_quiz_id
                 AND ui.intento_id = ra.intento_id
 
                 JOIN opciones o
@@ -3577,13 +3777,14 @@ def resultados_salon():
 
                 GROUP BY
                     ra.alumno_id,
-                    ra.quiz_id
+                    ra.quiz_id,
+                    ra.salon_quiz_id
             )
 
             SELECT
 
-                q.id,
-                q.codigo,
+                sq.id,
+                sq.codigo,
                 q.titulo,
                 MAX(sq.fecha_asignacion),
 
@@ -3608,8 +3809,8 @@ def resultados_salon():
             WHERE sq.salon_id = %s
 
             GROUP BY
-                q.id,
-                q.codigo,
+                sq.id,
+                sq.codigo,
                 q.titulo
 
             ORDER BY promedio DESC
@@ -3618,19 +3819,52 @@ def resultados_salon():
         rows = cur.fetchall()
 
         promedio_quiz = []
+   
+   
+        print(rows)
 
         for row in rows:
+            
+            print("BUSCANDO***:", row[1], row[0])
+
+            quiz_id = row[0]
+
+            notas = []
+
+            for fila in tabla:
+                print("keys: ",fila.keys())
+
+                celda = fila.get(quiz_id)
+
+                if isinstance(celda, dict):
+                    notas.append(float(celda["nota"]))
+
+            if notas:
+
+                promedio = round(sum(notas) / len(notas), 2)
+                maxima = max(notas)
+                minima = min(notas)
+                aprobados = len([n for n in notas if n >= 11])
+                desaprobados = len([n for n in notas if n < 11])
+
+            else:
+
+                promedio = 0
+                maxima = 0
+                minima = 0
+                aprobados = 0
+                desaprobados = 0
 
             promedio_quiz.append({
                 "id": row[0],
                 "codigo": row[1],
                 "titulo": row[2],
                 "fecha": row[3],
-                "promedio": float(row[4]),
-                "aprobados": row[5],
-                "desaprobados": row[6],
-                "maxima": float(row[7]),
-                "minima": float(row[8])
+                "promedio": promedio,
+                "aprobados": aprobados,
+                "desaprobados": desaprobados,
+                "maxima": maxima,
+                "minima": minima
             })
 
 
@@ -3638,7 +3872,9 @@ def resultados_salon():
     cur.close()
     conn.close()
     
-
+    
+    print("DETALLE NUEVO")
+    print(detalle_intentos)
     return render_template(
         "resultados_salon.html",
         salones=salones,
@@ -3649,6 +3885,7 @@ def resultados_salon():
         aprobados=aprobados,
         desaprobados=desaprobados,
         detalle_aprobados=detalle_aprobados,
+        detalle_intentos=detalle_intentos,
         tiempo_promedio=tiempo_promedio,
         nombres=nombres,
         distribucion=distribucion,
@@ -3657,6 +3894,7 @@ def resultados_salon():
         verdes=verdes,
         amarillos=amarillos,
         rojos=rojos,
+        intentos=intentos,
         preguntas_top=preguntas_top
     )
 
@@ -4108,6 +4346,11 @@ def ver_quiz_alumno(quiz_id, alumno_id):
 
     row = cur.fetchone()
     intento_id = row[0] if row else None
+    
+    print("QUIZ:", quiz_id)
+    print("ALUMNO:", alumno_id)
+    print("INTENTO NUMERO:", intento)
+    print("INTENTO_ID:", intento_id)
 
     # 🔹 Obtener preguntas + opciones + respuesta del alumno
     cur.execute("""
@@ -6257,9 +6500,19 @@ def login_alumno():
 
 def obtener_config_default():
     return {
+
+        # General
+        "multiple_intentos": True,
+        "enviar_solucionario": True,
+        "privado": True,
+
+        # Evaluación
         "tiempo_minutos": None,
-        "comodin": False,
-        "modo": "normal"
+        "modo": "normal",
+
+        # Gamificación
+        "comodin": False
+
     }
     
 def generar_codigo_unico_salon(cur):

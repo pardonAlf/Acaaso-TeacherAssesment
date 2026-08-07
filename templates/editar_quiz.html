@@ -109,65 +109,7 @@
             resize:vertical;
             font-size:12px;
         }
-        .config-card{
-            background:#abbfe7;
-            border:1px solid #418ce7;
-            border-radius:10px;
-            padding:14px;
-            margin-bottom:16px;
-            color:#030000;
-        }
-
-        .config-title{
-            font-size:12px;
-            font-weight:700;
-            color:#030911;
-            text-transform:uppercase;
-            letter-spacing:.8px;
-            margin-bottom:12px;
-        }
-
-        .config-card .form-check{
-            padding:8px 0 0 20px;
-            color:#030000;
-        }
-
-        .config-card .form-select{
-            border-radius:8px;
-            border:1px solid #c7d8ef;
-            background:white;
-            color:#030000;
-        }
-
-        .config-card .form-select:focus{
-            border-color:#2b72ed;
-            box-shadow:0 0 0 .18rem rgba(79,142,247,.15);
-        }
-
-        .feature-dev{
-            display:flex;
-            align-items:center;
-            padding:10px 0;
-            font-size:13px;
-            color:#495057;
-            border-bottom:1px solid #e9eef5;
-        }
-
-        .feature-dev:last-child{
-            border-bottom:none;
-        }
-
-        .feature-dev i{
-            color:#198754;
-            margin-right:10px;
-            font-size:14px;
-        }
-
-        .feature-dev .badge{
-            margin-left:auto;
-            font-size:10px;
-            font-weight:600;
-        }
+  
     </style>
 </head>
 <body class="bg_force">
@@ -175,6 +117,9 @@
     <div class="container mt-4">
 
         <form method="POST">
+
+            <input type="hidden" id="config_json" name="config_json">
+
             <!-- HEADER -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body py-3">
@@ -577,163 +522,9 @@
     });
     </script>
 
-       
-    <div id="overlayConfig" style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.4);
-        z-index: 1050;
-        display: none;
-    "></div>
-    <div id="panelConfig" style="
-        position: fixed;
-        top: 0;
-        right: -400px; /* oculto */
-        width: 400px;
-        height: 100%;
-        background: white;
-        border-left: 1px solid #e4e7ec;
-        box-shadow: -5px 0 15px rgba(0,0,0,0.05);
-        z-index: 1051;
-        transition: right 0.3s ease;
-        padding: 16px;
-    ">
-
-        <!-- header -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <b style="font-size:13px;">Configuración</b>
-            <button class="btn btn-sm btn-light" onclick="cerrarConfig()">✕</button>
-        </div>
-
-        <!-- contenido (temporal) -->
-        <div style="font-size:12px;">
-
-            <div class="config-card">
-
-                <div class="config-title">
-                    General
-                </div>
-                <!-- 1 -->
-                <div class="form-check mb-2">
-                    <input class="form-check-input"
-                        type="checkbox"
-                        id="multiple_intentos_panel"
-                        {% if quiz.multiple_intentos %}checked{% endif %}>
-                    <label class="form-check-label">Múltiples intentos</label>
-                </div>
-
-                <!-- 2 -->
-                <div class="form-check mb-2">
-                    <input class="form-check-input"
-                        type="checkbox"
-                        id="enviar_solucionario_panel"
-                        {% if quiz.enviar_solucionario %}checked{% endif %}>
-                    <label class="form-check-label">Enviar solucionario</label>
-                </div>
-
-                <div class="form-check mb-2">
-                    <input class="form-check-input"
-                        type="checkbox"
-                        id="privado_panel"
-                        {% if not quiz.publico %}checked{% endif %}>
-                    <label class="form-check-label">
-                        Quiz privado
-                    </label>
-                </div>
-
-                <!-- 3 -->
-                <div class="mb-2">
-                    <select id="tiempo_minutos" class="form-select form-select-sm">
-                        <option value="">Seleccionar minutos</option>
-                    <option value="1"
-                            {% if quiz.config_json.tiempo_minutos == 1 %}selected{% endif %}>
-                            1
-                        </option>
-                        <option value="5"
-                            {% if quiz.config_json.tiempo_minutos ==5 %}selected{% endif %}>
-                        5
-                        </option>
-                        <option value="10"
-                            {% if quiz.config_json.tiempo_minutos == 10 %}selected{% endif %}>
-                            10
-                        </option>
-                        <option value="15"
-                            {% if quiz.config_json.tiempo_minutos == 15 %}selected{% endif %}>
-                            15
-                        </option>
-                        <option value="20"
-                            {% if quiz.config_json.tiempo_minutos == 20 %}selected{% endif %}>
-                            20
-                        </option>
-                        <option value="30"
-                            {% if quiz.config_json.tiempo_minutos == 30 %}selected{% endif %}>
-                            30
-                        </option>
-                        <option value="45"
-                            {% if quiz.config_json.tiempo_minutos == 45 %}selected{% endif %}>
-                            45
-                        </option>
-                        <option value="60"
-                            {% if quiz.config_json.tiempo_minutos == 60 %}selected{% endif %}>
-                            60
-                        </option>
-                    </select>
-                </div>
-
-               
-            </div>
-
-            <hr>
-
-         <!-- PRÓXIMAMENTE -->
-            <div class="config-card">
-
-                <div class="config-title text-success">
-                    Próximamente
-                </div>
-
-                <div class="feature-dev">
-                    <i class="fas fa-check-circle"></i>
-                    Mantener último intento
-                    <span class="badge bg-success-subtle text-success ms-2">
-                        En desarrollo
-                    </span>
-                </div>
-
-                <div class="feature-dev">
-                    <i class="fas fa-check-circle"></i>
-                    Mantener mejor nota
-                    <span class="badge bg-success-subtle text-success ms-2">
-                        En desarrollo
-                    </span>
-                </div>
-
-                <div class="feature-dev">
-                    <i class="fas fa-check-circle"></i>
-                    Sistema de comodines (3 ayudas)
-                    <span class="badge bg-success-subtle text-success ms-2">
-                        En desarrollo
-                    </span>
-                </div>
-
-            </div>
-
-            <!-- BOTONES -->
-            <div class="d-flex justify-content-end gap-2 mt-4">
-                <button class="btn btn-outline-secondary" onclick="cerrarConfig()">
-                    Cancelar
-                </button>
-
-                <button class="btn btn-primary" onclick="guardarConfig()">
-                    Guardar configuración
-                </button>
-            </div>
-        </div>
-
-    </div>
+    
+    {% set config = quiz %}
+    {% include "quiz_config.html" %}
     <script>
     
     function abrirConfig() {
@@ -743,7 +534,7 @@
 
     function cerrarConfig() {
         document.getElementById("overlayConfig").style.display = "none";
-        document.getElementById("panelConfig").style.right = "-400px";
+        document.getElementById("panelConfig").style.right = "-720px";
     }
     function guardarConfig() {
 
@@ -759,12 +550,15 @@
         let tiempoMinutos = document.getElementById("tiempo_minutos").value;
 
         let config = {
+            multiple_intentos: document.getElementById("multiple_intentos_panel").checked,
+            enviar_solucionario: document.getElementById("enviar_solucionario_panel").checked,
+            privado: document.getElementById("privado_panel").checked,
             tiempo_minutos: tiempoMinutos === "" ? null : parseInt(tiempoMinutos),
             comodin: false,
             modo: "normal"
         };
 
-        document.getElementById("config_json_hidden").value = JSON.stringify(config);
+        document.getElementById("config_json").value = JSON.stringify(config);
 
         cerrarConfig();
     }

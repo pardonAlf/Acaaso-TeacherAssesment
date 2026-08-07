@@ -183,7 +183,8 @@
             font-size:14px;
             border-radius:10px;
             font-weight:600;
-            color:rgb(252, 250, 250);
+            background: #6e89d2;
+            color:white;
         }
 
         #btnVer:hover {
@@ -247,10 +248,10 @@
             padding: 6px;
         }
         /* alumno alineado a la izquierda */
-        .tabla th:nth-child(2),
-        .tabla td:nth-child(2) {
+        .tabla th:nth-child(3),
+        .tabla td:nth-child(3) {
             text-align: left;
-            width: 220px; /* 🔥 columna fija alumno */
+            width: 220px;
         }
 
 
@@ -360,23 +361,41 @@
             color: #000;
         }
 
+        /* =========================
+          Cabecera del modal
+           ========================= */
+
         .modal-tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 8px;
+            margin-bottom: 18px;
+            padding: 4px;
+            background: #eef4fb;
+            border-radius: 10px;
         }
 
         .tab-btn {
+            flex: 1;
             background: transparent;
             border: none;
-            color: #94a3b8;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
             cursor: pointer;
-            padding: 5px 10px;
+            transition: all .25s ease;
+        }
+
+        .tab-btn:hover {
+            background: rgba(1,118,211,.08);
+            color: #0176D3;
         }
 
         .tab-btn.active {
-            color: #3b82f6;
-            border-bottom: 2px solid #3b82f6;
+            background: #0176D3;
+            color: white;
+            box-shadow: 0 2px 8px rgba(1,118,211,.25);
         }
 
         .tab-content {
@@ -422,26 +441,66 @@
         }
 
         .box-nota {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 16px;
-            padding: 20px;
+            background: linear-gradient(180deg, #ffffff, #78aaec);
+            border: 1px solid #d8e6f5;
+            border-radius: 18px;
+            padding: 28px 20px;
             text-align: center;
-            margin-top: 15px;
-            margin-bottom: 20px;
-            color:black;
+            margin-top: 18px;
+            margin-bottom: 22px;
+            box-shadow: 0 8px 20px rgba(1,118,211,.10);
         }
 
         .nota-grande {
-            font-size: 40px;
+            font-size: 64px;
+            font-weight: 800;
+            line-height: 1;
+            color: #0176D3;
+            letter-spacing: -2px;
+        }
+
+        .estado-nota {
+            margin-top: 12px;
+            display: inline-block;
+            background: #d5eee1;
+            color: #047857;
             font-weight: 700;
-            color: #04f85e; /* 🔥 verde bonito */
+            font-size: 12px;
+            padding: 6px 16px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: .8px;
         }
 
         .intento-box {
-            margin-top: 8px;
-            font-size: 13px;
-            color: #94a3b8;
+            margin-top: 16px;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+
+        .info-card{
+            background:#aacced;
+            border:1px solid #e2e8f0;
+            border-radius:12px;
+            padding:12px 15px;
+            margin-bottom:12px;
+        }
+
+        .info-label{
+            font-size:11px;
+            font-weight:700;
+            text-transform:uppercase;
+            color:#64748b;
+            letter-spacing:.8px;
+            margin-bottom:4px;
+        }
+
+        .info-value{
+            font-size:15px;
+            font-weight:600;
+            color:#1e293b;
         }
 
         .btn-eliminar {
@@ -693,8 +752,8 @@
             justify-content:center;
             border:1px solid #5c6b80;
             border-radius:12px;
-            background:#ffffff;
-            color:#334155;
+            background:#1d4ed8;
+            color:white;
             text-decoration:none;
             font-weight:600;
             font-size:13px;
@@ -711,63 +770,111 @@
         }
 
         .estado-card{
-    display:flex;
-    align-items:center;
-    gap:18px;
-    height:100%;
-}
+            display:flex;
+            align-items:center;
+            gap:18px;
+            height:100%;
+        }
 
-.estado-grafico{
-    width:80px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    flex-shrink:0;
-}
+        .estado-grafico{
+            width:80px;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            flex-shrink:0;
+        }
 
-.estado-leyenda{
-    flex:1;
-}
+        .estado-leyenda{
+            flex:1;
+        }
 
-.estado-titulo{
-    font-size:14px;
-    font-weight:600;
-    color:#0351be;
-    margin-bottom:10px;
-}
+        .estado-titulo{
+            font-size:14px;
+            font-weight:600;
+            color:#0351be;
+            margin-bottom:10px;
+        }
 
-.estado-item{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    font-size:13px;
-    margin-bottom:8px;
-}
+        .estado-item{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:10px;
+            font-size:13px;
+            margin-bottom:8px;
+        }
 
-.estado-item span:nth-child(2){
-    flex:1;
-}
+        .estado-item span:nth-child(2){
+            flex:1;
+        }
 
-.punto{
-    width:12px;
-    height:12px;
-    border-radius:50%;
-    display:inline-block;
-}
+        .punto{
+            width:12px;
+            height:12px;
+            border-radius:50%;
+            display:inline-block;
+        }
 
-.verde{
-    background:#22c55e;
-}
+        .verde{
+            background:#22c55e;
+        }
 
-.amarillo{
-    background:#facc15;
-}
+        .amarillo{
+            background:#facc15;
+        }
 
-.rojo{
-    background:#ef4444;
-}
-    
+        .rojo{
+            background:#ef4444;
+        }
+
+        .detalle-nota{
+            margin-top:18px;
+            display:flex;
+            justify-content:space-around;
+            align-items:center;
+            border-top:1px solid #e5e7eb;
+            padding-top:14px;
+            font-size:13px;
+            color:#64748b;
+            font-weight:600;
+        }
+
+        .modal-header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+
+            background:#2f3b52;      /* Gris oscuro elegante */
+            color:#fff;
+
+            padding:14px 20px;
+
+            border-bottom:3px solid #0176D3;
+        }
+
+        .modal-header .titulo-modal{
+            font-size:22px;
+            font-weight:700;
+            color:#fff;
+        }
+
+        .modal-header button{
+            width:38px;
+            height:38px;
+            border:1px solid rgba(255,255,255,.35);
+            border-radius:8px;
+            background:transparent;
+            color:#fff;
+            font-size:20px;
+            cursor:pointer;
+            transition:.2s;
+        }
+
+        .modal-header button:hover{
+            background:#0176D3;
+            border-color:#0176D3;
+        }
+            
     </style>
 
     <div class="dashboard">
@@ -803,7 +910,7 @@
         </div>
 
         <button id="btnVer" disabled>
-            Consulta
+            Consultar
         </button>
         <a href="{{ url_for('splash') }}" class="btn-secundario">
             ← Volver
@@ -817,6 +924,7 @@
         <table class="tabla">
             <thead>
                 <tr>
+                    <th style="width:35px;"></th>
                     <th>#</th>
                     <th>Alumno</th>
 
@@ -834,7 +942,22 @@
 
             <tbody>
                 {% for fila in resultado %}
-                <tr {% if fila.es_promedio %}class="fila-promedio"{% endif %}>
+                <tr
+                    class="fila-principal {% if fila.es_promedio %}fila-promedio{% endif %}"
+                    data-alumno="{{ fila.alumno_id }}">
+                    <td class="text-center">
+
+                        {% if detalle_intentos.get(fila.alumno_id)
+                            and detalle_intentos[fila.alumno_id]|length > 1 %}
+
+                            <span class="toggle-intentos"
+                                style="cursor:pointer;font-size:18px;font-weight:bold;">
+                                +
+                            </span>
+
+                        {% endif %}
+
+                    </td>
                     <td>{{ loop.index }}</td>
                     <td>
                         {% if fila.es_promedio %}
@@ -846,21 +969,29 @@
 
                     {% for q in quizzes %}
                         {% set celda = fila[q.id] if q.id in fila else None %}
+
                         <td class="nota-celda"
-                            onclick="seleccionarCelda(this); abrirModal(this);"
+
+                            {% if intentos.get(fila.alumno_id, 0) == 1 %}
+                                onclick="seleccionarCelda(this); abrirModal(this);"
+                            {% endif %}
+
                             data-alumno="{{ fila.alumno }}"
                             data-alumno-id="{{ fila.alumno_id }}"
-                            data-quiz-id="{{ q.id }}"
+                            data-quiz-id="{{ q.quiz_id }}"
                             data-quiz="{{ q.titulo }}"
                             data-nota="{{ celda.nota if celda else 0 }}"
                             data-intento="{{ celda.intento if celda else 0 }}">
+
                             {% if celda and celda.nota > 0 %}
                                 <span class="nota-inline">
-                                    {{ celda.nota }} <span class="intento">({{ celda.intento }})</span>
+                                    {{ celda.nota }}
+                                    <span class="intento">({{ celda.intento }})</span>
                                 </span>
                             {% else %}
                                 —
                             {% endif %}
+
                         </td>
                     {% endfor %}
 
@@ -878,8 +1009,59 @@
                     
                     
                 </tr>
+                {% if detalle_intentos.get(fila.alumno_id) %}
+
+                    {% for intento, quizzes_intento in detalle_intentos[fila.alumno_id].items() %}
+
+                    <tr class="fila-intento"
+                        data-alumno="{{ fila.alumno_id }}"
+                        style="display:none;background:#f8fafc;">
+
+                        <td></td>
+
+                        <td></td>
+
+                        <td style="padding-left:25px;color:#64748b;">
+                            ↳ Intento {{ intento }}
+                        </td>
+
+                        {% for q in quizzes %}
+
+                            <td style="text-align:center;"
+
+                                {% if q.id in quizzes_intento %}
+                                    onclick="seleccionarCelda(this); abrirModal(this);"
+                                {% endif %}
+
+                                data-alumno="{{ fila.alumno }}"
+                                data-alumno-id="{{ fila.alumno_id }}"
+                                data-quiz-id="{{ q.quiz_id }}"
+                                data-quiz="{{ q.titulo }}"
+                                data-intento="{{ intento }}"
+                                data-nota="{{ quizzes_intento[q.id].nota if q.id in quizzes_intento else 0 }}"
+                                data-fecha="{{ quizzes_intento[q.id].fecha_inicio.strftime('%d/%m/%Y') if q.id in quizzes_intento and quizzes_intento[q.id].fecha_inicio else '' }}"
+                                data-hora="{{ quizzes_intento[q.id].fecha_inicio.strftime('%H:%M') if q.id in quizzes_intento and quizzes_intento[q.id].fecha_inicio else '' }}" 
+                                data-tiempo="{{ quizzes_intento[q.id].tiempo if q.id in quizzes_intento else '' }}">
+                                {% if q.id in quizzes_intento %}
+                                    {{ quizzes_intento[q.id].nota }}
+                                {% else %}
+                                    —
+                                {% endif %}
+
+                            </td>
+
+                        {% endfor %}
+
+                        <td></td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                {% endif %}
                 {% endfor %}
                 <tr class="fila-promedio">
+                    <td></td>   <!-- columna del (+) -->
                     <td></td>
                     <td> 📊 PROMEDIO </td>
 
@@ -1034,7 +1216,15 @@
 
                 <!-- HEADER -->
                 <div class="modal-header">
-                    <span>Resultado</span>
+                    <div>
+                        <div style="font-size:18px;font-weight:700; ">
+                            📝 Detalle del Intento
+                        </div>
+                        <div style="font-size:12px;color:#64748b;">
+                            Resultado y acciones disponibles
+                        </div>
+                    </div>
+
                     <button onclick="cerrarModal()">✕</button>
                 </div>
 
@@ -1058,11 +1248,30 @@
 
                         <!-- RESUMEN -->
                         <div id="tab-resumen" class="tab-content">
-                            <p><strong>Alumno:</strong> <span id="mAlumno"></span></p>
-                            <p><strong>Quiz:</strong> <span id="mQuiz"></span></p>
+                            <div class="info-card">
+                                <div class="info-label">👤 Alumno</div>
+                                <div class="info-value" id="mAlumno"></div>
+                            </div>
+
+                            <div class="info-card">
+                                <div class="info-label">📝 Evaluación</div>
+                                <div class="info-value" id="mQuiz"></div>
+                            </div>
+
                             <div class="box-nota">
                                 <div class="nota-grande" id="mNota">20</div>
-                                <div class="intento-box">Intento <span id="mIntento">1</span></div>
+                                <div class="estado-nota" id="mEstado">APROBADO</div>
+                                <div class="detalle-nota">
+
+                                    <div>📅 <span id="mFecha"></span></div>
+
+                                    <div>🕒 <span id="mHora"></span></div>
+
+                                    <div>⏱ <span id="mTiempo"></span></div>
+
+                                    <div>🔁 Intento <span id="mIntento"></span></div>
+
+                                </div>
                             </div>
                         </div>
 
@@ -1214,10 +1423,16 @@
             quizSeleccionado = el.dataset.quizId;
             intentoSeleccionado = el.dataset.intento;
 
+            console.log("QUIZ **=", quizSeleccionado);
+            console.log("INTENTO **=", intentoSeleccionado);
+
             document.getElementById('mAlumno').innerText = el.dataset.alumno;
             document.getElementById('mQuiz').innerText = el.dataset.quiz;
             document.getElementById('mNota').innerText = el.dataset.nota;
             document.getElementById('mIntento').innerText = el.dataset.intento;
+            document.getElementById('mFecha').innerText = el.dataset.fecha;
+            document.getElementById('mHora').innerText = el.dataset.hora;
+            document.getElementById('mTiempo').innerText = el.dataset.tiempo;
 
             cambiarTab('resumen');
         }
@@ -1617,14 +1832,24 @@
         }
 
         salones.forEach(s => {
-            let nombre = s[2].toLowerCase();
 
-            if (nombre.includes(texto)) {
-                let item = document.createElement("div");
-                item.innerText = s[2];
+            const codigo = (s[1] || "").toLowerCase();
+            const descripcion = (s[2] || "").toLowerCase();
+
+            if (
+                codigo.includes(texto) ||
+                descripcion.includes(texto)
+            ) {
+
+                const item = document.createElement("div");
+
+                item.innerHTML = `
+                    <b>${s[1]}</b>
+                    <span style="color:#6c757d;"> - ${s[2]}</span>
+                `;
 
                 item.onclick = () => {
-                    input.value = s[2];
+                    input.value = `${s[1]} - ${s[2]}`;
                     salonSeleccionado = s[0];
                     lista.style.display = "none";
                     btn.disabled = false;
@@ -1654,5 +1879,36 @@
         form.submit();
     };
 
-    </script>
+    
+    document.querySelectorAll(".toggle-intentos").forEach(boton => {
+
+        boton.addEventListener("click", function (e) {
+
+            e.stopPropagation();
+
+            const fila = this.closest("tr");
+            const alumno = fila.dataset.alumno;
+
+            const hijos = document.querySelectorAll(
+                '.fila-intento[data-alumno="' + alumno + '"]'
+            );
+
+            let abiertos = false;
+
+            hijos.forEach(f => {
+                if (f.style.display !== "none") {
+                    abiertos = true;
+                }
+            });
+
+            hijos.forEach(f => {
+                f.style.display = abiertos ? "none" : "table-row";
+            });
+
+            this.innerHTML = abiertos ? "+" : "−";
+
+        });
+
+    });
+</script>
     {% endblock %}

@@ -471,7 +471,7 @@ const quiz_id = {{ quiz_id | default(None) | tojson }};
 const salon_quiz_id = {{ salon_quiz_id | default(None) | tojson }};
 let preguntas = {{ preguntas | tojson }};
 let quizFinalizado = false; 
-let intento_id=null
+let intento_id={{ intento_id | default(None) | tojson }};
 
 let index = 0;
 const configQuiz = {{ config_json | default({}, true) | tojson }};
@@ -704,6 +704,18 @@ window.onpopstate = function () {
 
 
 async function comenzarQuiz() {
+
+    // Si ya existe un intento (caso salón), no crear otro
+    if (intento_id) {
+
+        document.getElementById("pantallaInicio").style.display = "none";
+        document.getElementById("pantallaQuiz").style.display = "block";
+
+        cargarPregunta();
+        iniciarCronometro();
+
+        return;
+    }
 
     let response = await fetch("/iniciar_quiz", {
         method: "POST",
