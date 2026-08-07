@@ -328,8 +328,8 @@
 
         .intento {
             font-size: 10px;
-            color: #f1f2f5; /* 🔥 más claro */
-            opacity: 0.8;
+            color: #0d44e9; /* 🔥 más claro */
+            
         }
         .vacio {
             font-size: 12px;
@@ -474,7 +474,7 @@
 
         .intento-box {
             margin-top: 16px;
-            color: #64748b;
+            color: #32578a;
             font-size: 14px;
             font-weight: 600;
         }
@@ -947,8 +947,7 @@
                     data-alumno="{{ fila.alumno_id }}">
                     <td class="text-center">
 
-                        {% if detalle_intentos.get(fila.alumno_id)
-                            and detalle_intentos[fila.alumno_id]|length > 1 %}
+                        {% if intentos.get(fila.alumno_id, 0) > 1 %}
 
                             <span class="toggle-intentos"
                                 style="cursor:pointer;font-size:18px;font-weight:bold;">
@@ -972,7 +971,7 @@
 
                         <td class="nota-celda"
 
-                            {% if intentos.get(fila.alumno_id, 0) == 1 %}
+                            {% if celda and celda.cantidad_intentos == 1 %}
                                 onclick="seleccionarCelda(this); abrirModal(this);"
                             {% endif %}
 
@@ -986,7 +985,9 @@
                             {% if celda and celda.nota > 0 %}
                                 <span class="nota-inline">
                                     {{ celda.nota }}
-                                    <span class="intento">({{ celda.intento }})</span>
+                                    <span class="intento">
+                                        ({{ celda.cantidad_intentos }})
+                                    </span>
                                 </span>
                             {% else %}
                                 —
@@ -1280,7 +1281,9 @@
                             <button class="btn-accion" onclick="verQuizSalon()">👁 Ver examen</button>
                             <button class="btn-accion" onclick="descargarPDF()">📄 Descargar PDF</button>
                             <button class="btn-accion" onclick="enviarCorreo()">✉ Enviar al alumno</button>
-                            <button class="btn-accion btn-eliminar" onclick="abrirEliminarDesdeModal()">🗑 Eliminar intento</button>
+                            <button class="btn-accion btn-eliminar" onclick="eliminarIntento()">
+                                🗑 Eliminar intento
+                            </button>
                         </div>
 
                     </div>
@@ -1310,32 +1313,6 @@
 
     <script>
 
-    function abrirEliminarDesdeModal() {
-
-        const cont = document.getElementById('listaIntentos');
-        const panel = document.getElementById('panelIntentos');
-
-        if (!cont) return;
-
-        cont.innerHTML = '';
-
-        fetch(`/obtener_intentos/${alumnoSeleccionado}/${quizSeleccionado}`)
-        .then(r => r.json())
-        .then(data => {
-
-            data.forEach(item => {
-                const div = document.createElement('div');
-                div.innerText = `${item.quiz} - intento ${item.intento}`;
-
-                div.onclick = () => eliminarIntento(item);
-
-                cont.appendChild(div);
-            });
-
-            // 🔥 abre panel tipo "escalera"
-            panel.classList.add('activo');
-        });
-    }
     function enviarCorreo() {
 
         if (!alumnoSeleccionado || !quizSeleccionado) {
@@ -1441,61 +1418,74 @@
             document.getElementById('modalResultado').classList.remove('activo');
         }
 
-        function eliminarIntento(item) {
+        function eliminarIntento() {
 
-            if (!confirm(`¿Eliminar ${item.quiz} intento ${item.intento}?`)) return;
+           if (!confirm(
+`¿Está seguro de ocultar este intento?
 
-            fetch('/eliminar_intento', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    alumno_id: alumnoSeleccionado,
-                    quiz_id: item.quiz_id,
-                    intento: item.intento
+Alumno: ${document.getElementById('mAlumno').innerText}
+Intento: ${intentoSeleccionado}
+Nota: ${document.getElementById('mNota').innerText}
+Esta acción ocultará el intento de los resultados del salón, pero no eliminará la información de la base de datos.
+
+¿Desea continuar?`
+)) return;
+
+                fetch('/eliminar_intento', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        alumno_id: alumnoSeleccionado,
+                        quiz_id: quizSeleccionado,
+                        intento: intentoSeleccionado
+                    })
                 })
-            })
-            .then(r => r.json())
-            .then(data => {
+                .then(r => r.json())
+                .then(data => {
 
-                console.log("DELETE RESP:", data); // 🔍 debug
+                    console.log("DELETE RESP:", data);
 
-                if (data.ok) {
+                    if (data.ok) {
 
-                    try {
+                        try {
 
-                        // 🔥 1. cerrar panel intentos
-                        const panel = document.getElementById('panelIntentos');
-                        if (panel) panel.classList.remove('activo');
+                            const panel = document.getElementById('panelIntentos');
+                            if (panel) panel.classList.remove('activo');
 
-                        // 🔥 2. cerrar modal principal
-                        if (typeof cerrarModal === "function") cerrarModal();
+                            if (typeof cerrarModal === "function")
+                                cerrarModal();
 
-                        // 🔥 3. refrescar datos
-                        if (typeof cargarResultadosSalon === "function") {
-                            cargarResultadosSalon();
-                        } else {
-                            location.reload(); // fallback seguro
+                            if (typeof cargarResultadosSalon === "function")
+                                cargarResultadosSalon();
+                            else
+                                location.reload();
+
+                            if (typeof mostrarToast === "function")
+                                mostrarToast("Intento ocultado correctamente.");
+
+                        } catch (e) {
+
+                            console.error("❌ ERROR FRONT:", e);
+                            alert("Error al actualizar la interfaz.");
+
                         }
 
-                        // 🔥 4. feedback
-                        if (typeof mostrarToast === "function") {
-                            mostrarToast("Intento eliminado");
-                        }
+                    } else {
 
-                    } catch (e) {
-                        console.error("❌ ERROR FRONT:", e);
-                        alert("Error UI después de eliminar");
+                        alert(data.error || "No fue posible ocultar el intento.");
+
                     }
 
-                } else {
-                    alert(data.error || "Error al eliminar");
-                }
+                })
+                .catch(err => {
 
-            })
-            .catch(err => {
-                console.error("❌ ERROR FETCH:", err);
-                alert("Error servidor");
-            });
+                    console.error("❌ ERROR FETCH:", err);
+                    alert("Error de comunicación con el servidor.");
+
+                });
+
         }
 
     

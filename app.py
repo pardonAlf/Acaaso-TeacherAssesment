@@ -453,7 +453,9 @@ def obtener_intentos(alumno_id, quiz_id):
         FROM intentos_quiz iq
         JOIN quiz q ON q.id = iq.quiz_id
         WHERE iq.alumno_id = %s
-          AND iq.quiz_id = %s
+            AND iq.quiz_id = %s
+            AND iq.activo = TRUE
+            AND iq.activo=TRUE
         ORDER BY iq.intento_numero
     """, (alumno_id, quiz_id))
 
@@ -808,6 +810,7 @@ def ingresar_dni():
                     WHERE alumno_id = %s
                     AND quiz_id = %s
                     AND nota_final IS NOT NULL
+                    AND activo = TRUE
                 """, (alumno_id, quiz_id))
 
                 ya_rindio = cur.fetchone()[0] > 0
@@ -823,6 +826,7 @@ def ingresar_dni():
                         WHERE alumno_id = %s
                         AND quiz_id = %s
                         AND nota_final IS NOT NULL
+                        AND activo=TRUE
                         ORDER BY intento_numero DESC
                         LIMIT 1
                     """, (alumno_id, quiz_id))
@@ -911,6 +915,7 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
         SELECT COALESCE(MAX(intento_numero), 0)
         FROM intentos_quiz
         WHERE alumno_id = %s AND quiz_id = %s
+        AND activo=TRUE
     """, (alumno_id, quiz_id))
 
     ultimo = cur.fetchone()[0]
@@ -943,6 +948,7 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
         SELECT id
         FROM intentos_quiz
         WHERE id = %s
+         AND activo=TRUE
     """, (intento_id,))
 
     print("VERIFICACION:", cur.fetchone())
@@ -2550,7 +2556,8 @@ def iniciar_quiz():
         SELECT COALESCE(MAX(intento_numero),0)
         FROM intentos_quiz
         WHERE alumno_id=%s
-          AND quiz_id=%s
+            AND quiz_id=%s
+            AND activo=TRUE
     """, (alumno_id, quiz_id))
 
     ultimo = cur.fetchone()[0]
@@ -3388,79 +3395,115 @@ def resultados_salon():
 # 1. OBTENER RESULTADOS DE LOS ALUMNOS
 # ==========================================================
         cur.execute("""
-            WITH ultimo_intento AS (
-                SELECT
-                    alumno_id,
-                    quiz_id,
-                    salon_quiz_id,
-                    MAX(intento_id) AS intento_id
-                FROM respuestas_alumno
-                GROUP BY
-                    alumno_id,
-                    quiz_id,
-                    salon_quiz_id
-            )
+                WITH ultimo_intento AS (
 
-            SELECT 
-                a.dni,
-                a.id AS alumno_id,
-                a.nombre,
-                a.apellido,
-                a.correo,
+                SELECT
+                    ra.alumno_id,
+                    ra.quiz_id,
+                    ra.salon_quiz_id,
+                    MAX(ra.intento_id) AS intento_id
+
+                FROM respuestas_alumno ra
+
+                JOIN intentos_quiz iq
+                    ON iq.id = ra.intento_id
+                AND iq.activo = TRUE
+                where   ra.salon_quiz_id IS NOT NULL
+
+                GROUP BY
+                    ra.alumno_id,
+                    ra.quiz_id,
+                    ra.salon_quiz_id
+            ),cantidad_intentos AS (
+
+            SELECT
+                ra.alumno_id,
+                ra.quiz_id,
                 ra.salon_quiz_id,
-                q.id AS quiz_id,
-                q.titulo,
-                iq.intento_numero,
-                ROUND(
-                    (
-                        COUNT(CASE WHEN o.es_correcta THEN 1 END)::decimal
-                        / NULLIF(COUNT(*), 0)
-                    ) * 20,
-                2) AS nota,
-                MAX(sq.fecha_asignacion) as fecha
+                count(distinct ra.intento_id) AS cantidad
 
             FROM respuestas_alumno ra
 
-            JOIN ultimo_intento ui
-                ON ui.alumno_id = ra.alumno_id
-            AND ui.quiz_id = ra.quiz_id
-            AND ui.salon_quiz_id = ra.salon_quiz_id
-            AND ui.intento_id = ra.intento_id
+            JOIN intentos_quiz iq
+                ON iq.id = ra.intento_id
+            AND iq.activo = TRUE
+            where   ra.salon_quiz_id IS NOT NULL
 
-            JOIN alumnos a ON a.id = ra.alumno_id
-            JOIN opciones o ON o.id = ra.opcion_id
-           JOIN quiz q
-                ON q.id = ra.quiz_id
+            GROUP BY
+                ra.alumno_id,
+                ra.quiz_id,
+                ra.salon_quiz_id
+        )  
 
-            JOIN salon_quiz sq
-                ON sq.id = ra.salon_quiz_id
+                SELECT 
+                    a.dni,
+                    a.id AS alumno_id,
+                    a.nombre,
+                    a.apellido,
+                    a.correo,
+                    ra.salon_quiz_id,
+                    q.id AS quiz_id,
+                    q.titulo,
+                    iq.intento_numero,
+                    ci.cantidad AS cantidad_intentos,
+                    ROUND(
+                        (
+                            COUNT(CASE WHEN o.es_correcta THEN 1 END)::decimal
+                            / NULLIF(COUNT(*), 0)
+                        ) * 20,
+                    2) AS nota,
+                    MAX(sq.fecha_asignacion) as fecha
 
-            JOIN salon s
-                ON s.id = sq.salon_id
-            LEFT JOIN intentos_quiz iq ON iq.id = ra.intento_id
+                FROM respuestas_alumno ra
 
-            WHERE sq.salon_id = %s
-            AND s.cempre = %s
+                JOIN ultimo_intento ui
+                    ON ui.alumno_id = ra.alumno_id
+                AND ui.quiz_id = ra.quiz_id
+                AND ui.salon_quiz_id = ra.salon_quiz_id
+                AND ui.intento_id = ra.intento_id
 
-            GROUP BY 
-            a.id, 
-            a.dni, 
-            a.nombre, 
-            a.apellido, 
-            q.id, 
-            q.titulo, 
-            iq.intento_numero,
-            ra.salon_quiz_id
+                JOIN alumnos a ON a.id = ra.alumno_id
+                JOIN opciones o ON o.id = ra.opcion_id
+            JOIN quiz q
+                    ON q.id = ra.quiz_id
 
-            ORDER BY a.nombre
-        """, (salon_id, cempre ))
+                JOIN salon_quiz sq
+                    ON sq.id = ra.salon_quiz_id
+
+                JOIN salon s
+                    ON s.id = sq.salon_id
+                LEFT JOIN intentos_quiz iq ON iq.id = ra.intento_id  AND iq.activo=TRUE
+                LEFT JOIN cantidad_intentos ci
+                        ON ci.alumno_id = ra.alumno_id
+                    AND ci.quiz_id = ra.quiz_id
+                    AND ci.salon_quiz_id = ra.salon_quiz_id
+
+                WHERE sq.salon_id = %s
+                AND s.cempre = %s
+
+                GROUP BY 
+                a.id, 
+                a.dni, 
+                a.nombre, 
+                a.apellido, 
+                q.id, 
+                q.titulo, 
+                iq.intento_numero,
+				 cantidad,
+                ra.salon_quiz_id
+
+                ORDER BY a.nombre
+            """, (salon_id, cempre ))
 
         data = cur.fetchall()
+        
+        print(data)
         
         cur.execute("""
             SELECT
                 ra.alumno_id,
                 ra.salon_quiz_id,
+                ra.intento_id,
                 iq.intento_numero,
                 ROUND(
                     (
@@ -3474,7 +3517,7 @@ def resultados_salon():
             FROM respuestas_alumno ra
 
             JOIN intentos_quiz iq
-                ON iq.id = ra.intento_id
+                ON iq.id = ra.intento_id  AND iq.activo=TRUE
 
             JOIN opciones o
                 ON o.id = ra.opcion_id
@@ -3482,11 +3525,13 @@ def resultados_salon():
             JOIN salon_quiz sq
                 ON sq.id = ra.salon_quiz_id
 
-            WHERE sq.salon_id = %s
+            WHERE sq.salon_id = %s 
+            AND ra.salon_quiz_id IS NOT NULL
 
             GROUP BY
                 ra.alumno_id,
                 ra.salon_quiz_id,
+                ra.intento_id,
                 iq.intento_numero,
                 iq.fecha_inicio,
                 iq.fecha_fin
@@ -3501,10 +3546,6 @@ def resultados_salon():
 
         data_intentos = cur.fetchall()
         
-         
-        for r in data_intentos:
-            print(r)
-
         detalle_intentos = defaultdict(dict)
 
 # ==========================================================
@@ -3528,7 +3569,7 @@ def resultados_salon():
 
         todos_quizzes = cur.fetchall()
         
-        print(todos_quizzes)
+     
 
 # ==========================================================
 # 3. CONSTRUIR PIVOT DE RESULTADOS
@@ -3537,7 +3578,7 @@ def resultados_salon():
         
         for row in data_intentos:
     
-            alumno_id, salon_quiz_id, intento, nota, fecha_inicio, fecha_fin = row
+            alumno_id, salon_quiz_id,intento_id, intento, nota, fecha_inicio, fecha_fin = row
             
             if fecha_inicio and fecha_fin:
                 segundos = int((fecha_fin - fecha_inicio).total_seconds())
@@ -3561,7 +3602,7 @@ def resultados_salon():
         for row in data:
              
     
-            dni, alumno_id, nombre, apellido, correo, salon_quiz_id, quiz_id, quiz, intento, nota, fecha = row
+            dni, alumno_id, nombre, apellido, correo, salon_quiz_id, quiz_id, quiz, intento, cantidad_intentos, nota, fecha = row = row
 
             if alumno_id not in resultado:
                 resultado[alumno_id] = {
@@ -3571,9 +3612,11 @@ def resultados_salon():
                     "correo": correo
                 }
 
+            
             resultado[alumno_id][salon_quiz_id] = {
                 "nota": nota,
                 "intento": intento,
+                "cantidad_intentos": cantidad_intentos,  # activos
                 "fecha": fecha,
                 "quiz_id": quiz_id
             }
@@ -3600,19 +3643,6 @@ def resultados_salon():
         tabla = []
 
         for alumno_id, fila in resultado.items():
-            
-            cur.execute("""
-                SELECT COUNT(DISTINCT intento_id)
-                FROM respuestas_alumno
-                WHERE alumno_id = %s
-                AND salon_quiz_id IN (
-                        SELECT id
-                        FROM salon_quiz
-                        WHERE salon_id = %s
-                )
-            """, (alumno_id, salon_id))
-
-            intentos[alumno_id] = cur.fetchone()[0]
 
             suma = 0
             evaluaciones = 0
@@ -3671,6 +3701,7 @@ def resultados_salon():
             WHERE sq.salon_id = %s
             AND iq.tiempo_total_segundos IS NOT NULL
             AND iq.nota_final IS NOT NULL
+            AND iq.activo=TRUE
         """, (salon_id,))
         
         tiempo_promedio = cur.fetchone()[0] or 0
@@ -3745,6 +3776,7 @@ def resultados_salon():
                     salon_quiz_id,
                     MAX(intento_id) AS intento_id
                 FROM respuestas_alumno
+                WHERE  salon_quiz_id IS NOT NULL
                 GROUP BY
                     alumno_id,
                     quiz_id,
@@ -3771,7 +3803,7 @@ def resultados_salon():
                 AND ui.quiz_id = ra.quiz_id
                 AND ui.salon_quiz_id = ra.salon_quiz_id
                 AND ui.intento_id = ra.intento_id
-
+                AND ra.salon_quiz_id IS NOT NULL
                 JOIN opciones o
                     ON o.id = ra.opcion_id
 
@@ -3820,19 +3852,15 @@ def resultados_salon():
 
         promedio_quiz = []
    
-   
-        print(rows)
+ 
 
         for row in rows:
-            
-            print("BUSCANDO***:", row[1], row[0])
 
             quiz_id = row[0]
 
             notas = []
 
             for fila in tabla:
-                print("keys: ",fila.keys())
 
                 celda = fila.get(quiz_id)
 
@@ -3872,9 +3900,7 @@ def resultados_salon():
     cur.close()
     conn.close()
     
-    
-    print("DETALLE NUEVO")
-    print(detalle_intentos)
+
     return render_template(
         "resultados_salon.html",
         salones=salones,
@@ -4124,6 +4150,7 @@ def ver_resultados(quiz_id):
         FROM intentos_quiz
         WHERE quiz_id = %s
         AND nota_final IS NOT NULL
+        AND activo=TRUE
         GROUP BY alumno_id
     """, (quiz_id,))
 
@@ -4147,6 +4174,7 @@ def ver_resultados(quiz_id):
         WHERE quiz_id = %s
         AND tiempo_total_segundos IS NOT NULL
         AND nota_final IS NOT NULL
+        AND activo=TRUE
         GROUP BY alumno_id
     """, (quiz_id,))
 
@@ -4174,7 +4202,7 @@ def ver_resultados(quiz_id):
         JOIN opciones o
             ON o.id = ra.opcion_id
 
-        WHERE iq.quiz_id = %s
+        WHERE iq.quiz_id = %s  AND iq.activo=TRUE
 
         GROUP BY
             iq.alumno_id,
@@ -4212,8 +4240,9 @@ def ver_resultados(quiz_id):
             MAX(tiempo_total_segundos)
         FROM intentos_quiz
         WHERE quiz_id = %s
-          AND tiempo_total_segundos IS NOT NULL
-          AND nota_final IS NOT NULL
+            AND tiempo_total_segundos IS NOT NULL
+            AND nota_final IS NOT NULL
+            AND activo=TRUE
     """, (quiz_id,))
 
     tiempo_promedio_examen, examen_mas_rapido, examen_mas_lento = cur.fetchone()
@@ -4227,8 +4256,9 @@ def ver_resultados(quiz_id):
             COALESCE(SUM(tiempo_total_segundos),0)
         FROM intentos_quiz
         WHERE quiz_id = %s
-          AND tiempo_total_segundos IS NOT NULL
-          AND nota_final IS NOT NULL
+            AND tiempo_total_segundos IS NOT NULL
+            AND nota_final IS NOT NULL
+            AND activo=TRUE
     """, (quiz_id,))
 
     tiempo_total_examenes = cur.fetchone()[0] or 0
@@ -4341,17 +4371,12 @@ def ver_quiz_alumno(quiz_id, alumno_id):
     cur.execute("""
     SELECT id
         FROM intentos_quiz
-        WHERE alumno_id = %s AND quiz_id = %s AND intento_numero = %s
+        WHERE alumno_id = %s AND quiz_id = %s AND intento_numero = %s  AND activo=TRUE
     """, (alumno_id, quiz_id, intento))
 
     row = cur.fetchone()
     intento_id = row[0] if row else None
     
-    print("QUIZ:", quiz_id)
-    print("ALUMNO:", alumno_id)
-    print("INTENTO NUMERO:", intento)
-    print("INTENTO_ID:", intento_id)
-
     # 🔹 Obtener preguntas + opciones + respuesta del alumno
     cur.execute("""
     SELECT 
@@ -4472,7 +4497,6 @@ def acceso_salon(codigo):
 
     row = cur.fetchone()
     
-    print("Codigo: ",codigo)
 
     if not row:
         return "❌ Código inválido"
@@ -4569,7 +4593,6 @@ def acceso_salon(codigo):
         cur.close()
         conn.close()
 
-        print("Estoy en acceso_salon, no hay preguntas cargadas")
         return redirect(url_for(
             'resolver_quiz_salon',
             salon_quiz_id=salon_quiz_id,
@@ -4607,8 +4630,6 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import letter
-
-    print("🔥 entrando a generar_y_enviar_reporte")
 
     # 📁 Ruta compatible local + Render
     if os.name == "nt":
@@ -4693,17 +4714,12 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
 
     # 🔥 Generar PDF
     try:
-        doc.build(elements)
-        print("✅ PDF generado")
-    except Exception as e:
-        print("❌ ERROR GENERANDO PDF:", str(e))
+        doc.build(elements)        
+    except Exception as e:       
         return
-
-    print("VALOR enviar_solucionario:", enviar_solucionario)
 
 
     if resend is None:
-        print("❌ Resend no disponible o sin API key")
         return
     
     if enviar_solucionario:
@@ -4713,14 +4729,11 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
                 pdf_bytes = f.read()
 
             pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
-            print("Tamaño PDF (bytes):", len(pdf_bytes))
-            print("Tamaño Base64:", len(pdf_base64))
 
             # 📧 Enviar con Resend
             import time
 
             t0 = time.time()
-            print("📤 Enviando a Resend...")
             resend.Emails.send({
                 
                 "from": "ACAASO <pardoalf@acaaso.com>",
@@ -4794,8 +4807,6 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
                     }
                 ]
             })
-            print("⏱ Tiempo:", round(time.time() - t0, 2), "segundos")
-            print("✅ correo enviado con Resend")
 
             # 🧹 limpiar archivo
             try:
@@ -4986,8 +4997,6 @@ def contactos():
                 """
 
             })
-
-            print("✅ Solicitud enviada por correo.")
             
             try:
 
@@ -5112,8 +5121,6 @@ def contactos():
 
                 })
 
-                print("✅ Correo de confirmación enviado al cliente.")
-
             except Exception as e:
 
                 print("❌ Error enviando correo al cliente:", e)
@@ -5147,8 +5154,9 @@ def eliminar_intento():
             SELECT id
             FROM intentos_quiz
             WHERE alumno_id = %s
-              AND quiz_id = %s
-              AND intento_numero = %s
+                AND quiz_id = %s
+                AND intento_numero = %s
+                AND activo=TRUE 
         """, (alumno_id, quiz_id, intento))
 
         row = cur.fetchone()
@@ -5160,15 +5168,13 @@ def eliminar_intento():
 
         # 🔥 borrar respuestas
         cur.execute("""
-            DELETE FROM respuestas_alumno
-            WHERE intento_id = %s
-        """, (intento_id,))
-
-        # 🔥 borrar intento
-        cur.execute("""
-            DELETE FROM intentos_quiz
+            UPDATE intentos_quiz
+            SET
+                activo = FALSE,
+                fecha_eliminacion = NOW(),
+                eliminado_por = %s
             WHERE id = %s
-        """, (intento_id,))
+        """, (session["user_id"], intento_id))
 
         conn.commit()
 
@@ -5878,7 +5884,7 @@ def obtener_examen_alumno(alumno_id, quiz_id, intento_id):
     cur.execute("""
         SELECT id, intento_numero, quiz_id
         FROM intentos_quiz
-        WHERE alumno_id = %s AND quiz_id = %s
+        WHERE alumno_id = %s AND quiz_id = %s  AND activo=TRUE
     """, (alumno_id, quiz_id))
 
     print("INTENTOS EN BD:", cur.fetchall())
@@ -5890,6 +5896,7 @@ def obtener_examen_alumno(alumno_id, quiz_id, intento_id):
         WHERE alumno_id = %s 
         AND quiz_id = %s 
         AND intento_numero = %s
+        AND activo=TRUE
     """, (alumno_id, quiz_id, intento_id))
 
     row = cur.fetchone()
@@ -6429,7 +6436,8 @@ def logros_alumno():
         JOIN quiz q
             ON q.id = i.quiz_id
         WHERE i.alumno_id = %s
-        AND i.nota_final IS NOT NULL
+            AND i.nota_final IS NOT NULL
+            AND i.activo=TRUE
         ORDER BY i.fecha_fin DESC;
     """, (session["alumno_id"],))
 
