@@ -4015,23 +4015,56 @@ def ver_resultados(quiz_id):
 
     # 🔹 RESULTADOS GENERALES
     cur.execute("""
-        SELECT 
+        WITH total_preguntas AS (
+
+            SELECT
+                quiz_id,
+                COUNT(*) AS total
+            FROM preguntas
+            GROUP BY quiz_id
+
+        )
+
+        SELECT
             a.id,
             a.dni,
             a.nombre,
             a.apellido,
+
             COUNT(CASE WHEN o.es_correcta THEN 1 END) AS correctas,
-            COUNT(r.id) AS total,
-            ROUND((COUNT(CASE WHEN o.es_correcta THEN 1 END)::decimal / COUNT(r.id)) * 20, 2) AS nota
+
+            tp.total,
+
+            ROUND(
+                (
+                    COUNT(CASE WHEN o.es_correcta THEN 1 END)::decimal
+                    / tp.total
+                ) * 20,
+            2) AS nota
 
         FROM respuestas_alumno r
-        JOIN alumnos a ON a.id = r.alumno_id
-        JOIN opciones o ON o.id = r.opcion_id
-        JOIN preguntas p ON p.id = r.pregunta_id
+
+        JOIN alumnos a
+            ON a.id = r.alumno_id
+
+        JOIN opciones o
+            ON o.id = r.opcion_id
+
+        JOIN preguntas p
+            ON p.id = r.pregunta_id
+
+        JOIN total_preguntas tp
+            ON tp.quiz_id = p.quiz_id
 
         WHERE p.quiz_id = %s
 
-        GROUP BY a.id,a.dni,a.nombre, a.apellido
+        GROUP BY
+            a.id,
+            a.dni,
+            a.nombre,
+            a.apellido,
+            tp.total
+
         ORDER BY nota DESC
     """, (quiz_id,))
 
