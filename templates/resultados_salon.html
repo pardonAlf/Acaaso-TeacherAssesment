@@ -874,6 +874,50 @@
             background:#0176D3;
             border-color:#0176D3;
         }
+
+        .titulo-panel{
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+        }
+
+        .titulo-quiz{
+
+            font-size:30px;
+            font-weight:700;
+            color:#183153;
+            line-height:1.15;
+            margin:0;
+
+        }
+
+        .subtitulo-quiz{
+
+            margin-top:6px;
+            display:flex;
+            flex-wrap:wrap;
+            align-items:center;
+            gap:18px;
+
+            font-size:14px;
+            color:#6b7280;
+
+        }
+
+        .subtitulo-quiz span{
+
+            display:flex;
+            align-items:center;
+            gap:6px;
+
+        }
+
+        .subtitulo-quiz i{
+
+            color:#2563eb;
+            font-size:14px;
+
+        }
             
     </style>
 
@@ -881,44 +925,61 @@
 
         <div class="top-bar">
 
-    <div class="titulo-panel">
+            <div class="titulo-panel">
 
-       
+                <div class="titulo-quiz">
+                    {{ descripcion }}
+                </div>
 
-        <div>
-            <h2 class="titulo-pagina">
-                Resultados del Salón
-            </h2>
+                <div class="subtitulo-quiz">
 
-            <div class="subtitulo-pagina">
-                Consulte el rendimiento general de un salón.
+                    <span>
+                        <i class="bi bi-key-fill"></i>
+                        {{ codigo }}
+                    </span>
+
+                    <span>
+                        <i class="bi bi-people-fill"></i>
+                        {{ cantidad_alumnos }} alumnos
+                    </span>
+
+                    <span>
+                        <i class="bi bi-journal-bookmark-fill"></i>
+                        {{ cantidad_evaluaciones }} evaluaciones
+                    </span>
+
+                    <span>
+                        <i class="bi bi-calendar-event"></i>
+                        Creado {{ fecha_creacion }}
+                    </span>
+
+                </div>
+
             </div>
+
+            <div class="acciones-top">
+
+                <div class="selector">
+                    <input
+                        type="text"
+                        id="buscarSalon"
+                        placeholder="Buscar salón..."
+                        autocomplete="off"
+                    >
+                    <div id="listaSalones" class="dropdown"></div>
+                </div>
+
+                <button id="btnVer" disabled>
+                    Consultar
+                </button>
+
+                <a href="{{ url_for('splash') }}" class="btn-secundario">
+                    ← Volver
+                </a>
+
+            </div>
+
         </div>
-
-    </div>
-
-    <div class="acciones-top">
-
-        <div class="selector">
-            <input
-                type="text"
-                id="buscarSalon"
-                placeholder="Buscar salón..."
-                autocomplete="off"
-            >
-            <div id="listaSalones" class="dropdown"></div>
-        </div>
-
-        <button id="btnVer" disabled>
-            Consultar
-        </button>
-        <a href="{{ url_for('splash') }}" class="btn-secundario">
-            ← Volver
-        </a>
-
-    </div>
-
-</div>
 
         <!-- Tabla -->
         <table class="tabla">

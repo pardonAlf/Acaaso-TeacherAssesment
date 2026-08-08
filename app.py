@@ -3343,9 +3343,14 @@ def resultados_salon():
     promedio_quiz = []
     aprobados = 0
     desaprobados = 0
+    cantidad_alumnos = 0
+    cantidad_evaluaciones = 0
     intentos = {}
     intentos_detalle = {}
     detalle_intentos = {}
+    codigo=""
+    descripcion=""
+    fecha_creacion=""
     
     tiempo_promedio = "00:00"
 
@@ -3374,19 +3379,35 @@ def resultados_salon():
 
         if rol == 'admin':
             cur.execute("""
-                SELECT id FROM salon
+                SELECT id,codigo,descripcion,fecha_creacion FROM salon
                 WHERE id = %s AND cempre = %s
             """, (salon_id, cempre))
         else:
             cur.execute("""
-                SELECT id FROM salon
+                SELECT id,codigo,descripcion,fecha_creacion FROM salon
                 WHERE id = %s AND cempre = %s AND usuario_id = %s
             """, (salon_id, cempre, user_id))
+            
+        salon = cur.fetchone()
 
-        if not cur.fetchone():
+        if not salon:
             cur.close()
             conn.close()
             return "No autorizado", 403
+
+        codigo = salon[1]
+        descripcion = salon[2]
+        fecha_creacion = salon[3]
+        
+        cur.execute("""
+            select count(distinct(alumno_id) ) cantidad
+                from respuestas_alumno
+                inner join salon_quiz sq on sq.id=salon_quiz_id
+                where salon_id=%s      AND
+                      cempre=%s   
+            """, (salon_id, cempre ))
+        
+        cantidad_alumnos=cur.fetchone()[0]
 
     # 🔹 PROCESO SOLO SI ES POST
     if request.method == 'POST' and salon_id:
@@ -3569,7 +3590,13 @@ def resultados_salon():
 
         todos_quizzes = cur.fetchall()
         
-     
+        cur.execute("""
+            select count(distinct codigo) cantidad  from salon_quiz
+                where salon_id=%s and
+                      cempre=%s
+        """,(salon_id,cempre))
+        
+        cantidad_evaluaciones=cur.fetchone()[0]
 
 # ==========================================================
 # 3. CONSTRUIR PIVOT DE RESULTADOS
@@ -3906,6 +3933,12 @@ def resultados_salon():
         salones=salones,
         quizzes=quizzes,
         resultado=tabla,
+        codigo =codigo,
+        descripcion=descripcion,
+
+        cantidad_alumnos=cantidad_alumnos,
+        cantidad_evaluaciones=cantidad_evaluaciones,
+        fecha_creacion=fecha_creacion,
         salon_seleccionado=salon_id or "",
         notas=notas,
         aprobados=aprobados,
@@ -4168,16 +4201,15 @@ def ver_resultados(quiz_id):
     # mayor nota
     mayor_nota = max(r[6] for r in resultados) if resultados else 0
     
-    cur.execute("SELECT titulo,codigo,multiple_intentos  FROM quiz WHERE id = %s", (quiz_id,))
+    cur.execute("SELECT titulo,codigo,multiple_intentos FROM quiz WHERE id = %s", (quiz_id,))
     resultado = cur.fetchone()
 
     if resultado is not None:
         titulo_quiz = resultado[0]
         codigo_quiz = resultado[1]
-        multiple_intentos = resultado[2]
+        multiple_intentos=resultado[2]
     else:
         titulo_quiz = "Quiz no encontrado"
-        codigo_quiz = ""
         
     cur.execute("""
         SELECT
@@ -4361,11 +4393,11 @@ def ver_resultados(quiz_id):
         "resultados.html",
         resultados=resultados,
         quiz_id=quiz_id,
+        codigo_quiz=codigo_quiz,
         multiple_intentos=multiple_intentos,
-
         top_nombres=top_nombres,
         top_puntajes=top_puntajes,
-
+        cantidad_alumnos=cantidad_alumnos,
         aprobados_data=aprobados_data,
 
         notas_labels=notas_labels,
@@ -4376,7 +4408,6 @@ def ver_resultados(quiz_id):
         preguntas_tooltips=preguntas_tooltips,
         intentos=intentos_dict,
         titulo_quiz=titulo_quiz,
-        codigo_quiz=codigo_quiz,
         tiempos_promedio=tiempos_promedio,
         promedio=promedio ,
         mayor_nota=mayor_nota,
