@@ -4168,13 +4168,16 @@ def ver_resultados(quiz_id):
     # mayor nota
     mayor_nota = max(r[6] for r in resultados) if resultados else 0
     
-    cur.execute("SELECT titulo FROM quiz WHERE id = %s", (quiz_id,))
+    cur.execute("SELECT titulo,codigo,multiple_intentos  FROM quiz WHERE id = %s", (quiz_id,))
     resultado = cur.fetchone()
 
     if resultado is not None:
         titulo_quiz = resultado[0]
+        codigo_quiz = resultado[1]
+        multiple_intentos = resultado[2]
     else:
         titulo_quiz = "Quiz no encontrado"
+        codigo_quiz = ""
         
     cur.execute("""
         SELECT
@@ -4358,6 +4361,7 @@ def ver_resultados(quiz_id):
         "resultados.html",
         resultados=resultados,
         quiz_id=quiz_id,
+        multiple_intentos=multiple_intentos,
 
         top_nombres=top_nombres,
         top_puntajes=top_puntajes,
@@ -4372,6 +4376,7 @@ def ver_resultados(quiz_id):
         preguntas_tooltips=preguntas_tooltips,
         intentos=intentos_dict,
         titulo_quiz=titulo_quiz,
+        codigo_quiz=codigo_quiz,
         tiempos_promedio=tiempos_promedio,
         promedio=promedio ,
         mayor_nota=mayor_nota,

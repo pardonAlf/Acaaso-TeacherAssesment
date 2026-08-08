@@ -136,6 +136,40 @@
         .lista{
             margin-bottom: 30px;
         }
+        .titulo-quiz{
+
+    font-size:30px;
+    font-weight:700;
+    color:#183153;
+    line-height:1.15;
+
+}
+
+.subtitulo-quiz{
+
+    margin-top:6px;
+    font-size:14px;
+    color:#6b7280;
+
+    display:flex;
+    flex-wrap:wrap;
+    gap:18px;
+
+}
+
+.subtitulo-quiz span{
+
+    display:flex;
+    align-items:center;
+    gap:6px;
+
+}
+
+.subtitulo-quiz i{
+
+    color:#2563eb;
+
+}
     </style>
 </head>
 
@@ -144,9 +178,44 @@
     <div class="container-fluid">
 
         <!-- HEADER -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="title">
-                Resultados
+        <div class="d-flex justify-content-between align-items-start mb-4">
+
+            <div>
+
+                <div class="titulo-quiz">
+                    {{ titulo_quiz }}
+                </div>
+
+                <div class="subtitulo-quiz">
+
+                    <span><i class="bi bi-hash"></i> {{ codigo_quiz }}</span>
+
+                    <span><i class="bi bi-patch-question"></i> {{ total_preguntas }} preguntas</span>
+
+                    <span><i class="bi bi-hourglass-split"></i>
+                        {% if tiempo_limite %}
+                            {{ tiempo_limite }} min
+                        {% else %}
+                            Sin límite
+                        {% endif %}
+                    </span>
+
+                    <span>
+                        <i class="bi bi-arrow-repeat"></i>
+
+                        {% if multiple_intentos %}
+                            Intentos: Múltiples
+                        {% else %}
+                            Intentos: Único
+                        {% endif %}
+                    </span>
+
+                    {% if enviar_pdf %}
+                        <span><i class="bi bi-envelope-check"></i> PDF</span>
+                    {% endif %}
+
+                </div>
+
             </div>
 
             <div class="d-flex gap-2">
@@ -162,25 +231,22 @@
                         class="btn btn-outline-primary btn-sm me-2"
                         onclick="verQuizAlumno()"
                         disabled>
+
                         <i class="bi bi-eye"></i> Ver Quiz
+
                     </button>
 
                 </span>
 
-                <!--<button class="btn btn-outline-danger btn-sm"
-                        onclick="generarPDF()"
-                        disabled
-                        id="btnPDF">
-                    <i class="bi bi-file-earmark-pdf"></i> PDF
-                </button>-->
-
                 <a href="/dashboard_profesor"
                 class="btn btn-primary btn-sm">
+
                     <i class="bi bi-arrow-left"></i> Dashboard
+
                 </a>
 
             </div>
-                 
+
         </div>
 
         <div class="lista row mt-4">
