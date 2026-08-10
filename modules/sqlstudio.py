@@ -25,7 +25,7 @@ def get_db_connection():
         return psycopg2.connect(database_url, sslmode="require")
     else:
         return psycopg2.connect(
-            dbname="BDTeacherAssesment",
+            dbname="BDTeacherAssessment",
             user="postgres",
             password="1234",
             host="127.0.0.1",

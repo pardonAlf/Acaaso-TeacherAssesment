@@ -2,3 +2,4 @@ llave.env
 .env
 __pycache__/
 *.pyc
+tmp/reportes/

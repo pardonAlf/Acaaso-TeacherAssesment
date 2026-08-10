@@ -123,7 +123,7 @@
 
         <div class="mt-3">
             <small class="text-muted">
-                https://acaaso-teacherassesment.onrender.com/quiz/{{ codigo_quiz }}
+                https://acaaso-teacherassessment.onrender.com/quiz/{{ codigo_quiz }}
             </small>
         </div>
 
@@ -137,7 +137,7 @@ document.getElementById('panelQR').addEventListener('shown.bs.offcanvas', functi
 
     if (contenedor.innerHTML.trim() !== "") return;
 
-    const url = "https://acaaso-teacherassesment.onrender.com/quiz/{{ codigo_quiz }}";
+    const url = "https://acaaso-teacherassessment.onrender.com/quiz/{{ codigo_quiz }}";
 
     new QRCode(contenedor, {
         text: url,

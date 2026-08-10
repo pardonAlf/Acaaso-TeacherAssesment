@@ -114,7 +114,7 @@ Students have access to:
 
 ## 🚀 Live Demo
 
-https://acaaso-teacherassesment.onrender.com/
+https://acaaso-teacherassessment.onrender.com/
 
 Demo Account
 
@@ -302,10 +302,10 @@ Planned features include:
 ----
 ## Repository
 
-https://github.com/pardonAlf/Acaaso-TeacherAssesment
+https://github.com/pardonAlf/Acaaso-TeacherAssessment
 
 ---
 
 ## Live Demo
 
-https://acaaso-teacherassesment.onrender.com/
+https://acaaso-teacherassessment.onrender.com/

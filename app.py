@@ -187,7 +187,7 @@ def login():
 
 #def get_db_connection():
 #    conn = psycopg2.connect(
-#       dbname="BDTeacherAssesment",
+#       dbname="BDTeacherAssessment",
 #        user="postgres",
 ##        password="1234",   # ⚠️ usa algo simple temporalmente
 #        host="127.0.0.1",
@@ -211,7 +211,7 @@ def get_db_connection():
     else:
         print("👉 CONECTANDO A LOCAL (SIN SSL)")
         return psycopg2.connect(
-            dbname="BDTeacherAssesment",
+            dbname="BDTeacherAssessment",
             user="postgres",
             password="1234",
             host="127.0.0.1",
@@ -5395,9 +5395,9 @@ def enviar_codigo_quiz(correo, nombre_completo, titulo_quiz, codigo_quiz):
     
     #import resend
     
-    link_quiz = f"https://acaaso-teacherassesment.onrender.com/quiz/{codigo_quiz}"
+    link_quiz = f"https://acaaso-teacherassessment.onrender.com/quiz/{codigo_quiz}"
     qr_png = generar_qr(link_quiz)
-    #banner_url = "https://acaaso-teacherassesment.onrender.com/static/img/banner_enviar_quiz.png"
+    #banner_url = "https://acaaso-teacherassessment.onrender.com/static/img/banner_enviar_quiz.png"
     #banner_url = "http://localhost:5000/static/img/banner_enviar_quiz.png"
     with open("static/img/banner_enviar3.png", "rb") as f:
         banner_png = f.read() 
@@ -5573,7 +5573,7 @@ def enviar_codigo_quiz_backup(correo, nombre_completo, titulo_quiz, codigo_quiz)
     
     #import resend
     
-    link_quiz = f"https://acaaso-teacherassesment.onrender.com/quiz/{codigo_quiz}"
+    link_quiz = f"https://acaaso-teacherassessment.onrender.com/quiz/{codigo_quiz}"
      
     try:
         resend.Emails.send({
