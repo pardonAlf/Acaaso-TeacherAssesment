@@ -654,17 +654,6 @@ input.form-control {
 
                 </div>
             </div>
-
-            <!-- GUARDAR -->
-            <div class="mt-3 text-end">
-                <button type="button"
-                    class="btn btn-primary btn-sm-custom"
-                    onclick="guardarQuiz()">
-                    <i class="fas fa-save"></i>
-                    Guardar Quiz
-                </button>
-            </div>
-
         </div>
 
     </form>
@@ -1392,9 +1381,8 @@ function guardarEdicion() {
 }
  
 function guardarQuiz() {
-
+    
     let form = document.getElementById("formQuiz");
-    console.log("guardarQuiz ejecutado");
 
     // limpiar inputs previos
     document.querySelectorAll(".hidden-input").forEach(e => e.remove());
@@ -1433,27 +1421,46 @@ function guardarQuiz() {
         }
     });
 
+    let multiple =
+        document.getElementById("multiple_intentos_panel").checked;
 
-    let multiple = document.getElementById("multiple_intentos_panel").checked;
-    let solucionario = document.getElementById("enviar_solucionario_panel").checked;
-    let privado = document.getElementById("privado_panel").checked;
+    let solucionario =
+        document.getElementById("enviar_solucionario_panel").checked;
+
+    let privado =
+        document.getElementById("privado_panel").checked;
+
+    let permitir_sin_contestar =
+        document.getElementById("permitir_sin_contestar").checked;
+
+    let permitir_retroceder =
+        document.getElementById("permitir_retroceder").checked;
+
 
     agregarInput(form, "multiple_intentos", multiple ? "true" : "false");
     agregarInput(form, "enviar_solucionario", solucionario ? "true" : "false");
     agregarInput(form, "privado", privado ? "true" : "false");
 
 
-    // 🔥 NUEVO
-    let tiempoMinutos = document.getElementById("tiempo_minutos").value;
+    // CONFIGURACIÓN DEL QUIZ
+    let tiempoMinutos =
+        document.getElementById("tiempo_minutos").value;
 
     let config = {
-        tiempo_minutos: tiempoMinutos === "" ? null : parseInt(tiempoMinutos),
+        multiple_intentos: multiple,
+        enviar_solucionario: solucionario,
+        privado: privado,
+        tiempo_minutos: tiempoMinutos === ""
+            ? null
+            : parseInt(tiempoMinutos),
         comodin: false,
-        modo: "normal"
+        modo: "normal",
+        permitir_sin_contestar: permitir_sin_contestar,
+        permitir_retroceder: permitir_retroceder
     };
 
-    agregarInput(form, "config_json", JSON.stringify(config));
-     
+    document.getElementById("config_json").value = JSON.stringify(config);
+
     form.submit();
 }
 
@@ -1661,12 +1668,14 @@ function guardarConfig() {
             ? null
             : parseInt(document.getElementById("tiempo_minutos").value),
         comodin: false,
-        modo: "normal"
+        modo: "normal",
+        permitir_sin_contestar: document.getElementById("permitir_sin_contestar").checked,
+        permitir_retroceder: document.getElementById("permitir_retroceder").checked
     };
 
     document.getElementById("config_json").value = JSON.stringify(config);
 
-    console.log(config);
+     
 
     cerrarConfig();
 }

@@ -118,8 +118,6 @@
 
         <form method="POST">
 
-            <input type="hidden" id="config_json" name="config_json">
-
             <!-- HEADER -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body py-3">
@@ -310,7 +308,10 @@
             <input type="hidden" name="multiple_intentos" id="multiple_intentos_hidden">
             <input type="hidden" name="enviar_solucionario" id="enviar_solucionario_hidden">
             <input type="hidden" name="privado" id="privado_hidden">
-            <input type="hidden" id="config_json_hidden" name="config_json">
+            <input type="hidden"
+                id="config_json"
+                name="config_json"
+                value='{{ quiz.config_json | tojson }}'>
             <!-- GUARDAR -->
             <div class="card border-0 shadow-sm mt-4">
                 <div class="card-body d-flex justify-content-end">
@@ -528,11 +529,68 @@
     <script>
     
     function abrirConfig() {
+
+        // Guardar estado actual antes de permitir cambios
+        window.configOriginal = {
+            multiple_intentos:
+                document.getElementById("multiple_intentos_panel").checked,
+
+            enviar_solucionario:
+                document.getElementById("enviar_solucionario_panel").checked,
+
+            privado:
+                document.getElementById("privado_panel").checked,
+
+            tiempo_minutos:
+                document.getElementById("tiempo_minutos").value,
+
+            permitir_sin_contestar:
+                document.getElementById("permitir_sin_contestar").checked,
+
+            permitir_retroceder:
+                document.getElementById("permitir_retroceder").checked
+        };
+
         document.getElementById("overlayConfig").style.display = "block";
         document.getElementById("panelConfig").style.right = "0";
     }
 
     function cerrarConfig() {
+
+        // Restaurar los valores originales si existen
+        if (window.configOriginal) {
+
+            document.getElementById("multiple_intentos_panel").checked =
+                window.configOriginal.multiple_intentos;
+
+            document.getElementById("enviar_solucionario_panel").checked =
+                window.configOriginal.enviar_solucionario;
+
+            document.getElementById("privado_panel").checked =
+                window.configOriginal.privado;
+
+            document.getElementById("tiempo_minutos").value =
+                window.configOriginal.tiempo_minutos;
+
+            document.getElementById("permitir_sin_contestar").checked =
+                window.configOriginal.permitir_sin_contestar;
+
+            document.getElementById("permitir_retroceder").checked =
+                window.configOriginal.permitir_retroceder;
+
+            document.getElementById("multiple_intentos_hidden").value =
+                window.configOriginal.multiple_intentos ? "on" : "";
+
+            document.getElementById("enviar_solucionario_hidden").value =
+                window.configOriginal.enviar_solucionario ? "on" : "";
+
+            document.getElementById("privado_hidden").value =
+                window.configOriginal.privado ? "on" : "";
+
+            actualizarTextoAvance();
+            actualizarTextoRetroceder();
+        }
+
         document.getElementById("overlayConfig").style.display = "none";
         document.getElementById("panelConfig").style.right = "-720px";
     }
@@ -555,12 +613,20 @@
             privado: document.getElementById("privado_panel").checked,
             tiempo_minutos: tiempoMinutos === "" ? null : parseInt(tiempoMinutos),
             comodin: false,
-            modo: "normal"
+            modo: "normal",
+            permitir_sin_contestar:
+                document.getElementById("permitir_sin_contestar").checked,
+            permitir_retroceder:
+                document.getElementById("permitir_retroceder").checked
         };
 
         document.getElementById("config_json").value = JSON.stringify(config);
 
-        cerrarConfig();
+        // Los cambios fueron guardados, ya no debemos restaurar los valores anteriores
+        window.configOriginal = null;
+
+        document.getElementById("overlayConfig").style.display = "none";
+        document.getElementById("panelConfig").style.right = "-720px";
     }
 
     function guardarQuiz() {

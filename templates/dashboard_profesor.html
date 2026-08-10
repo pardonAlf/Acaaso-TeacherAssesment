@@ -75,6 +75,14 @@
                             <i class="fa-solid fa-rotate text-success"></i>
                         </th>
 
+                        <th title="Permitir volver a preguntas anteriores">
+                            <i class="fa-solid fa-arrow-left text-success"></i>
+                        </th>
+
+                        <th title="Permitir avanzar sin responder">
+                            <i class="fa-solid fa-forward text-success"></i>
+                        </th>
+
                         <th title="Enviar solucionario">
                             <i class="fa-solid fa-envelope text-primary"></i>
                         </th>
@@ -139,13 +147,29 @@
                             </td>
                             <td>
                                 {% if q[8] %}
-                                    <i class="bi bi-arrow-repeat text-success"></i>
+                                    <i class="bi bi-arrow-repeat text-success"
+                                    title="Permite múltiples intentos"></i>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if q[10] %}
+                                    <i class="bi bi-arrow-left-circle text-success"
+                                    title="Permite volver a preguntas anteriores"></i>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if q[11] %}
+                                    <i class="bi bi-forward-fill text-success"
+                                    title="Permite avanzar sin responder"></i>
                                 {% endif %}
                             </td>
 
                             <td>
                                 {% if q[9] %}
-                                    <i class="bi bi-envelope-check-fill text-primary"></i>
+                                    <i class="bi bi-envelope-check-fill text-primary"
+                                    title="Enviar solucionario"></i>
                                 {% endif %}
                             </td>
                         {% else %}
@@ -178,6 +202,19 @@
                             <td>
                                 {% if q[7] %}
                                     <i class="bi bi-arrow-repeat text-success"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if q[9] %}
+                                    <i class="bi bi-arrow-left-circle text-success"
+                                    title="Permite volver a preguntas anteriores"></i>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if q[10] %}
+                                    <i class="bi bi-forward-fill text-success"
+                                    title="Permite avanzar sin responder"></i>
                                 {% endif %}
                             </td>
 

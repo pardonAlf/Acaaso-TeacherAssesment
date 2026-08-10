@@ -237,23 +237,35 @@
                     </div>
 
                     <div class="form-check mb-2">
+
                         <input class="form-check-input"
                             type="checkbox"
                             id="permitir_retroceder"
-                            disabled>
-                        <label class="form-check-label text-muted">
+                            onchange="actualizarTextoRetroceder()"
+                            {% if config.config_json.get("permitir_retroceder", true) %}checked{% endif %}>
+
+                        <label class="form-check-label" id="label_permitir_retroceder">
                             Permitir volver a preguntas anteriores
                         </label>
+
                     </div>
 
                     <div class="form-check mb-3">
+
                         <input class="form-check-input"
                             type="checkbox"
                             id="permitir_sin_contestar"
-                            disabled>
-                        <label class="form-check-label text-muted">
-                            Permitir avanzar sin responder
+                            onchange="actualizarTextoAvance()"
+                            {% if config.config_json.get("permitir_sin_contestar", false) %}checked{% endif %}>
+
+                        <label class="form-check-label" id="label_permitir_sin_contestar">
+                            {% if config.config_json.get("permitir_sin_contestar", false) %}
+                                Permitir avanzar sin responder
+                            {% else %}
+                                No permitir avanzar sin responder
+                            {% endif %}
                         </label>
+
                     </div>
 
                     <hr class="config-separator">
@@ -412,3 +424,30 @@
         </div>
 
     </div>
+    <script>
+    function actualizarTextoAvance() {
+
+        const checkbox = document.getElementById("permitir_sin_contestar");
+        const label = document.getElementById("label_permitir_sin_contestar");
+
+        if (checkbox.checked) {
+            label.innerText = "Permitir avanzar sin responder";
+        } else {
+            label.innerText = "No permitir avanzar sin responder";
+        }
+    }
+
+    function actualizarTextoRetroceder() {
+
+        const checkbox = document.getElementById("permitir_retroceder");
+        const label = document.getElementById("label_permitir_retroceder");
+
+        if (checkbox.checked) {
+            label.innerText = "Permitir volver a preguntas anteriores";
+        } else {
+            label.innerText = "No permitir volver a preguntas anteriores";
+        }
+    }
+    </script>
+   
+}

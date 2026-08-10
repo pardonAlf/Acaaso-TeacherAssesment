@@ -26,7 +26,9 @@ import os,uuid
 import json
 from flask import make_response
 
-import qrcode
+import os
+import base64
+import qrcode,time
 from io import BytesIO
 import base64
 
@@ -330,7 +332,15 @@ def dashboard_profesor():
                     0
                 ) AS tiempo_minutos,
                 z.multiple_intentos,
-                z.enviar_solucionario
+                z.enviar_solucionario,
+                COALESCE(
+                    (z.config_json::json->>'permitir_retroceder')::boolean,
+                    true
+                ) AS permitir_retroceder,
+                COALESCE(
+                    (z.config_json::json->>'permitir_sin_contestar')::boolean,
+                    false
+                ) AS permitir_sin_contestar
                 FROM quiz z
                 INNER JOIN usuarios u on u.id=z.usuario_id
                 LEFT JOIN preguntas p ON p.quiz_id = z.id
@@ -356,7 +366,15 @@ def dashboard_profesor():
                     0
                 ) AS tiempo_minutos,
                 z.multiple_intentos,
-                z.enviar_solucionario
+                z.enviar_solucionario,
+                COALESCE(
+                    (z.config_json::json->>'permitir_retroceder')::boolean,
+                    true
+                ) AS permitir_retroceder,
+                COALESCE(
+                    (z.config_json::json->>'permitir_sin_contestar')::boolean,
+                    false
+                ) AS permitir_sin_contestar
                 FROM quiz z
                 LEFT JOIN preguntas p ON p.quiz_id = z.id
                 LEFT JOIN respuestas_alumno r ON r.pregunta_id = p.id
@@ -910,6 +928,18 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
     # 🔥 última defensa
     if not quiz_id:
         return "No se pudo determinar el quiz", 400
+    
+    cur.execute("""
+        SELECT config_json, multiple_intentos, titulo
+        FROM quiz
+        WHERE id = %s
+    """, (quiz_id,))
+
+    row = cur.fetchone()
+
+    config_json = json.loads(row[0]) if row and row[0] else {}
+    multiple_intentos = row[1] if row else False
+    titulo = row[2] if row else "Titulo del quiz"
 
     cur.execute("""
         SELECT COALESCE(MAX(intento_numero), 0)
@@ -1012,7 +1042,10 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
         quiz_id=quiz_id,
         alumno_id=alumno_id,
         salon_quiz_id=salon_quiz_id , # 🔥 clave
-        intento_id=intento_id
+        intento_id=intento_id,
+        config_json=config_json,
+        multiple_intentos=multiple_intentos,
+        titulo=titulo
     )
  
 
@@ -1253,9 +1286,10 @@ def quiz():
     
 @app.route('/crear_quiz', methods=['GET', 'POST'])
 def crear_quiz():
-    if request.method == 'POST':
+    if request.method == 'POST':    
         titulo = request.form['titulo']
         config_json = request.form.get("config_json")
+        print("CONFIG_JSON QUE LLEGA A FLASK:", repr(config_json))
         usuario = session.get('usuario')
         
         multiple_intentos = request.form.get('multiple_intentos') in ['true', 'on', '1']
@@ -1714,7 +1748,6 @@ def editar_quiz(quiz_id):
         if not config_json or config_json=='':
             config_json = json.dumps(obtener_config_default())
         
-        print(config_json)
         
         # actualizar título
         cur.execute(
@@ -1932,8 +1965,6 @@ def editar_quiz(quiz_id):
 
         "config_json": config_json
     }   
-    
-    print("*****",quiz)
     
     cur.execute("""
         SELECT id, texto, tipo, explicacion
@@ -3307,8 +3338,7 @@ def resultados_salon():
     user_id = session['user_id']
     rol = session['rol']
     cempre = session['cempre']
-    
-    print("DEBUG user_id:", user_id)
+
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -3332,8 +3362,6 @@ def resultados_salon():
         """, (cempre, user_id))
 
     salones = cur.fetchall()
-    
-    print("DEBUG salones:", salones)
 
     quizzes = []
     tabla = []
@@ -3397,7 +3425,7 @@ def resultados_salon():
 
         codigo = salon[1]
         descripcion = salon[2]
-        fecha_creacion = salon[3]
+        fecha_creacion = salon[3].strftime("%d/%m/%Y")
         
         cur.execute("""
             select count(distinct(alumno_id) ) cantidad
@@ -3517,8 +3545,7 @@ def resultados_salon():
             """, (salon_id, cempre ))
 
         data = cur.fetchall()
-        
-        print(data)
+    
         
         cur.execute("""
             SELECT
@@ -4383,6 +4410,14 @@ def ver_resultados(quiz_id):
     aciertos_tooltips = [r[1] for r in resultados_aciertos]
     aciertos_porcentaje = [float(r[4]) for r in resultados_aciertos]
     aciertos_respuestas = [int(r[2]) for r in resultados_aciertos]
+    
+    cur.execute("""
+                select count(distinct(alumno_id) ) cantidad
+                    from respuestas_alumno
+                    where quiz_id=%s       
+                """, (quiz_id, ))
+            
+    cantidad_alumnos=cur.fetchone()[0]
 
     cur.close()
     conn.close()
@@ -4399,7 +4434,6 @@ def ver_resultados(quiz_id):
         top_puntajes=top_puntajes,
         cantidad_alumnos=cantidad_alumnos,
         aprobados_data=aprobados_data,
-
         notas_labels=notas_labels,
         notas_data=notas_data,
         total_preguntas=total_preguntas,
@@ -4691,18 +4725,13 @@ def eliminar_quiz(quiz_id):
 
 def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, titulo_quiz, dni, fecha_hora, enviar_solucionario):
     
-    import os
-    import base64
-    #import resend
-
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-    from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab.lib import colors
-    from reportlab.lib.pagesizes import letter
-
+    limpiar_reportes_temporales()
+    
     # 📁 Ruta compatible local + Render
     if os.name == "nt":
-        ruta_pdf = f"reporte_{alumno_id}.pdf"
+        carpeta_tmp = os.path.join(os.getcwd(), "tmp", "reportes")
+        os.makedirs(carpeta_tmp, exist_ok=True)
+        ruta_pdf = os.path.join(carpeta_tmp, f"reporte_{alumno_id}.pdf")
     else:
         ruta_pdf = f"/tmp/reporte_{alumno_id}.pdf"
 
@@ -4887,6 +4916,32 @@ def generar_y_enviar_reporte(detalle, nota, correo, nombre_completo, alumno_id, 
             print("❌ ERROR RESEND:", str(e))
     else:
         print("ℹ️ solucionario no enviado")
+
+def limpiar_reportes_temporales():
+    if os.name != "nt":
+        return
+
+    carpeta_tmp = os.path.join(os.getcwd(), "tmp", "reportes")
+
+    if not os.path.exists(carpeta_tmp):
+        return
+
+    ahora = time.time()
+    limite = 60 * 60  # 1 hora
+
+    for archivo in os.listdir(carpeta_tmp):
+
+        ruta = os.path.join(carpeta_tmp, archivo)
+
+        if os.path.isfile(ruta) and archivo.lower().endswith(".pdf"):
+
+            try:
+                if ahora - os.path.getmtime(ruta) > limite:
+                    os.remove(ruta)
+                    print(f"🧹 PDF temporal eliminado: {archivo}")
+
+            except Exception as e:
+                print(f"⚠️ No se pudo eliminar {archivo}: {e}")
         
 @app.route("/contactos", methods=["GET", "POST"])
 def contactos():
@@ -5948,15 +6003,13 @@ def obtener_examen_alumno(alumno_id, quiz_id, intento_id):
     conn = get_db_connection()
     cur = conn.cursor()
     
-    print("DEBUG intento_id:", intento_id)
-    
     cur.execute("""
         SELECT id, intento_numero, quiz_id
         FROM intentos_quiz
         WHERE alumno_id = %s AND quiz_id = %s  AND activo=TRUE
     """, (alumno_id, quiz_id))
 
-    print("INTENTOS EN BD:", cur.fetchall())
+    
     # 🔥 convertir intento_numero → intento_id real
     
     cur.execute("""
@@ -5971,7 +6024,6 @@ def obtener_examen_alumno(alumno_id, quiz_id, intento_id):
     row = cur.fetchone()
     intento_id = row[0] if row else None
 
-    print("INTENTO_ID REAL:", intento_id)
     
     # 🔹 obtener respuestas reales del alumno (CLAVE)
     cur.execute("""
@@ -6173,9 +6225,6 @@ from datetime import datetime
 @app.route('/mejoras/guardar', methods=['POST'])
 def guardar_mejora():
     
-    print("SESSION:", session)
-    print("ROL:", session.get('rol'))
-    
     if session.get('rol') not in ['admin', 'profesor', 'root']:
         return "No autorizado", 403
     
@@ -6184,8 +6233,6 @@ def guardar_mejora():
     tipo = request.form.get('tipo', 'M')
     id_mejora = request.form.get('id')
     
-    print("ID RECIBIDO:", request.form.get('id'))
-
     conn = get_db_connection()
     cur = conn.cursor()
 
