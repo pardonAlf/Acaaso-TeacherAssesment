@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Configuración</title>
+    <style>
+    body {
+        margin: 0;
+        background: #f3f4f6;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 14px;
+        color: #2f3542;
+    }
+
+    .config-window {
+        width: 900px;
+        max-width: 95%;
+        margin: 35px auto;
+        background: #ffffff;
+        border: 1px solid #d7dbe0;
+        border-radius: 6px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.10);
+    }
+
+    .config-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid #e1e4e8;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .config-body {
+        padding: 16px;
+        min-height: 420px;
+    }
+
+    .config-footer {
+        padding: 10px 16px;
+        border-top: 1px solid #0d6ff0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    .config-footer .btn {
+        font-size: 13px;
+        padding: 5px 16px;
+    }
+
+    .config-tabs {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        width: 100%;
+        height: 42px;
+        border-bottom: 1px solid #0971f0;
+        margin: 0;
+        padding: 0;
+    }
+
+    .config-tab {
+        width: 120px;
+        height: 36px;
+        margin: 0 2px;
+        padding: 0;
+
+        background: transparent;
+        border: 2px solid transparent;
+        border-bottom: none;
+        border-radius: 5px 5px 0 0;
+
+        font-size: 13px;
+        color: #311ce7;
+        cursor: pointer;
+    }
+
+    .config-tabs .nav-item {
+        margin: 0 2px;
+    }
+
+    .config-tabs .nav-link {
+        min-width: 120px;
+        height: 36px;
+        padding: 8px 20px;
+        margin: 0;
+        
+        font-size: 13px;
+        line-height: 20px;
+        text-align: center;
+        
+        color: #0546f8;
+        background: transparent;
+        
+        border: 1px solid transparent;
+        border-bottom: none;
+        border-radius: 5px 5px 0 0;
+    }
+
+    .config-tabs .nav-link:hover {
+        background: #5ec708;
+        color: #222;
+    }
+
+    .config-tabs .nav-link.active {
+        background: #fa1f1f;
+        color: #222;
+        border: 1px solid #cfd4da;
+        border-bottom: 1px solid #ffffff;
+        margin-bottom: -1px;
+    }
+
+    .config-tab:hover {
+        background: #f1e0e0;
+        color: #222;
+    }
+
+    .config-tab.active {
+        background: #f6f7f5;
+        color: #222;
+        border-color: #146dda;
+        border-bottom: 1px solid #fff;
+        margin-bottom: -1px;
+    }
+    .logo-config {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+    padding: 12px;
+    border: 1px solid #adb5bd;
+    background: #fafafa;
+}
+
+.logo-preview {
+    width: 100px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 1px solid #ced4da;
+}
+
+.logo-preview img {
+    max-width: 85px;
+    max-height: 55px;
+    object-fit: contain;
+}
+
+.logo-title {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.logo-description {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 3px;
+}
+
+    </style>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+</head>
+
+<body>
+
+<div class="config-window">
+
+    <div class="config-header">
+        Configuración
+    </div>
+
+    <div class="config-body">
+        <div class="mt-4">
+
+            <div class="config-tabs">
+
+                <button type="button"
+                        class="config-tab active"
+                        data-bs-toggle="tab"
+                        data-bs-target="#general">
+                    General
+                </button>
+
+                <button type="button"
+                        class="config-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#reportes">
+                    Reportes
+                </button>
+
+                <button type="button"
+                        class="config-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#quiz">
+                    Quiz
+                </button>
+
+            </div>
+
+        </div>
+        <div class="tab-content mt-3">
+
+            <div class="tab-pane show active"
+                id="general">
+                Configuración general.
+            </div>
+
+            <div class="tab-pane"
+                id="reportes">
+                <div class="reportes-config">
+
+                    <div class="section-title">
+                        Header de los reportes
+                    </div>
+
+                    <div class="section-description">
+                        Encabezado utilizado en los reportes generados por esta empresa.
+                    </div>
+                    <div class="logo-config">
+
+                        <div class="logo-preview">
+                            <img src="{{ logo_actual }}"
+                                alt="Logo actual"
+                                id="logoPreview">
+                        </div>
+
+                        <div class="logo-info">
+                            <div class="logo-title">Logo del Header</div>
+
+                            <div class="logo-description">
+                                Este logo aparecerá en los encabezados de los reportes.
+                            </div>
+                            <div style="margin-top: 8px;">
+                                <input type="file"
+                                    id="logoHeader"
+                                    accept="image/png,image/jpeg,image/webp"
+                                    style="font-size: 12px;">
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="tab-pane"
+                id="quiz">
+                Configuración de Quiz.
+            </div>
+
+        </div>
+    </div>
+
+    <div class="config-footer">
+
+        <button type="button"
+                class="btn btn-secondary"
+                onclick="cancelarConfiguracion()">
+            Cancelar
+        </button>
+
+        <button type="button"
+                class="btn btn-primary"
+                onclick="guardarConfiguracion()">
+            OK
+        </button>
+
+    </div>
+    
+
+</div>
+
+<script>
+
+function cancelarConfiguracion() {
+    window.history.back();
+}
+
+function guardarConfiguracion() {
+    window.history.back();
+}
+
+document.querySelectorAll('.config-tab').forEach(tab => {
+
+    tab.addEventListener('click', function () {
+
+        // Quitar activo de todas las pestañas
+        document.querySelectorAll('.config-tab').forEach(t => {
+            t.classList.remove('active');
+        });
+
+        // Activar la seleccionada
+        this.classList.add('active');
+
+        // Ocultar todos los contenidos
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('show', 'active');
+        });
+
+        // Mostrar el contenido correspondiente
+        const target = document.querySelector(
+            this.getAttribute('data-bs-target')
+        );
+
+        if (target) {
+            target.classList.add('show', 'active');
+        }
+    });
+
+});
+
+const logoHeader = document.getElementById("logoHeader");
+const logoPreview = document.getElementById("logoPreview");
+
+logoHeader.addEventListener("change", function () {
+
+    const archivo = this.files[0];
+
+    if (!archivo) {
+        return;
+    }
+
+    const lector = new FileReader();
+
+    lector.onload = function (e) {
+        logoPreview.src = e.target.result;
+    };
+
+    lector.readAsDataURL(archivo);
+
+    const formulario = new FormData();
+    formulario.append("logo", archivo);
+
+    fetch("/configuracion/logo", {
+        method: "POST",
+        body: formulario
+    })
+    .then(response => response.json())
+    .then(data => {
+
+        if (data.ok) {
+            console.log("Logo guardado correctamente");
+        } else {
+            alert(data.mensaje);
+        }
+
+    })
+    .catch(error => {
+        console.error("Error al guardar el logo:", error);
+        alert("No se pudo guardar el logo.");
+    });
+
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

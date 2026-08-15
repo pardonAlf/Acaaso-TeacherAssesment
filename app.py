@@ -526,7 +526,18 @@ def reporte_quiz(quiz_id):
     """, (quiz_id,))
 
     titulo_quiz = cur.fetchone()[0]
+    
+    # 🔹 NOMBRE DE LA EMPRESA
+    cur.execute("""
+        SELECT dempre 
+        FROM empresa
+        WHERE cempre = %s
+    """, (session['cempre'],))
 
+    empresa = cur.fetchone()
+
+    nombre_empresa = empresa[0] if empresa else "Empresa"
+    
     cur.close()
     conn.close()
 
@@ -542,23 +553,121 @@ def reporte_quiz(quiz_id):
     doc = SimpleDocTemplate(buffer, pagesize=letter)
     styles = getSampleStyleSheet()
     elements = []
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
 
-    # 🔹 HEADER
-    logo = Image("static/img/logo.png", width=80, height=50)
+    cur.execute("""
+        SELECT logo_header
+        FROM configuracion_reportes
+        WHERE cempre = %s
+    """, (session['cempre'],))
 
-    header = [[logo, Paragraph(f"""
-    <b>ACAASO</b><br/>
-    <b>Reporte:</b> Solucionario<br/>
-    <b>Usuario:</b> {session.get('usuario')}<br/>
-    <b>Fecha:</b> {datetime.now().strftime("%d/%m/%Y %H:%M")}
-    """, styles['Normal'])]]
+    config_logo = cur.fetchone()
 
-    tabla_header = Table(header, colWidths=[100, 350])
+    cur.close()
+    conn.close()
+
+    # Logo por defecto
+    logo_path = "static/img/logo.png"
+
+    # Logo configurado por la empresa
+    if config_logo and config_logo[0]:
+        logo_path = config_logo[0].lstrip("/")
+    
+    
+    # 🔹 HEADER PROFESIONAL DEL REPORTE
+
+    from reportlab.lib.utils import ImageReader
+
+    # Obtener dimensiones reales del logo
+    try:
+        img_reader = ImageReader(logo_path)
+        img_width, img_height = img_reader.getSize()
+
+        # Área máxima disponible para el logo
+        max_logo_width = 90
+        max_logo_height = 55
+
+        # Mantener siempre la proporción original
+        escala = min(
+            max_logo_width / img_width,
+            max_logo_height / img_height,
+            1
+        )
+
+        logo_width = img_width * escala
+        logo_height = img_height * escala
+
+    except Exception:
+        logo_width = 80
+        logo_height = 50
+
+
+    logo = Image(
+        logo_path,
+        width=logo_width,
+        height=logo_height
+    )
+
+    # Información del reporte
+    fecha_actual = datetime.now()
+
+    info_header = Paragraph(
+        f"""
+        <b>{nombre_empresa}</b><br/>
+        <b>Solucionario de:</b> {titulo_quiz}<br/>
+        <font size="8">
+            Usuario: {session.get('usuario')} |
+            Fecha: {fecha_actual.strftime("%d/%m/%Y")} |
+            Hora: {fecha_actual.strftime("%H:%M")}
+        </font>
+        """,
+        styles["Normal"]
+    )
+
+    # Separador vertical entre logo e información
+    header_data = [[logo, info_header]]
+
+    tabla_header = Table(
+        header_data,
+        colWidths=[125, 343],
+        rowHeights=[70]
+    )
+
     tabla_header.setStyle(TableStyle([
-        ('BOX', (0,0), (-1,-1), 1.5, colors.black),
-        ('BACKGROUND', (0,0), (-1,-1), colors.whitesmoke),
-    ]))
 
+        # Borde exterior
+        ('BOX', (0,0), (-1,-1), 0.8, colors.HexColor("#9AA0A6")),
+
+        # Logo centrado verticalmente
+        ('VALIGN', (0,0), (0,0), 'MIDDLE'),
+
+        # Información centrada verticalmente
+        ('VALIGN', (1,0), (1,0), 'MIDDLE'),
+
+        # Separador vertical
+        ('LINEAFTER', (0,0), (0,0), 0.8, colors.HexColor("#B8BEC5")),
+
+        # Holgura del logo a la derecha
+        ('RIGHTPADDING', (0,0), (0,0), 20),
+
+        # Holgura izquierda del logo
+        ('LEFTPADDING', (0,0), (0,0), 8),
+
+        # Información
+        ('LEFTPADDING', (1,0), (1,0), 12),
+        ('RIGHTPADDING', (1,0), (1,0), 8),
+
+        # Fondo
+        ('BACKGROUND', (0,0), (-1,-1), colors.white),
+
+        # Barra inferior profesional
+        ('LINEBELOW', (0,0), (-1,-1), 4, colors.HexColor("#1554B8")),
+    ]))
     elements.append(tabla_header)
     elements.append(Spacer(1, 15))
 
@@ -589,13 +698,17 @@ def reporte_quiz(quiz_id):
         elements.append(Spacer(1, 5))
 
         tabla_data = []
+        
+        letras = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-        for op_texto, correcta in pregunta["opciones"]:
-    
+        for indice, (op_texto, correcta) in enumerate(pregunta["opciones"]):
+            
+            letra = letras[indice]
+        
             if correcta and con_sol:
-                texto = f"✔ {op_texto}"
+                texto = f"<b>{letra})</b>{op_texto} ✔ "
             else:
-                texto = op_texto
+                texto = f"<b>{letra})</b> {op_texto}"
 
             tabla_data.append([Paragraph(texto, styles['Normal'])])
 
@@ -648,10 +761,10 @@ def registrar_admin():
     # 🔐 VALIDACIÓN (temporal)
     CODIGO_VALIDO = "VCX234"
 
-    if codigo != CODIGO_VALIDO:
-        return jsonify({
-            "mensaje": "Código de verificación inválido"
-        }), 400
+    #if codigo != CODIGO_VALIDO:
+    #    return jsonify({
+     #       "mensaje": "Código de verificación inválido"
+    #    }), 400 
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -6657,6 +6770,91 @@ def generar_codigo_unico_salon(cur):
 
         if not cur.fetchone():
             return codigo
+        
+@app.route('/configuracion')
+def configuracion():
 
+    cempre = session.get('cempre')
+
+    logo_actual = "/static/img/logo.png"
+
+    if cempre:
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT logo_header
+            FROM configuracion_reportes
+            WHERE cempre = %s
+        """, (cempre,))
+
+        resultado = cur.fetchone()
+
+        cur.close()
+        conn.close()
+
+        if resultado and resultado[0]:
+            logo_actual = resultado[0]
+
+    return render_template(
+        'configuracion.html',
+        logo_actual=logo_actual
+    )
+
+@app.route('/configuracion/logo', methods=['POST'])
+def guardar_logo_configuracion():
+
+    if 'cempre' not in session:
+        return jsonify({"ok": False, "mensaje": "Sesión no válida"}), 401
+
+    archivo = request.files.get('logo')
+
+    if not archivo:
+        return jsonify({"ok": False, "mensaje": "No se recibió ningún logo"}), 400
+
+    cempre = session['cempre']
+
+    carpeta = os.path.join(
+        app.root_path,
+        'static',
+        'uploads',
+        'empresas',
+        str(cempre)
+    )
+
+    os.makedirs(carpeta, exist_ok=True)
+
+    extension = os.path.splitext(archivo.filename)[1].lower()
+
+    nombre_archivo = 'logo_header' + extension
+
+    ruta = os.path.join(carpeta, nombre_archivo)
+
+    archivo.save(ruta)
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO configuracion_reportes
+            (cempre, logo_header, fecha_actualizacion)
+        VALUES
+            (%s, %s, CURRENT_TIMESTAMP)
+        ON CONFLICT (cempre)
+        DO UPDATE SET
+            logo_header = EXCLUDED.logo_header,
+            fecha_actualizacion = CURRENT_TIMESTAMP
+    """, (cempre, f"/static/uploads/empresas/{cempre}/{nombre_archivo}"))
+
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "ok": True,
+        "mensaje": "Logo guardado correctamente"
+    })
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
