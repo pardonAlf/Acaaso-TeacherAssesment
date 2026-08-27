@@ -1,32 +1,255 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Gestión de Empresas</title>
+{% extends "base.html" %}
+    
+{% block content %}
+<style>
+        /* =========================================================
+        GESTIÓN DE EMPRESAS
+        MISMO ESTILO QUE MANTENIMIENTO DE PLANES
+        ========================================================= */
 
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-    >
-</head>
+        .empresas-container {
+            width: 100%;
+            max-width: 1240px;
+            margin: 30px auto;
+            padding: 0 10px;
+        }
 
-<body>
 
-<div class="container-fluid p-4">
+        /* =========================================================
+        CABECERA
+        ========================================================= */
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+        .empresas-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            margin-bottom: 10px;
+        }
+
+        .empresas-header h3 {
+            margin: 0;
+
+            font-size: 28px;
+            font-weight: 500;
+
+            color: #07152f;
+        }
+
+
+        /* =========================================================
+        BOTÓN NUEVA EMPRESA
+        ========================================================= */
+
+        .btn-nueva-empresa {
+            border: none;
+
+            background: #198754;
+            color: white;
+
+            padding: 7px 12px;
+
+            font-size: 12px;
+            font-weight: 500;
+
+            border-radius: 4px;
+
+            cursor: pointer;
+        }
+
+        .btn-nueva-empresa:hover {
+            background: #157347;
+        }
+
+
+        /* =========================================================
+        CONTENEDOR TABLA
+        ========================================================= */
+
+        .empresas-table-wrapper {
+            width: 100%;
+
+            background: white;
+
+            border-radius: 7px 7px 0 0;
+
+            overflow-x: auto;
+        }
+
+
+        /* =========================================================
+        TABLA
+        ========================================================= */
+
+        .empresas-table {
+            width: 100%;
+
+            margin: 0;
+
+            border-collapse: collapse;
+
+            font-size: 12px;
+        }
+
+
+        /* =========================================================
+        CABECERA
+        ========================================================= */
+
+        .empresas-table thead th {
+            height: 36px;
+
+            padding: 7px 9px;
+
+            background: #212529;
+
+            color: white;
+
+            border: 1px solid #ebeef1;
+
+            font-size: 12px;
+            font-weight: 600;
+
+            white-space: nowrap;
+
+            vertical-align: middle;
+        }
+
+
+        /* =========================================================
+        FILAS
+        ========================================================= */
+
+        .empresas-table tbody td {
+            height: 25px;
+
+            padding: 2px 2px;
+
+            background: #ffffff;
+
+            color: #111827;
+
+            border: 1px solid #afc5db;
+
+            vertical-align: middle;
+
+            white-space: nowrap;
+        }
+
+
+        /* FILAS ALTERNADAS */
+
+        .empresas-table tbody tr:nth-child(even) td {
+            background: #d7e0e9;
+        }
+
+
+        /* HOVER */
+
+        .empresas-table tbody tr:hover td {
+            background: #c2dce9;
+        }
+
+
+        /* =========================================================
+        ESTADOS
+        ========================================================= */
+
+        .empresa-activa {
+            color: #198754;
+
+            font-weight: 600;
+        }
+
+        .empresa-inactiva {
+            color: #dc3545;
+
+            font-weight: 600;
+        }
+
+
+        /* =========================================================
+        BOTONES DE ACCIONES
+        ========================================================= */
+
+        .empresas-table .btn {
+            padding: 4px 8px;
+
+            font-size: 11px;
+
+            line-height: 1.1;
+
+            border-radius: 3px;
+        }
+
+        .btn-editar-empresa {
+            background: #6c757d;
+
+            border: 1px solid #6c757d;
+
+            color: white;
+        }
+
+        .btn-editar-empresa:hover {
+            background: #5c636a;
+        }
+
+        .btn-eliminar-empresa {
+            background: #dc3545;
+
+            border: 1px solid #dc3545;
+
+            color: white;
+        }
+
+        .btn-eliminar-empresa:hover {
+            background: #bb2d3b;
+        }
+
+
+        /* =========================================================
+        RESPONSIVE
+        ========================================================= */
+
+        @media (max-width: 1000px) {
+
+            .empresas-container {
+                max-width: 98%;
+                margin: 20px auto;
+            }
+
+            .empresas-header h3 {
+                font-size: 22px;
+            }
+
+            .empresas-table {
+                font-size: 11px;
+            }
+
+            .empresas-table thead th,
+            .empresas-table tbody td {
+                padding: 5px 7px;
+            }
+        }
+        </style>
+
+<div class="empresas-container">
+
+    <div class="empresas-header">
 
         <h3>Gestión de Empresas</h3>
 
-        <button class="btn btn-primary">
+        <button
+            type="button"
+            class="btn-nueva-empresa">
             Nueva empresa
         </button>
 
     </div>
 
-    <div class="table-responsive">
+    <div class="empresas-table-wrapper">
 
-        <table class="table table-bordered table-hover align-middle">
+        <table class="empresas-table">
 
             <thead>
                 <tr>
@@ -63,30 +286,36 @@
 
                     <td>
                         {% if empresa[4] %}
-                            Activa
+                            <span class="empresa-activa">Activa</span>
                         {% else %}
-                            Inactiva
+                            <span class="empresa-inactiva">Inactiva</span>
                         {% endif %}
                     </td>
 
                     <td>
                         {{ empresa[5].strftime('%d/%m/%Y %H:%M')
-                        if empresa[5] else '-' }}
+                           if empresa[5] else '-' }}
                     </td>
 
                     <td>
                         {{ empresa[6].strftime('%d/%m/%Y %H:%M')
-                        if empresa[6] else '-' }}
+                           if empresa[6] else '-' }}
                     </td>
 
                     <td>
-                        <button class="btn btn-sm btn-secondary">
+
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-secondary btn-editar-empresa">
                             Editar
                         </button>
 
-                        <button class="btn btn-sm btn-danger">
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-danger btn-eliminar-empresa">
                             Eliminar
                         </button>
+
                     </td>
 
                 </tr>
@@ -94,7 +323,7 @@
                 {% else %}
 
                 <tr>
-                    <td colspan="6" class="text-center">
+                    <td colspan="8" class="text-center">
                         No existen empresas registradas.
                     </td>
                 </tr>
@@ -109,5 +338,4 @@
 
 </div>
 
-</body>
-</html>
+{% endblock %}

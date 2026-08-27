@@ -8536,14 +8536,16 @@ def empresas():
     try:
 
         cur.execute("""
-            SELECT
-                cempre,
-                dempre,
-                ruc,
-                licencia,
-                estado
-            FROM empresa
-            ORDER BY dempre
+        SELECT
+            cempre,
+            dempre,
+            ruc,
+            licencia,
+            estado,
+            fcreacion,
+            fecha_modificacion
+        FROM empresa
+        ORDER BY dempre
         """)
 
         empresas = cur.fetchall()

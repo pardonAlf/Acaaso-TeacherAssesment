@@ -1503,26 +1503,100 @@
 
             <div class="modal-body">
 
-                <!-- BOTONES GENERALES -->
-                <div class="d-flex gap-2 mb-3">
-                    <button type="button"
-                            class="btn btn-sm btn-outline-primary"
-                            onclick="marcarTodosPendientes()">
-                        ✓ Marcar todos
-                    </button>
+                <!-- PESTAÑAS -->
+                <ul class="nav nav-tabs mb-3" id="tabsEnviarQuiz" role="tablist">
 
-                    <button type="button"
-                            class="btn btn-sm btn-outline-secondary"
-                            onclick="desmarcarTodosPendientes()">
-                        Desmarcar todos
-                    </button>
-                </div>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active"
+                                id="tab-alumnos"
+                                data-bs-toggle="tab"
+                                data-bs-target="#contenido-alumnos"
+                                type="button"
+                                role="tab">
+                            👥 Alumnos
+                        </button>
+                    </li>
 
-                <!-- LISTA -->
-                <div id="listaAlumnosPendientes">
-                    <div class="text-muted text-center">
-                        Cargando alumnos...
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link"
+                                id="tab-qr"
+                                data-bs-toggle="tab"
+                                data-bs-target="#contenido-qr"
+                                type="button"
+                                role="tab">
+                            ▣ QR
+                        </button>
+                    </li>
+
+                </ul>
+
+                <!-- CONTENIDO DE LAS PESTAÑAS -->
+                <div class="tab-content">
+
+                    <!-- PESTAÑA ALUMNOS -->
+                    <div class="tab-pane fade show active"
+                        id="contenido-alumnos"
+                        role="tabpanel">
+
+                        <!-- BOTONES GENERALES -->
+                        <div class="d-flex gap-2 mb-3">
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-primary"
+                                    onclick="marcarTodosPendientes()">
+                                ✓ Marcar todos
+                            </button>
+
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    onclick="desmarcarTodosPendientes()">
+                                Desmarcar todos
+                            </button>
+                        </div>
+
+                        <!-- LISTA -->
+                        <div id="listaAlumnosPendientes">
+                            <div class="text-muted text-center">
+                                Cargando alumnos...
+                            </div>
+                        </div>
+
                     </div>
+
+
+                    <!-- PESTAÑA QR -->
+                    <div class="tab-pane fade"
+                        id="contenido-qr"
+                        role="tabpanel">
+
+                        <div class="text-center py-3">
+
+                            <div class="fw-semibold mb-3">
+                                Escanea para ingresar al Quiz
+                            </div>
+
+                            <div id="contenedorQREnviarQuiz" style="display:flex; justify-content:center;">
+                                <div class="text-muted">
+                                    Generando código QR...
+                                </div>
+                            </div>
+
+                            <div class="mt-3 text-muted">
+                                Código:
+                                <strong id="codigoQREnviarQuiz"></strong>
+                            </div>
+
+                            <div class="mt-2">
+                                <a id="linkQREnviarQuiz"
+                                href="#"
+                                target="_blank"
+                                style="font-size:12px; word-break:break-all;">
+                                </a>
+                            </div>
+
+                        </div>
+
+                    </div>
+
                 </div>
 
             </div>
@@ -1544,6 +1618,7 @@
         </div>
     </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     let quizSeleccionado = null;
@@ -1562,6 +1637,30 @@
         salonQuizSeleccionado = salonQuizId;
         codigoQuizSeleccionado = codigoQuiz;
         salonSeleccionado = salonId;
+
+        const linkQR =
+            `https://acaaso-teacherassessment.onrender.com/salon/${codigoQuizSeleccionado}`;
+
+        const contenedorQR = document.getElementById(
+            "contenedorQREnviarQuiz"
+        );
+
+        // Limpiar el QR anterior antes de generar uno nuevo
+        contenedorQR.innerHTML = "";
+
+        new QRCode(contenedorQR, {
+            text: linkQR,
+            width: 216,
+            height: 216
+        });
+
+        document.getElementById("codigoQREnviarQuiz").textContent =
+            codigoQuizSeleccionado;
+
+        const linkCompleto = document.getElementById("linkQREnviarQuiz");
+
+        linkCompleto.href = linkQR;
+        linkCompleto.textContent = linkQR;
 
         document.getElementById("tituloModalEnviarQuiz").textContent =
             `Enviar acceso — ${nombreQuiz} (${codigoQuiz})`;
