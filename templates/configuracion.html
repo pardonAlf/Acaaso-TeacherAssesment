@@ -15,25 +15,38 @@
     }
 
     .config-window {
-        width: 900px;
-        max-width: 95%;
+        width: 900px !important;
+        max-width: 94vw;
+        min-height: 520px;
         margin: 35px auto;
         background: #ffffff;
-        border: 1px solid #d7dbe0;
-        border-radius: 6px;
-        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.10);
+        border: 1px solid #64748b;
+        border-radius: 10px;
+        box-shadow: 0 8px 28px rgba(15, 23, 42, 0.28);
+
+        overflow: hidden;
     }
 
     .config-header {
-        padding: 12px 16px;
-        border-bottom: 1px solid #e1e4e8;
-        font-size: 16px;
-        font-weight: 600;
-    }
+        background: #334155;
+        color: #ffffff;
 
+        padding: 13px 20px;
+
+        font-size: 17px;
+        font-weight: 600;
+
+        border-bottom: 1px solid #1e293b;
+        
+    }
+ 
+    /* CUERPO */
     .config-body {
-        padding: 16px;
-        min-height: 420px;
+        padding: 16px 20px;
+
+        min-height: 410px;
+
+        background: #f8fafc;
     }
 
     .config-footer {
@@ -59,6 +72,7 @@
         margin: 0;
         padding: 0;
     }
+    
 
     .config-tab {
         width: 120px;
@@ -131,34 +145,240 @@
     padding: 12px;
     border: 1px solid #adb5bd;
     background: #fafafa;
+    }
+
+    .logo-preview {
+        width: 100px;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 1px solid #ced4da;
+    }
+
+    .logo-preview img {
+        max-width: 85px;
+        max-height: 55px;
+        object-fit: contain;
+    }
+
+    .logo-title {
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .logo-description {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 3px;
+    }
+
+    /* =====================================================
+    CONFIGURACIÓN - LICENCIA
+    ===================================================== */
+
+    .licencia-container {
+        width: 100%;
+        padding: 4px 2px;
+    }
+
+    /* BLOQUE SUPERIOR */
+    .licencia-activar {
+        border: 1px solid #dfe5ec;
+        border-radius: 8px;
+        padding: 12px;
+        background: #fff;
+    }
+
+    .licencia-titulo {
+        font-size: 14px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 9px;
+    }
+
+    /* INPUT + BOTÓN */
+    .licencia-form {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .licencia-input {
+        flex: 1;
+        height: 34px;
+        padding: 0 11px;
+        border: 1px solid #cfd8e3;
+        border-radius: 6px;
+        outline: none;
+        font-size: 13px;
+        color: #334155;
+    }
+
+    .licencia-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.08);
+    }
+
+    .btn-activar-licencia {
+        height: 34px;
+        min-width: 92px;
+        border: none;
+        border-radius: 6px;
+        padding: 0 15px;
+        background: #2563eb;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-activar-licencia:hover {
+        background: #1d4ed8;
+    }
+
+    /* ESTADO DE LA LICENCIA */
+    .licencia-estado {
+        margin-top: 9px;
+        padding: 7px 10px;
+        border-radius: 6px;
+        background: #f1f5f9;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    /* INFORMACIÓN DE LA LICENCIA */
+    .licencia-info {
+        margin-top: 10px;
+        border: 1px solid #dfe5ec;
+        border-radius: 8px;
+        padding: 12px;
+        background: #fff;
+    }
+
+    .licencia-info-titulo {
+        font-size: 14px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 8px;
+    }
+
+    /* DOS COLUMNAS */
+    .licencia-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
+
+    .licencia-columna {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .licencia-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 25px;
+        padding: 3px 5px;
+        border-bottom: 1px solid #edf1f5;
+        font-size: 12px;
+    }
+
+    .licencia-item:last-child {
+        border-bottom: none;
+    }
+
+    .licencia-item span {
+        color: #64748b;
+    }
+
+    .licencia-item strong {
+        color: #334155;
+        font-weight: 600;
+        text-align: right;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 650px) {
+
+        .licencia-grid {
+            grid-template-columns: 1fr;
+            gap: 6px;
+        }
+
+        .licencia-form {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .btn-activar-licencia {
+            width: 100%;
+        }
+    }
+
+    /* =====================================================
+   LICENCIA - MÁS CONTRASTE PARA PANTALLAS HD
+   ===================================================== */
+
+/* Contenedor superior */
+.licencia-activar {
+    border: 1px solid #9aa8b8;
+    box-shadow: 0 2px 8px rgba(30, 41, 59, 0.12);
 }
 
-.logo-preview {
-    width: 100px;
-    height: 70px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: white;
-    border: 1px solid #ced4da;
+/* Información de licencia */
+.licencia-info {
+    border: 1px solid #9aa8b8;
+    box-shadow: 0 2px 8px rgba(30, 41, 59, 0.12);
 }
 
-.logo-preview img {
-    max-width: 85px;
-    max-height: 55px;
-    object-fit: contain;
+/* Input */
+.licencia-input {
+    border: 1px solid #8b9aad;
+    background: #ffffff;
 }
 
-.logo-title {
-    font-size: 13px;
-    font-weight: 600;
+.licencia-input:hover {
+    border-color: #64748b;
 }
 
-.logo-description {
-    font-size: 12px;
-    color: #6c757d;
-    margin-top: 3px;
+.licencia-input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
 }
+
+/* Estado */
+.licencia-estado {
+    border: 1px solid #b5c0cc;
+    background: #e9eef4;
+    color: #475569;
+}
+
+/* Líneas de los datos */
+.licencia-item {
+    border-bottom: 1px solid #cbd5e1;
+}
+
+/* Títulos más oscuros */
+.licencia-titulo,
+.licencia-info-titulo {
+    color: #1e293b;
+}
+
+/* Etiquetas */
+.licencia-item span {
+    color: #475569;
+}
+
+/* Valores */
+.licencia-item strong {
+    color: #1e293b;
+}
+
+
 
     </style>
 
@@ -182,8 +402,8 @@
                 <button type="button"
                         class="config-tab active"
                         data-bs-toggle="tab"
-                        data-bs-target="#general">
-                    General
+                        data-bs-target="#licencia">
+                    Licencia
                 </button>
 
                 <button type="button"
@@ -205,9 +425,110 @@
         </div>
         <div class="tab-content mt-3">
 
-            <div class="tab-pane show active"
-                id="general">
-                Configuración general.
+            <div class="tab-pane show active" id="licencia">
+
+                <div class="licencia-container">
+
+                    <!-- ACTIVAR O REEMPLAZAR -->
+                    <div class="licencia-activar">
+
+                        <div class="licencia-titulo">
+                            Activar o reemplazar licencia
+                        </div>
+
+                        <div class="licencia-form">
+                            
+                            <input
+                                type="text"
+                                id="codigoLicencia"
+                                class="licencia-input"
+                                placeholder="Pegue o ingrese su código de licencia"
+                                autocomplete="off">
+
+                            <button
+                                type="button"
+                                class="btn-activar-licencia"
+                                onclick="activarLicencia()">
+                                Activar
+                            </button>
+
+                        </div>
+
+                        <!-- ESTE MENSAJE SERÁ DINÁMICO -->
+                        <div class="licencia-estado" id="licenciaEstado">
+                            Sin licencia activa
+                        </div>
+
+                    </div>
+
+
+                    <!-- INFORMACIÓN: OCULTA HASTA ACTIVAR -->
+                    <div
+                        class="licencia-info"
+                        id="licenciaInfo"
+                        style="display: none;">
+
+                        <div class="licencia-info-titulo">
+                            Información de su licencia
+                        </div>
+
+                        <div class="licencia-grid">
+
+                            <div class="licencia-columna">
+
+                                <div class="licencia-item">
+                                    <span>Plan</span>
+                                    <strong id="licPlan">-</strong>
+                                </div>
+
+                                <div class="licencia-item">
+                                    <span>Estado</span>
+                                    <strong id="licEstado">-</strong>
+                                </div>
+
+                                <div class="licencia-item">
+                                    <span>Inicio</span>
+                                    <strong id="licInicio">-</strong>
+                                </div>
+
+                                <div class="licencia-item">
+                                    <span>Vencimiento</span>
+                                    <strong id="licVencimiento">-</strong>
+                                </div>
+
+                            </div>
+
+
+                            <div class="licencia-columna">
+
+                                <div class="licencia-item">
+                                    <span>Administradores</span>
+                                    <strong id="licAdmins">-</strong>
+                                </div>
+
+                                <div class="licencia-item">
+                                    <span>Profesores</span>
+                                    <strong id="licProfesores">-</strong>
+                                </div>
+
+                                <div class="licencia-item">
+                                    <span>Alumnos</span>
+                                    <strong id="licAlumnos">-</strong>
+                                </div>
+
+                                <div class="licencia-item">
+                                    <span>Quizzes</span>
+                                    <strong id="licQuizzes">-</strong>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
             </div>
 
             <div class="tab-pane"
@@ -356,7 +677,103 @@ logoHeader.addEventListener("change", function () {
     });
 
 });
+
+function activarLicencia() {
+
+    const inputCodigo = document.getElementById("codigoLicencia");
+    const codigo = inputCodigo.value.trim();
+
+    // ==========================================
+    // VALIDAR
+    // ==========================================
+    if (!codigo) {
+        alert("Ingrese o pegue un código de licencia");
+        inputCodigo.focus();
+        return;
+    }
+
+    // ==========================================
+    // ENVIAR AL SERVIDOR
+    // ==========================================
+    fetch("/activar_licencia", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            codigo: codigo
+        })
+    })
+    .then(async response => {
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+            throw new Error(
+                data.mensaje || "Error al activar la licencia"
+            );
+        }
+
+        return data;
+    })
+    .then(data => {
+
+        console.log("LICENCIA ACTIVADA:", data);
+
+        // ==========================================
+        // MOSTRAR ESTADO
+        // ==========================================
+        const fechaExpiracion = data.fecha_expiracion;
+
+        document.getElementById("licenciaEstado").innerHTML =
+            "🟢 Licencia activa · vence el " + fechaExpiracion;
+
+
+        // ==========================================
+        // MOSTRAR INFORMACIÓN
+        // ==========================================
+        document.getElementById("licenciaInfo").style.display = "block";
+
+        document.getElementById("licPlan").textContent =
+            data.plan || "-";
+
+        document.getElementById("licEstado").textContent =
+            data.estado || "ACTIVA";
+
+        document.getElementById("licInicio").textContent =
+            data.fecha_inicio || "-";
+
+        document.getElementById("licVencimiento").textContent =
+            data.fecha_expiracion || "-";
+
+        document.getElementById("licAdmins").textContent =
+            data.max_admins ?? 0;
+
+        document.getElementById("licProfesores").textContent =
+            data.max_profesores ?? 0;
+
+        document.getElementById("licAlumnos").textContent =
+            data.max_alumnos ?? 0;
+
+        document.getElementById("licQuizzes").textContent =
+            data.max_quizzes ?? 0;
+
+
+        // ==========================================
+        // LIMPIAR EL CUADRO
+        // ==========================================
+        inputCodigo.value = "";
+
+    })
+    .catch(error => {
+
+        console.error("ERROR ACTIVANDO LICENCIA:", error);
+
+        alert(error.message);
+    });
+}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

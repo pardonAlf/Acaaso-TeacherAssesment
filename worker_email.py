@@ -15,9 +15,11 @@ while True:
             destinatario,
             nombre,
             titulo_quiz,
-            codigo_quiz
+            codigo_quiz,
+            tipo_acceso
         FROM cola_email
-        WHERE estado='PENDIENTE'  OR (estado='ERROR' AND intentos < 3)
+        WHERE estado='PENDIENTE'
+        OR (estado='ERROR' AND intentos < 3)
         ORDER BY id
         LIMIT 10
     """)
@@ -31,6 +33,7 @@ while True:
         nombre = correo[2]
         titulo = correo[3]
         codigo = correo[4]
+        tipo_acceso = correo[5]
 
         print(f"Enviando a {destinatario}")
 
@@ -40,7 +43,8 @@ while True:
                 destinatario,
                 nombre,
                 titulo,
-                codigo
+                codigo,
+                tipo_acceso
             )
 
             cur.execute("""

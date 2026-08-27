@@ -24,6 +24,7 @@ import threading
 from dotenv import load_dotenv
 import os,uuid
 import json
+import secrets
 from flask import make_response
 
 import os
@@ -60,6 +61,59 @@ PASSWORD_TEST = "1234"
 EMAIL_REMITENTE = "pardoalf@gmail.com"
 EMAIL_PASSWORD = "pxvr oyrf uhgb xugj"
  
+from functools import wraps
+
+def requiere_licencia(func):
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+
+        # No está logueado
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+
+        # ROOT siempre puede entrar
+        if session.get('rol') == 'root':
+            return func(*args, **kwargs)
+
+        cempre = session.get('cempre')
+
+        if not cempre:
+            return redirect(url_for('home'))
+
+        # Consultar la BD directamente.
+        # No dependemos de session['licencia_activa'],
+        # porque una licencia puede activarse o vencer
+        # mientras el usuario ya está logueado.
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        try:
+
+            cur.execute("""
+                SELECT id
+                FROM licencias
+                WHERE cempre = %s
+                  AND estado = 'ACTIVA'
+                  AND fecha_expiracion >= CURRENT_TIMESTAMP
+                LIMIT 1
+            """, (cempre,))
+
+            licencia = cur.fetchone()
+
+        finally:
+            cur.close()
+            conn.close()
+
+        # No tiene licencia válida
+        if not licencia:
+            return redirect(url_for('home'))
+
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
 @app.context_processor
 def inject_version():
     return dict(version=get_version())
@@ -81,24 +135,44 @@ def home():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # 🔹 individuales
+    # 🔹 planes individuales
     cur.execute("""
-        SELECT id, nombre, precio, admins, profesores, alumnos, quizzes,orden
+        SELECT
+            id,
+            nombre,
+            precio,
+            admins,
+            profesores,
+            alumnos,
+            quizzes,
+            periodicidad,
+            orden
         FROM planes
-        WHERE tipo = 'individual' AND activo = TRUE
-        ORDER BY orden
+        WHERE tipo = 'individual'
+          AND activo = TRUE
+        ORDER BY orden, id
     """)
     planes_individual = cur.fetchall()
 
-    # 🔹 empresariales
+    # 🔹 planes empresariales
     cur.execute("""
-        SELECT id, nombre, precio, admins, profesores, alumnos, quizzes,orden
+        SELECT
+            id,
+            nombre,
+            precio,
+            admins,
+            profesores,
+            alumnos,
+            quizzes,
+            periodicidad,
+            orden
         FROM planes
-        WHERE tipo = 'empresarial' AND activo = TRUE
-        ORDER BY orden
+        WHERE tipo = 'empresarial'
+          AND activo = TRUE
+        ORDER BY orden, id
     """)
     planes_empresarial = cur.fetchall()
-    
+
     # ==========================
     # KPIs
     # ==========================
@@ -146,8 +220,55 @@ def login():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT dempre FROM empresa ORDER BY dempre")
+    # =========================================================
+    # PLAN SELECCIONADO
+    # =========================================================
+
+    plan_id = request.args.get('plan_id')
+
+    if plan_id:
+
+        try:
+            plan_id = int(plan_id)
+
+            cur.execute("""
+                SELECT id
+                FROM planes
+                WHERE id = %s
+                  AND activo = TRUE
+            """, (plan_id,))
+
+            plan = cur.fetchone()
+
+            if not plan:
+                plan_id = None
+
+        except (ValueError, TypeError):
+            plan_id = None
+
+
+    # Si llegó un plan válido, lo conservamos en sesión
+    if plan_id:
+        session['plan_id'] = plan_id
+
+
+    # =========================================================
+    # EMPRESAS
+    # =========================================================
+
+    cur.execute("""
+        SELECT cempre, dempre
+        FROM empresa
+        WHERE estado = TRUE
+        ORDER BY dempre
+    """)
+
     empresas = cur.fetchall()
+
+
+    # =========================================================
+    # LOGIN
+    # =========================================================
 
     if request.method == 'POST':
 
@@ -155,7 +276,13 @@ def login():
         password = request.form['password']
 
         cur.execute("""
-            SELECT id, usuario, password, rol, cempre,usuario
+            SELECT
+                id,
+                usuario,
+                password,
+                rol,
+                cempre,
+                usuario
             FROM usuarios
             WHERE usuario = %s
         """, (usuario,))
@@ -163,9 +290,9 @@ def login():
         user = cur.fetchone()
 
         if user:
+
             db_password = user[2]
 
-            # 🔐 validar hash (si aún no usas hash, temporalmente deja ==)
             if db_password == password or check_password_hash(db_password, password):
 
                 session['user_id'] = user[0]
@@ -173,27 +300,51 @@ def login():
                 session['rol'] = user[3]
                 session['cempre'] = user[4]
                 session['usuario'] = user[5]
+                
+                
+                # =========================================================
+                # VALIDAR LICENCIA ACTIVA DE LA EMPRESA
+                # =========================================================
 
-                cur.close(); conn.close()
-                return redirect(url_for('splash'))
+                cur.execute("""
+                    SELECT id
+                    FROM licencias
+                    WHERE cempre = %s
+                    AND estado = 'ACTIVA'
+                    AND fecha_expiracion >= CURRENT_TIMESTAMP
+                    LIMIT 1
+                """, (user[4],))
 
-        cur.close(); conn.close()
-        return render_template("login.html", empresas=empresas, error="Credenciales incorrectas")
+                licencia_activa = cur.fetchone()
+
+                session['licencia_activa'] = bool(licencia_activa)
+
+                cur.close()
+                conn.close()
+
+                if session['licencia_activa']:
+                    return redirect(url_for('splash'))
+                else:
+                    return redirect(url_for('home'))
+
+
+        cur.close()
+        conn.close()
+
+        return render_template(
+            "login.html",
+            empresas=empresas,
+            error="Credenciales incorrectas"
+        )
+
 
     cur.close()
     conn.close()
 
-    return render_template("login.html", empresas=empresas)
-
-#def get_db_connection():
-#    conn = psycopg2.connect(
-#       dbname="BDTeacherAssessment",
-#        user="postgres",
-##        password="1234",   # ⚠️ usa algo simple temporalmente
-#        host="127.0.0.1",
-#        port="5432"
-#   )
-#   return conn
+    return render_template(
+        "login.html",
+        empresas=empresas
+    )
 
 def require_admin():
     if 'user_id' not in session or session.get('rol') != 'admin':
@@ -305,8 +456,23 @@ def register():
 @app.route('/dashboard_profesor')
 def dashboard_profesor():
     
+    # =========================================================
+    # VALIDAR SESIÓN
+    # =========================================================
     if 'user_id' not in session:
-            return redirect(url_for('login'))
+        return redirect(url_for('login'))
+    
+    # =========================================================
+    # ROOT SIEMPRE PUEDE ENTRAR
+    # =========================================================
+    if session.get('rol') != 'root':
+
+        # =====================================================
+        # VALIDAR LICENCIA ACTIVA
+        # =====================================================
+        if not session.get('licencia_activa', False):
+
+            return redirect(url_for('home'))
 
     if session['rol'] == 'admin':
         # lógica admin
@@ -403,6 +569,7 @@ def dashboard_profesor():
     return render_template('dashboard_profesor.html', quizzes=quizzes,cola=cola)
 
 @app.route('/profesores')
+@requiere_licencia
 def profesores():
 
     if 'rol' not in session or session['rol'] != 'admin':
@@ -756,40 +923,7 @@ def registrar_admin():
 
     data = request.get_json()
 
-    codigo = data.get("codigo")
-
-    # 🔐 VALIDACIÓN (temporal)
-    CODIGO_VALIDO = "VCX234"
-
-    #if codigo != CODIGO_VALIDO:
-    #    return jsonify({
-     #       "mensaje": "Código de verificación inválido"
-    #    }), 400 
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    empresa_nombre = data.get("empresa")
-
-    # 🔍 buscar empresa
-    cur.execute("""
-        SELECT cempre FROM empresa
-        WHERE dempre = %s
-    """, (empresa_nombre,))
-
-    row = cur.fetchone()
-
-    if row:
-        cempre = row[0]
-    else:
-        # crear empresa
-        cur.execute("""
-            INSERT INTO empresa (dempre)
-            VALUES (%s)
-            RETURNING cempre
-        """, (empresa_nombre,))
-        
-        cempre = cur.fetchone()[0]
+    tipo_registro = data.get("tipoRegistro")
 
     usuario = data.get("usuario")
     password = data.get("password")
@@ -797,32 +931,387 @@ def registrar_admin():
     nombre = data.get("nombre")
     apellido = data.get("apellido")
     correo = data.get("correo")
+    ruc = data.get("ruc")
+    plan_id = data.get("plan_id")
+    print("PLAN RECIBIDO EN REGISTRO:", plan_id)
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # =========================================================
+    # VALIDAR PLAN
+    # =========================================================
 
-    # 🔍 validar si ya existe usuario
-    cur.execute("""
-        SELECT id FROM usuarios
-        WHERE usuario = %s
-    """, (usuario,))
-
-    if cur.fetchone():
+    try:
+        plan_id = int(plan_id)
+    except (ValueError, TypeError):
         return jsonify({
-            "mensaje": "El usuario ya existe"
+            "mensaje": "Debe seleccionar un plan"
         }), 400
 
-    # 🔥 INSERT COMPLETO
+
     cur.execute("""
-        INSERT INTO usuarios (
-            usuario, password, rol, dni, nombre, apellido, correo, cempre
-        )
-            VALUES (%s, %s, 'admin', %s, %s, %s, %s, %s)
-        """, (usuario, password, dni, nombre, apellido, correo, cempre))
+        SELECT
+            id,
+            nombre,
+            precio,
+            periodicidad,
+            admins,
+            profesores,
+            alumnos,
+            quizzes
+        FROM planes
+        WHERE id = %s
+        AND activo = TRUE
+    """, (plan_id,))
 
-    conn.commit()
+    plan = cur.fetchone()
+
+    if not plan:
+        return jsonify({
+            "mensaje": "El plan seleccionado no existe o está inactivo"
+        }), 400
+
+
+    # Datos reales del plan, obtenidos desde BD
+    plan_id = plan[0]
+    plan_nombre = plan[1]
+    plan_precio = plan[2]
+    plan_periodicidad = plan[3]
+    plan_admins = plan[4]
+    plan_profesores = plan[5]
+    plan_alumnos = plan[6]
+    plan_quizzes = plan[7]
+
+    print("PLAN:", plan_id, plan_nombre, plan_precio, plan_periodicidad)
+
+    try:
+
+        # =========================================================
+        # 1. VALIDAR QUE EL USUARIO NO EXISTA
+        # =========================================================
+
+        cur.execute("""
+            SELECT id
+            FROM usuarios
+            WHERE usuario = %s
+        """, (usuario,))
+
+        if cur.fetchone():
+
+            return jsonify({
+                "mensaje": "El usuario ya existe"
+            }), 400
+
+
+        # =========================================================
+        # 2. DETERMINAR LA EMPRESA
+        # =========================================================
+
+        if tipo_registro == "natural":
+
+            # -----------------------------------------------------
+            # PERSONA NATURAL
+            # Se crea automáticamente una empresa.
+            # -----------------------------------------------------
+
+            empresa_nombre = f"{nombre} {apellido}".strip()
+
+            cur.execute("""
+                INSERT INTO empresa (
+                    dempre,
+                    licencia,
+                    estado
+                )
+                VALUES (%s, FALSE, TRUE)
+                RETURNING cempre
+            """, (empresa_nombre,))
+
+            cempre = cur.fetchone()[0]
+
+
+        elif tipo_registro == "empresa":
+
+            # -----------------------------------------------------
+            # EMPRESA
+            # El usuario seleccionó una empresa existente
+            # o una empresa creada desde el formulario.
+            # -----------------------------------------------------
+
+            empresa_nombre = data.get("empresa")
+            ruc = data.get("ruc")
+
+            if not empresa_nombre:
+
+                return jsonify({
+                    "mensaje": "Debe seleccionar una empresa"
+                }), 400
+
+
+            # Buscar empresa
+
+            cur.execute("""
+                SELECT cempre
+                FROM empresa
+                WHERE dempre = %s
+            """, (empresa_nombre,))
+
+            row = cur.fetchone()
+
+
+            if row:
+
+                cempre = row[0]
+
+            else:
     
-    return jsonify({
-        "mensaje": "Usuario administrador creado correctamente"
-    })
+                cur.execute("""
+                    INSERT INTO empresa (
+                        dempre,
+                        ruc,
+                        licencia,
+                        estado
+                    )
+                    VALUES (%s, %s, FALSE, TRUE)
+                    RETURNING cempre
+                """, (empresa_nombre, ruc))
 
+                cempre = cur.fetchone()[0]
+
+
+        else:
+
+            return jsonify({
+                "mensaje": "Tipo de registro inválido"
+            }), 400
+
+        cur.execute("""
+            SELECT id
+            FROM usuarios
+            WHERE dni = %s
+            AND cempre = %s
+        """, (dni, cempre))
+
+        if cur.fetchone():
+
+            conn.rollback()
+
+            return jsonify({
+                "campo": "dni",
+                "mensaje": "El DNI ya está registrado en esta empresa. Registre otro DNI."
+            }), 409
+        # =========================================================
+        # 3. CREAR USUARIO ADMINISTRADOR
+        # =========================================================
+
+        cur.execute("""
+            INSERT INTO usuarios (
+                usuario,
+                password,
+                rol,
+                dni,
+                nombre,
+                apellido,
+                correo,
+                cempre
+            )
+            VALUES (
+                %s,
+                %s,
+                'admin',
+                %s,
+                %s,
+                %s,
+                %s,
+                %s
+            )
+            RETURNING id
+        """, (
+            usuario,
+            password,
+            dni,
+            nombre,
+            apellido,
+            correo,
+            cempre
+        ))
+
+        usuario_id = cur.fetchone()[0]
+        
+        session['user_id'] = usuario_id
+        session['usuario'] = usuario
+        session['rol'] = 'admin'
+        session['cempre'] = cempre
+        
+        # =========================================================
+        # 4. LICENCIA STARTER GRATUITA
+        # =========================================================
+        print("LICENCIA precio:", plan_precio)
+
+        if plan_precio == 0:
+
+            from datetime import datetime, timedelta
+
+            fecha_inicio = datetime.now()
+            fecha_expiracion = fecha_inicio + timedelta(days=7)
+
+            # Generar código único
+            codigo = "TA-" + secrets.token_hex(10).upper()
+
+            cur.execute("""
+                INSERT INTO licencias (
+                    codigo,
+                    cempre,
+                    plan_id,
+                    fecha_inicio,
+                    fecha_expiracion,
+                    estado,
+                    periodicidad,
+                    cantidad_periodos,
+                    max_admins,
+                    max_profesores,
+                    max_alumnos,
+                    max_quizzes,
+                    origen,
+                    creado_por
+                )
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    'GENERADA',
+                    %s,
+                    1,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    'AUTOMATICA',
+                    %s
+                )
+                RETURNING id, codigo
+            """, (
+                codigo,
+                cempre,
+                plan_id,
+                fecha_inicio,
+                fecha_expiracion,
+                plan_periodicidad,
+                plan_admins,
+                plan_profesores,
+                plan_alumnos,
+                plan_quizzes,
+                usuario_id
+            ))
+
+            licencia_id, codigo_licencia = cur.fetchone()
+
+            print("LICENCIA STARTER:", licencia_id)
+            print("CODIGO:", codigo_licencia)
+            print("INICIO:", fecha_inicio)
+            print("EXPIRA:", fecha_expiracion)
+
+
+        # =========================================================
+        # 4. CONFIRMAR TODO
+        # =========================================================
+
+        conn.commit()
+
+
+        respuesta = {
+            "mensaje": "Usuario administrador creado correctamente",
+            "plan_id": plan_id,
+            "precio": float(plan_precio)
+        }
+
+        if plan_precio == 0:
+            respuesta["licencia_id"] = licencia_id
+            respuesta["codigo_licencia"] = codigo_licencia
+            respuesta["fecha_expiracion"] = fecha_expiracion.strftime("%d/%m/%Y")
+
+        return jsonify(respuesta)
+
+
+    except Exception as e:
+
+        conn.rollback()
+
+        print("========================================")
+        print("ERROR REGISTRO:")
+        print(str(e))
+        print("========================================")
+
+        return jsonify({
+            "ok": False,
+            "mensaje": "ERROR REAL: " + str(e)
+        }), 500
+
+
+    finally:
+
+        cur.close()
+        conn.close()
+
+
+@app.route('/pago')
+def pago():
+
+    # =========================================================
+    # 1. VALIDAR SESIÓN
+    # =========================================================
+
+    if 'user_id' not in session or 'cempre' not in session:
+        return redirect(url_for('login'))
+
+    # =========================================================
+    # 2. OBTENER PLAN
+    # =========================================================
+
+    plan_id = request.args.get('plan_id', type=int)
+
+    if not plan_id:
+        return redirect(url_for('home'))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+
+        cur.execute("""
+            SELECT
+                id,
+                nombre,
+                precio,
+                periodicidad
+            FROM planes
+            WHERE id = %s
+              AND activo = TRUE
+        """, (plan_id,))
+
+        plan = cur.fetchone()
+
+        if not plan:
+            return "Plan no válido", 400
+
+        # Starter nunca debe entrar a pago
+        if float(plan[2]) <= 0:
+            return redirect(url_for('home'))
+
+        return render_template(
+            "pago.html",
+            plan_id=plan[0],
+            plan_nombre=plan[1],
+            precio=float(plan[2]),
+            periodicidad=plan[3]
+        )
+
+    finally:
+
+        cur.close()
+        conn.close()
 
 @app.route('/admin')
 def admin():
@@ -1398,11 +1887,12 @@ def quiz():
 
     
 @app.route('/crear_quiz', methods=['GET', 'POST'])
+@requiere_licencia
 def crear_quiz():
+    
     if request.method == 'POST':    
         titulo = request.form['titulo']
         config_json = request.form.get("config_json")
-        print("CONFIG_JSON QUE LLEGA A FLASK:", repr(config_json))
         usuario = session.get('usuario')
         
         multiple_intentos = request.form.get('multiple_intentos') in ['true', 'on', '1']
@@ -3169,14 +3659,23 @@ def exportar_quiz_excel(quiz_id):
         download_name=f"{titulo}.xlsx",
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )   
-
-
-    
+   
 @app.route('/salones')
 def ver_salones():
 
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    
+    # =========================================================
+    # CONTROL DE LICENCIA
+    # =========================================================
+
+    if session.get('rol') != 'root':
+
+        if not session.get('licencia_activa', False):
+            return redirect(url_for('home'))
+        
+        
 
     user_id = session['user_id']
     rol = session['rol']
@@ -3326,6 +3825,7 @@ def guardar_salon():
     })
 
 @app.route('/asignar_quiz')
+@requiere_licencia
 def asignar_quiz():
 
     if 'user_id' not in session:
@@ -3443,6 +3943,7 @@ def guardar_asignacion():
     return jsonify({"status": "ok"})
 
 @app.route('/resultados_salon', methods=['GET', 'POST'])
+@requiere_licencia
 def resultados_salon():
 
     if 'user_id' not in session:
@@ -4096,7 +4597,53 @@ def resultados_salon():
         intentos=intentos,
         preguntas_top=preguntas_top
     )
+@app.route('/obtener_alumnos_salon', methods=['POST'])
+def obtener_alumnos_salon():
 
+    data = request.json
+
+    salon_id = data.get('salon_id')
+
+    if not salon_id:
+        return jsonify({
+            "error": "Salón no válido"
+        }), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT DISTINCT
+            a.id,
+            a.nombre,
+            a.apellido,
+            a.correo
+        FROM alumnos a
+        JOIN respuestas_alumno ra
+            ON ra.alumno_id = a.id
+        JOIN salon_quiz sq
+            ON sq.id = ra.salon_quiz_id
+        WHERE sq.salon_id = %s
+        ORDER BY a.apellido, a.nombre
+    """, (salon_id,))
+
+    alumnos = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "ok": True,
+        "alumnos": [
+            {
+                "id": alumno[0],
+                "nombre": f"{alumno[1]} {alumno[2]}",
+                "correo": alumno[3]
+            }
+            for alumno in alumnos
+        ]
+    })
+    
 def construir_tabla(resultado, quizzes):
 
     tabla = []
@@ -5503,12 +6050,178 @@ def endpoint_enviar_codigo_quiz():
         "mensaje": f"{enviados} correos agregados a la cola de envío."
     })
 
+def enviar_correo_licencia(
+        correo,
+        nombre_completo,
+        plan_nombre,
+        codigo_licencia,
+        fecha_inicio,
+        fecha_expiracion
+    ):
+
+    try:
+
+        with open("static/img/banner_enviar3.png", "rb") as archivo:
+            banner_base64 = base64.b64encode(
+                archivo.read()
+            ).decode("utf-8")
+
+        resend.Emails.send({
+
+            "from": "ACAASO <pardoalf@acaaso.com>",
+
+            "to": correo,
+
+            "subject": "Su licencia ha sido generada – ACAASO Teacher Assessment",
+
+            "html": f"""
+            <div style="
+                font-family: Arial, sans-serif;
+                max-width: 650px;
+                margin: auto;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                overflow: hidden;
+                color: #334155;
+            ">
+
+                <img
+                    src="cid:banner_licencia"
+                    style="
+                        width: 100%;
+                        display: block;
+                    "
+                >
+
+                <div style="padding: 30px;">
+
+                    <h2 style="
+                        color: #1e293b;
+                        margin-top: 0;
+                    ">
+                        ¡Su licencia ha sido generada!
+                    </h2>
+
+                    <p>
+                        Estimado(a) <b>{nombre_completo}</b>,
+                    </p>
+
+                    <p>
+                        Le informamos que su licencia de
+                        <b>ACAASO Teacher Assessment</b>
+                        ha sido generada correctamente.
+                    </p>
+
+                    <div style="
+                        background: #f8fafc;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 10px;
+                        padding: 20px;
+                        margin: 25px 0;
+                    ">
+
+                        <p>
+                            <b>Plan:</b> {plan_nombre}
+                        </p>
+
+                        <p>
+                            <b>Código de licencia:</b><br>
+
+                            <span style="
+                                font-size: 20px;
+                                font-weight: bold;
+                                color: #2563eb;
+                            ">
+                                {codigo_licencia}
+                            </span>
+                        </p>
+
+                        <p>
+                            <b>Fecha de inicio:</b>
+                            {fecha_inicio}
+                        </p>
+
+                        <p>
+                            <b>Fecha de vencimiento:</b>
+                            {fecha_expiracion}
+                        </p>
+
+                    </div>
+
+                    <p><b>Instrucciones para activar su licencia:</b></p>
+
+                    <ol>
+                        <li>Ingrese a ACAASO Teacher Assessment.</li>
+                        <li>Inicie sesión con su usuario y contraseña.</li>
+                        <li>Ingrese al módulo de Licencia.</li>
+                        <li>Registre el código de licencia enviado en este correo.</li>
+                    </ol>
+
+                    <p>
+                        Conserve este correo como respaldo de su licencia.
+                    </p>
+
+                    <p>
+                        Atentamente,<br>
+                        <b>ACAASO Teacher Assessment</b>
+                    </p>
+
+                </div>
+
+                <div style="
+                    background: #f8fafc;
+                    padding: 15px;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #64748b;
+                ">
+                    © ACAASO Assessment
+                </div>
+
+            </div>
+            """,
+
+            "attachments": [
+                {
+                    "filename": "banner_enviar_quiz.png",
+                    "content": banner_base64,
+                    "content_type": "image/png",
+                    "content_id": "banner_licencia"
+                }
+            ]
+        })
+
+        print(
+            f"✅ CORREO DE LICENCIA ENVIADO A: {correo}"
+        )
+
+        return True
+
+
+    except Exception as e:
+
+        print(
+            "❌ ERROR ENVIANDO CORREO DE LICENCIA:",
+            str(e)
+        )
+
+        return False
     
-def enviar_codigo_quiz(correo, nombre_completo, titulo_quiz, codigo_quiz):
+def enviar_codigo_quiz(
+        correo,
+        nombre_completo,
+        titulo_quiz,
+        codigo_quiz,
+        tipo_acceso="quiz"
+    ):
     
     #import resend
     
-    link_quiz = f"https://acaaso-teacherassessment.onrender.com/quiz/{codigo_quiz}"
+    if tipo_acceso == "salon":
+        link_quiz = f"https://acaaso-teacherassessment.onrender.com/salon/{codigo_quiz}"
+    else:
+        link_quiz = f"https://acaaso-teacherassessment.onrender.com/quiz/{codigo_quiz}"
+        
     qr_png = generar_qr(link_quiz)
     #banner_url = "https://acaaso-teacherassessment.onrender.com/static/img/banner_enviar_quiz.png"
     #banner_url = "http://localhost:5000/static/img/banner_enviar_quiz.png"
@@ -5524,7 +6237,15 @@ def enviar_codigo_quiz(correo, nombre_completo, titulo_quiz, codigo_quiz):
             "html": f"""
                 <div style="font-family: Arial, sans-serif; background-color:#f4f6f8; padding:20px;">
 
-                <div style="max-width:600px; margin:auto; background:white; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                <div style="
+                    width:100%;
+                    max-width:600px;
+                    margin:0 auto;
+                    background:white;
+                    border-radius:8px;
+                    overflow:hidden;
+                    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+                ">
 
                     <!-- HEADER -->
                     <div style="
@@ -5681,49 +6402,109 @@ def enviar_codigo_quiz(correo, nombre_completo, titulo_quiz, codigo_quiz):
     except Exception as e:
         print("❌ ERROR RESEND:", str(e))
         raise
-        
-def enviar_codigo_quiz_backup(correo, nombre_completo, titulo_quiz, codigo_quiz):
+ 
+@app.route('/enviar_acceso_salon', methods=['POST'])
+def enviar_acceso_salon():
+
+    data = request.json
+
+    quiz_id = data.get('quiz_id')
+    salon_quiz_id = data.get('salon_quiz_id')
+    alumnos = data.get('alumnos')
+
+    if not quiz_id or not salon_quiz_id or not alumnos:
+        return jsonify({
+        "error": "Datos incompletos"
+    }), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # 🔹 Obtener título del quiz y código específico del salón
+    cur.execute("""
+        SELECT
+            q.titulo,
+            sq.codigo
+        FROM salon_quiz sq
+        JOIN quiz q
+            ON q.id = sq.quiz_id
+        WHERE sq.id = %s
+        AND q.id = %s
+    """, (
+        salon_quiz_id,
+        quiz_id
+    ))
+
+    quiz = cur.fetchone()
+
+    if not quiz:
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "error": "Quiz o asignación al salón no encontrada"
+        }), 404
+
+    titulo_quiz, codigo_quiz = quiz
+
+    # 🔹 Obtener todos los alumnos seleccionados
+    cur.execute("""
+        SELECT id, nombre, apellido, correo
+        FROM alumnos
+        WHERE id = ANY(%s)
+        ORDER BY apellido, nombre
+    """, (alumnos,))
+
+    alumnos_data = cur.fetchall()
+
+    enviados = 0
+
+    # 🔹 Insertar un correo por cada alumno seleccionado
+    for alumno in alumnos_data:
     
-    #import resend
-    
-    link_quiz = f"https://acaaso-teacherassessment.onrender.com/quiz/{codigo_quiz}"
-     
-    try:
-        resend.Emails.send({
-            "from": "ACAASO <pardoalf@acaaso.com>",
-            "to": correo,
-            "subject": "Acceso a evaluación – ACAASO Assessment",
-            "html": f"""
-                <p>Hola {nombre_completo},</p>
+        _, nombre, apellido, correo = alumno
 
-                <p>Te informamos que tienes una evaluación disponible en la plataforma <b>ACAASO Assessment</b>.</p>
+        nombre_completo = f"{nombre} {apellido}"
 
-                <p><b>Detalles del quiz:</b></p>
-                <ul>
-                    <li><b>Título:</b> {titulo_quiz}</li>
-                    <li><b>Código de acceso:</b> <span style="font-size:18px;"><b>{codigo_quiz}</b></span></li>
-                     
-                    <li><b>Acceso directo:</b><br>
-                       <a href="{link_quiz}">{link_quiz}</a>
-                    </li>
-                </ul>
+        if not correo:
+            continue
 
-                <p><b>Instrucciones:</b></p>
-                <ol>
-                    <li>Ingresa a la plataforma.</li>
-                    <li>Introduce el código.</li>
-                    <li>Resuelve el quiz.</li>
-                </ol>
+        cur.execute("""
+            INSERT INTO cola_email
+            (
+                destinatario,
+                nombre,
+                titulo_quiz,
+                codigo_quiz,
+                tipo_acceso
+            )
+            VALUES
+            (
+                %s,
+                %s,
+                %s,
+                %s,
+                'salon'
+            )
+        """, (
+            correo,
+            nombre_completo,
+            titulo_quiz,
+            codigo_quiz
+        ))
 
-                <p>Atentamente,<br>ACAASO Assessment</p>
-            """
-        })
+        enviados += 1
 
-        print(f"✅ Código enviado con Resend a {correo}")
+    conn.commit()
 
-    except Exception as e:
-        print("❌ ERROR RESEND:", str(e))
-        
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "ok": True,
+        "enviados": enviados,
+        "mensaje": f"{enviados} correos agregados a la cola de envío."
+    })   
         
 def generar_qr(texto):
     
@@ -5968,6 +6749,7 @@ def crear_plan():
     return render_template('crear_plan.html')   
     
 @app.route('/mantenimiento_planes')
+@requiere_licencia
 def mantenimiento_planes():
 
     if session.get('rol') != 'root':
@@ -6056,6 +6838,7 @@ def eliminar_plan():
     return {"ok": True}
 
 @app.route('/metricas_db')
+@requiere_licencia
 def metricas_db():
 
     if session.get('rol') != 'root':
@@ -6286,6 +7069,7 @@ def descargar_reporte(quiz_id, alumno_id):
 # MEJORAS
 #=========================================================   
 @app.route('/mejoras')
+@requiere_licencia
 def mejoras():
     
     if not session.get('usuario'):
@@ -6330,6 +7114,7 @@ def mejoras():
     return render_template('mejoras.html', mejoras=mejoras, version_actual=version_actual)
 
 @app.route('/mejoras/nueva')
+@requiere_licencia
 def nueva_mejora():
     return render_template('nueva_mejora.html')
 
@@ -6550,27 +7335,178 @@ def ayuda():
     usuario_logeado = session.get('usuario')
 
     plan = None
+    licencia = None
 
-    # 🔥 SOLO si está logeado consultamos plan
+    # Valores por defecto
+    uso = {
+        'admins': 0,
+        'profesores': 0,
+        'alumnos': 0,
+        'quizzes': 0,
+
+        'disp_admins': 0,
+        'disp_profesores': 0,
+        'disp_alumnos': 0,
+        'disp_quizzes': 0
+    }
+
+    # =========================================================
+    # SOLO SI ESTÁ LOGEADO
+    # =========================================================
     if usuario_logeado:
+
+        # Empresa del usuario logeado
+        cempre = session.get('cempre')
+
         conn = get_db_connection()
         cur = conn.cursor()
 
-        cur.execute("""
-            SELECT nombre, precio, profesores, alumnos, quizzes
-            FROM planes
-            ORDER BY orden
-            LIMIT 1
-        """)
+        try:
 
-        plan = cur.fetchone()
+            # =================================================
+            # PLAN
+            # =================================================
+            cur.execute("""
+                SELECT nombre, precio, profesores, alumnos, quizzes
+                FROM planes
+                ORDER BY orden
+                LIMIT 1
+            """)
 
-        cur.close()
-        conn.close()
+            plan = cur.fetchone()
+
+
+            # =================================================
+            # LICENCIA MÁS RECIENTE DE LA EMPRESA
+            # =================================================
+            if cempre:
+
+                cur.execute("""
+                    SELECT
+                        codigo,
+                        fecha_emision,
+                        fecha_inicio,
+                        fecha_expiracion,
+                        estado,
+                        periodicidad,
+                        cantidad_periodos,
+                        max_admins,
+                        max_profesores,
+                        max_alumnos,
+                        max_quizzes,
+                        fecha_activacion,
+                        origen
+                    FROM licencias
+                    WHERE cempre = %s
+                    ORDER BY fecha_emision DESC
+                    LIMIT 1
+                """, (cempre,))
+
+                licencia = cur.fetchone()
+                
+                print("DEBUG cempre:", cempre)
+                print("DEBUG licencia:", licencia)
+
+
+                # =================================================
+                # SI EXISTE LICENCIA, CONTAMOS LOS RECURSOS USADOS
+                # =================================================
+                if licencia:
+
+                    # ---------------------------------------------
+                    # ADMINISTRADORES
+                    # Root NO cuenta contra la licencia
+                    # ---------------------------------------------
+                    cur.execute("""
+                        SELECT COUNT(*)
+                        FROM usuarios
+                        WHERE cempre = %s
+                        AND LOWER(rol) = 'admin'
+                    """, (cempre,))
+
+                    uso['admins'] = cur.fetchone()[0]
+
+
+                    # ---------------------------------------------
+                    # PROFESORES
+                    # ---------------------------------------------
+                    cur.execute("""
+                        SELECT COUNT(*)
+                        FROM usuarios
+                        WHERE cempre = %s
+                        AND LOWER(rol) = 'profesor'
+                    """, (cempre,))
+
+                    uso['profesores'] = cur.fetchone()[0]
+
+
+                    # ---------------------------------------------
+                    # ALUMNOS ACTIVOS
+                    # ---------------------------------------------
+                    cur.execute("""
+                        SELECT COUNT(*)
+                        FROM alumnos
+                        WHERE cempre = %s
+                        AND estado = 'A'
+                    """, (cempre,))
+
+                    uso['alumnos'] = cur.fetchone()[0]
+
+
+                    # ---------------------------------------------
+                    # QUIZZES ACTIVOS
+                    # ---------------------------------------------
+                    cur.execute("""
+                        SELECT COUNT(*)
+                        FROM quiz
+                        WHERE cempre = %s
+                        AND estado = 'A'
+                    """, (cempre,))
+
+                    uso['quizzes'] = cur.fetchone()[0]
+
+
+                    # =================================================
+                    # DISPONIBLE = MÁXIMO DE LICENCIA - UTILIZADO
+                    # =================================================
+
+                    # licencia[7]  = max_admins
+                    # licencia[8]  = max_profesores
+                    # licencia[9]  = max_alumnos
+                    # licencia[10] = max_quizzes
+
+                    uso['disp_admins'] = max(
+                        0,
+                        licencia[7] - uso['admins']
+                    )
+
+                    uso['disp_profesores'] = max(
+                        0,
+                        licencia[8] - uso['profesores']
+                    )
+
+                    uso['disp_alumnos'] = max(
+                        0,
+                        licencia[9] - uso['alumnos']
+                    )
+
+                    uso['disp_quizzes'] = max(
+                        0,
+                        licencia[10] - uso['quizzes']
+                    )
+
+            print("DEBUG uso:", uso)
+        finally:
+
+            cur.close()
+            conn.close()
+
 
     return render_template(
         'ayuda.html',
         plan=plan,
+        licencia=licencia,
+        uso=uso,
         usuario_logeado=usuario_logeado
     )
 
@@ -6598,6 +7534,7 @@ def estado_cola(cola_id):
 
 
 @app.route("/eliminar_pregunta/<int:pregunta_id>", methods=["POST"])
+@requiere_licencia
 def eliminar_pregunta(pregunta_id):
 
     conn = get_db_connection()
@@ -6856,5 +7793,770 @@ def guardar_logo_configuracion():
         "ok": True,
         "mensaje": "Logo guardado correctamente"
     })
+    
+    
+@app.route('/procesar_pago', methods=['POST'])
+def procesar_pago():
+
+    # =========================================================
+    # 1. VALIDAR SESIÓN
+    # =========================================================
+
+    if 'user_id' not in session or 'cempre' not in session:
+        return jsonify({
+            "ok": False,
+            "mensaje": "Debe iniciar sesión"
+        }), 401
+
+
+    data = request.get_json()
+    plan_id = data.get("plan_id")
+
+    try:
+        plan_id = int(plan_id)
+    except (ValueError, TypeError):
+        return jsonify({
+            "ok": False,
+            "mensaje": "Plan inválido"
+        }), 400
+
+
+    user_id = session['user_id']
+    cempre = session['cempre']
+
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+
+        # =========================================================
+        # 2. OBTENER PLAN REAL DESDE BD
+        # =========================================================
+
+        cur.execute("""
+            SELECT
+                id,
+                nombre,
+                precio,
+                periodicidad,
+                admins,
+                profesores,
+                alumnos,
+                quizzes
+            FROM planes
+            WHERE id = %s
+              AND activo = TRUE
+        """, (plan_id,))
+
+        plan = cur.fetchone()
+
+        if not plan:
+            conn.rollback()
+
+            return jsonify({
+                "ok": False,
+                "mensaje": "El plan no existe o está inactivo"
+            }), 400
+
+
+        plan_id = plan[0]
+        plan_nombre = plan[1]
+        precio_final = float(plan[2])
+        periodicidad = plan[3]
+        max_admins = plan[4]
+        max_profesores = plan[5]
+        max_alumnos = plan[6]
+        max_quizzes = plan[7]
+
+
+        # Nunca procesar Starter aquí
+        if precio_final <= 0:
+
+            conn.rollback()
+
+            return jsonify({
+                "ok": False,
+                "mensaje": "Este plan no requiere pago"
+            }), 400
+
+
+        # =========================================================
+        # 3. OBTENER USUARIO Y EMPRESA
+        # =========================================================
+
+        cur.execute("""
+            SELECT
+                u.correo,
+                e.ruc,
+                nombre,
+                apellido
+            FROM usuarios u
+            INNER JOIN empresa e
+                ON e.cempre = u.cempre
+            WHERE u.id = %s
+              AND u.cempre = %s
+        """, (user_id, cempre))
+
+        cliente = cur.fetchone()
+
+        if not cliente:
+            raise Exception("No se encontró el usuario o empresa")
+
+
+        correo_cliente = cliente[0]
+        ruc = cliente[1]
+        nombre = cliente[2]
+        apellido = cliente[3]
+
+
+        # =========================================================
+        # 4. PAGO SIMULADO APROBADO
+        # =========================================================
+
+        referencia_pago = "SIM-" + secrets.token_hex(8).upper()
+
+        pago_aprobado = True
+
+        if not pago_aprobado:
+
+            conn.rollback()
+
+            return jsonify({
+                "ok": False,
+                "mensaje": "Pago rechazado"
+            }), 400
+
+
+        # =========================================================
+        # 5. DETERMINAR FA O BV
+        # =========================================================
+
+        if ruc:
+            tipo_documento = "FA"
+        else:
+            tipo_documento = "BV"
+
+
+        # =========================================================
+        # 6. OBTENER IGV
+        # =========================================================
+
+        cur.execute("""
+            SELECT id, porcentaje
+            FROM impuesto
+            WHERE activo = TRUE
+            ORDER BY id
+            LIMIT 1
+        """)
+
+        impuesto = cur.fetchone()
+
+        if not impuesto:
+            raise Exception("No existe un impuesto activo")
+
+
+        impuesto_id = impuesto[0]
+        porcentaje_impuesto = float(impuesto[1])
+
+
+        # Precio mostrado ya incluye IGV
+        factor_igv = 1 + (porcentaje_impuesto / 100)
+
+        importe_bruto = round(
+            precio_final / factor_igv,
+            2
+        )
+
+        importe_impuesto = round(
+            precio_final - importe_bruto,
+            2
+        )
+
+        importe_neto = precio_final
+
+
+        # =========================================================
+        # 7. SOLO AHORA GENERAR NUMERACIÓN
+        # =========================================================
+
+        cur.execute("""
+            SELECT ultusado
+            FROM numerador
+            WHERE tipodedc = %s
+            FOR UPDATE
+        """, (tipo_documento,))
+
+        numerador = cur.fetchone()
+
+        if not numerador:
+            raise Exception(
+                f"No existe numerador para {tipo_documento}"
+            )
+
+
+        numero_documento = numerador[0] + 1
+
+
+        cur.execute("""
+            UPDATE numerador
+            SET ultusado = %s
+            WHERE tipodedc = %s
+        """, (
+            numero_documento,
+            tipo_documento
+        ))
+
+
+        # =========================================================
+        # 8. CREAR LICENCIA
+        # =========================================================
+
+        from datetime import datetime, timedelta
+
+        fecha_inicio = datetime.now()
+
+
+        # Por ahora manejamos las periodicidades actuales
+        if periodicidad == "MENSUAL":
+            fecha_expiracion = fecha_inicio + timedelta(days=30)
+
+        elif periodicidad == "TRIMESTRAL":
+            fecha_expiracion = fecha_inicio + timedelta(days=90)
+
+        elif periodicidad == "SEMESTRAL":
+            fecha_expiracion = fecha_inicio + timedelta(days=180)
+
+        elif periodicidad == "ANUAL":
+            fecha_expiracion = fecha_inicio + timedelta(days=365)
+
+        elif periodicidad == "SEMANAL":
+            fecha_expiracion = fecha_inicio + timedelta(days=7)
+
+        else:
+            raise Exception(
+                f"Periodicidad no válida: {periodicidad}"
+            )
+
+
+        codigo = "TA-" + secrets.token_hex(10).upper()
+
+
+        cur.execute("""
+            INSERT INTO licencias (
+                codigo,
+                cempre,
+                plan_id,
+                fecha_inicio,
+                fecha_expiracion,
+                estado,
+                periodicidad,
+                cantidad_periodos,
+                max_admins,
+                max_profesores,
+                max_alumnos,
+                max_quizzes,
+                origen,
+                creado_por
+            )
+            VALUES (
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                'GENERADA',
+                %s,
+                1,
+                %s,
+                %s,
+                %s,
+                %s,
+                'AUTOMATICA',
+                %s
+            )
+            RETURNING id
+        """, (
+            codigo,
+            cempre,
+            plan_id,
+            fecha_inicio,
+            fecha_expiracion,
+            periodicidad,
+            max_admins,
+            max_profesores,
+            max_alumnos,
+            max_quizzes,
+            user_id
+        ))
+
+        licencia_id = cur.fetchone()[0]
+
+
+        # =========================================================
+        # 9. CREAR VENTA PAGADA
+        # =========================================================
+
+        cur.execute("""
+            INSERT INTO ventas (
+                cempre,
+                plan_id,
+                licencia_id,
+                tipo_documento,
+                numero_documento,
+                periodicidad,
+                cantidad_periodos,
+                importe_bruto,
+                impuesto_id,
+                porcentaje_impuesto,
+                importe_impuesto,
+                importe_neto,
+                moneda,
+                estado,
+                metodo_pago,
+                referencia_pago,
+                correo_cliente,
+                creado_por
+            )
+            VALUES (
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                1,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                'PEN',
+                'PAGADA',
+                'SIMULADO',
+                %s,
+                %s,
+                %s
+            )
+            RETURNING id
+        """, (
+            cempre,
+            plan_id,
+            licencia_id,
+            tipo_documento,
+            numero_documento,
+            periodicidad,
+            importe_bruto,
+            impuesto_id,
+            porcentaje_impuesto,
+            importe_impuesto,
+            importe_neto,
+            referencia_pago,
+            correo_cliente,
+            user_id
+        ))
+
+        venta_id = cur.fetchone()[0]
+
+
+        # =========================================================
+        # 10. CONFIRMAR TODA LA OPERACIÓN
+        # =========================================================
+
+        conn.commit()
+
+        # =========================================================
+        # ENVIAR CORREO CON LA LICENCIA
+        # =========================================================
+
+        nombre_completo = f"{nombre} {apellido}".strip()
+
+        correo_enviado = enviar_correo_licencia(
+            correo=correo_cliente,
+            nombre_completo=nombre_completo,
+            plan_nombre=plan_nombre,
+            codigo_licencia=codigo,
+            fecha_inicio=fecha_inicio.strftime("%d/%m/%Y"),
+            fecha_expiracion=fecha_expiracion.strftime("%d/%m/%Y")
+        )
+        print("CORREO LICENCIA ENVIADO:", correo_enviado)
+
+        # Guardamos el resultado para pago_exito
+        session['ultimo_pago'] = {
+            "venta_id": venta_id,
+            
+            # Pago
+            "plan_nombre": plan_nombre,
+            "importe": precio_final,
+            "tipo_documento": tipo_documento,
+            "numero_documento": numero_documento,
+
+            # Licencia
+            "licencia_id": licencia_id,
+            "codigo_licencia": codigo,
+            "fecha_inicio": fecha_inicio.strftime("%d/%m/%Y"),
+            "fecha_expiracion": fecha_expiracion.strftime("%d/%m/%Y"),
+            "periodicidad": periodicidad,
+            "correo": correo_cliente
+        }
+
+
+        return jsonify({
+            "ok": True,
+            "mensaje": "Pago aprobado",
+            "venta_id": venta_id
+        })
+
+
+    except Exception as e:
+
+        conn.rollback()
+
+        print("========================================")
+        print("ERROR PROCESANDO PAGO:")
+        print(str(e))
+        print("========================================")
+
+        return jsonify({
+            "ok": False,
+            "mensaje": "ERROR REAL: " + str(e)
+        }), 500
+
+
+    finally:
+
+        cur.close()
+        conn.close()
+        
+@app.route('/pago_exito')
+def pago_exito():
+
+    ultimo_pago = session.get('ultimo_pago')
+
+    if not ultimo_pago:
+        return redirect(url_for('login'))
+
+    return render_template(
+        'pago_exito.html',
+        pago=ultimo_pago
+    )
+    
+    
+@app.route("/activar_licencia", methods=["POST"])
+def activar_licencia():
+
+    # ==========================================
+    # VALIDAR SESIÓN
+    # ==========================================
+    if "user_id" not in session or "cempre" not in session:
+        return jsonify({
+            "ok": False,
+            "mensaje": "Sesión no válida"
+        }), 401
+
+    datos = request.get_json()
+
+    if not datos or not datos.get("codigo"):
+        return jsonify({
+            "ok": False,
+            "mensaje": "Debe ingresar una licencia"
+        }), 400
+
+    codigo = datos["codigo"].strip().upper()
+
+    cempre = session["cempre"]
+    usuario_id = session["user_id"]
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+
+        # ==========================================
+        # BUSCAR LICENCIA
+        # ==========================================
+        cur.execute("""
+            SELECT
+                l.id,
+                l.codigo,
+                l.cempre,
+                l.plan_id,
+                l.fecha_inicio,
+                l.fecha_expiracion,
+                l.estado,
+                l.periodicidad,
+                l.cantidad_periodos,
+                l.max_admins,
+                l.max_profesores,
+                l.max_alumnos,
+                l.max_quizzes,
+                p.nombre
+            FROM licencias l
+            LEFT JOIN planes p
+                ON p.id = l.plan_id
+            WHERE UPPER(l.codigo) = %s
+        """, (codigo,))
+
+        licencia = cur.fetchone()
+ 
+
+        # ==========================================
+        # NO EXISTE
+        # ==========================================
+        if not licencia:
+
+            return jsonify({
+                "ok": False,
+                "mensaje": "El código de licencia no existe"
+            }), 404
+
+        # ==========================================
+        # NO PERTENECE A ESTA EMPRESA
+        # ==========================================
+        if licencia[2] != cempre:
+
+            return jsonify({
+                "ok": False,
+                "mensaje": "Esta licencia no pertenece a esta empresa"
+            }), 403
+
+        licencia_id = licencia[0]
+        estado = licencia[6]
+
+        # ==========================================
+        # SI YA ESTÁ ACTIVA
+        # ==========================================
+        if estado == "ACTIVA":
+
+            return jsonify({
+                "ok": False,
+                "mensaje": "Esta licencia ya se encuentra activa"
+            }), 400
+            
+        licencia_id = licencia[0]
+        estado = licencia[6]
+        fecha_expiracion = licencia[5]
+
+        # ==========================================
+        # SI YA ESTÁ ACTIVA
+        # ==========================================
+        if estado == "ACTIVA":
+
+            return jsonify({
+                "ok": False,
+                "mensaje": "Esta licencia ya se encuentra activa"
+            }), 400
+
+        # ==========================================
+        # LICENCIA VENCIDA
+        # ==========================================
+        if estado == "VENCIDA":
+
+            return jsonify({
+                "ok": False,
+                "mensaje": "Esta licencia se encuentra vencida y no puede activarse"
+            }), 400
+
+        # ==========================================
+        # VALIDAR FECHA DE EXPIRACIÓN
+        # ==========================================
+        if fecha_expiracion < datetime.now():
+
+            return jsonify({
+                "ok": False,
+                "mensaje": "Esta licencia ha expirado y no puede activarse"
+            }), 400
+
+        # ==========================================
+        # SOLO SE PUEDE ACTIVAR UNA LICENCIA GENERADA
+        # ==========================================
+        if estado != "GENERADA":
+
+            return jsonify({
+                "ok": False,
+                "mensaje": "Esta licencia no está disponible para activación"
+            }), 400
+
+        # ==========================================
+        # VENCER LICENCIA ACTIVA ANTERIOR
+        # ==========================================
+        cur.execute("""
+            UPDATE licencias
+            SET
+                estado = 'VENCIDA',
+                fecha_modificacion = CURRENT_TIMESTAMP,
+                usuario_modificador = %s
+            WHERE cempre = %s
+              AND estado = 'ACTIVA'
+        """, (
+            usuario_id,
+            cempre
+        ))
+
+        # ==========================================
+        # ACTIVAR NUEVA LICENCIA
+        # ==========================================
+        cur.execute("""
+            UPDATE licencias
+            SET
+                estado = 'ACTIVA',
+                fecha_activacion = CURRENT_TIMESTAMP,
+                fecha_modificacion = CURRENT_TIMESTAMP,
+                usuario_modificador = %s
+            WHERE id = %s
+        """, (
+            usuario_id,
+            licencia_id
+        ))
+
+        conn.commit()
+
+        return jsonify({
+            "ok": True,
+            "mensaje": "Licencia activada correctamente",
+
+            "plan": licencia[13],
+            "codigo": licencia[1],
+            "estado": "ACTIVA",
+
+            "fecha_inicio": licencia[4].strftime("%d/%m/%Y"),
+            "fecha_expiracion": licencia[5].strftime("%d/%m/%Y"),
+
+            "periodicidad": licencia[7],
+            "cantidad_periodos": licencia[8],
+
+            "max_admins": licencia[9],
+            "max_profesores": licencia[10],
+            "max_alumnos": licencia[11],
+            "max_quizzes": licencia[12]
+        })
+        
+    except Exception as e:
+
+        conn.rollback()
+
+        print("❌ ERROR ACTIVANDO LICENCIA:", str(e))
+
+        return jsonify({
+            "ok": False,
+            "mensaje": str(e)
+        }), 500
+
+    finally:
+
+        cur.close()
+        conn.close()
+        
+@app.route('/validar_licencia', methods=['POST'])
+def validar_licencia():
+
+    # =========================================================
+    # VALIDAR SESIÓN
+    # =========================================================
+    if 'user_id' not in session or 'cempre' not in session:
+        return jsonify({
+            'ok': False,
+            'mensaje': 'Sesión no válida.'
+        }), 401
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({
+            'ok': False,
+            'mensaje': 'No se recibió información.'
+        }), 400
+
+    codigo = data.get('codigo', '').strip().upper()
+
+    if not codigo:
+        return jsonify({
+            'ok': False,
+            'mensaje': 'Ingrese el código de licencia.'
+        }), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+
+        # =====================================================
+        # BUSCAR LA LICENCIA SOLO POR EL CÓDIGO INGRESADO
+        # =====================================================
+        cur.execute("""
+            SELECT
+                id,
+                codigo,
+                cempre,
+                fecha_inicio,
+                fecha_expiracion,
+                estado,
+                max_admins,
+                max_profesores,
+                max_alumnos,
+                max_quizzes
+            FROM licencias
+            WHERE UPPER(codigo) = %s
+        """, (codigo,))
+
+        licencia = cur.fetchone()
+
+        if not licencia:
+            return jsonify({
+                'ok': False,
+                'mensaje': 'El código de licencia no existe.'
+            }), 404
+
+        # =====================================================
+        # POR AHORA SOLO VALIDAMOS
+        # =====================================================
+        return jsonify({
+            'ok': True,
+            'mensaje': 'Licencia encontrada correctamente.',
+            'codigo': licencia[1],
+            'estado': licencia[5]
+        })
+
+    finally:
+        cur.close()
+        conn.close()
+        
+@app.route('/empresas')
+def empresas():
+
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('rol') != 'root':
+        return redirect(url_for('home'))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+
+        cur.execute("""
+            SELECT
+                cempre,
+                dempre,
+                ruc,
+                licencia,
+                estado
+            FROM empresa
+            ORDER BY dempre
+        """)
+
+        empresas = cur.fetchall()
+
+    finally:
+
+        cur.close()
+        conn.close()
+
+    return render_template(
+        'empresas.html',
+        empresas=empresas
+    )
+    
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

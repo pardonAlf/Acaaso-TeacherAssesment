@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Pago Seguro - Teacher Assessment</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 90vh;
+            font-family: Arial, sans-serif;
+            background:
+                radial-gradient(
+                    circle at top,
+                    #1f3b4d 0%,
+                    #111827 45%,
+                    #080d18 100%
+                );
+            color: #ffffff;
+        }
+
+        .checkout-container {
+            min-height: 90vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px  ;
+        }
+
+        .checkout-wrapper {
+            width: 70%;
+            max-width: 830px;
+
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+
+            align-items: stretch;
+        }
+
+        .checkout-card {
+            height: 100%;
+            width: 100%;
+            padding: 5px;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(30, 41, 59, 0.98),
+                    rgba(15, 23, 42, 0.98)
+                );
+
+            border: 1px solid #334155;
+            border-radius: 22px;
+
+            box-shadow:
+                0 25px 70px rgba(0, 0, 0, 0.45);
+        }
+
+        .checkout-logo {
+            text-align: center;
+             
+        }
+
+        .checkout-logo img {
+            max-width: 200px;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .checkout-card h2 {
+            text-align: center;
+            font-size: 25px;
+            margin-bottom: 8px;
+            color: #ffffff;
+        }
+
+        .orden {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+
+        .plan-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 12px ;
+            margin-bottom: 15px;
+        }
+
+        .plan-info span {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .plan-info strong {
+            color: #ffffff;
+            font-size: 12px;
+        }
+
+        .card-box {
+            background: rgba(15, 23, 42, 0.55);
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        input {
+            width: 100%;
+            background: #0f172a;
+            color: #ffffff;
+            border: 1px solid #475569;
+            border-radius: 9px;
+            padding: 10px 10px;
+            margin-bottom: 10px;
+            font-size: 12px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        input::placeholder {
+            color: #64748b;
+        }
+
+        input:focus {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn-pagar {
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            background:
+                linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.25s;
+            box-shadow:
+                0 8px 25px rgba(34, 197, 94, 0.25);
+        }
+
+        .btn-pagar:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 12px 30px rgba(34, 197, 94, 0.38);
+        }
+
+        .btn-pagar:active {
+            transform: translateY(0);
+        }
+
+        .secure-text {
+            text-align: center;
+            margin-top: 20px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .secure-text span {
+            color: #22c55e;
+        }
+
+        .security-card {
+            height: 100%;
+            display: flex;
+            overflow: hidden;
+            border-radius: 22px;
+
+            border: 1px solid #334155;
+
+            background: #ffffff;
+
+            box-shadow:
+                0 25px 70px rgba(0, 0, 0, 0.45);
+        }
+
+        .security-card img {
+            width: 100%;
+            height: auto    ;
+            display: block;
+            object-fit: cover;
+        }
+
+        @media (max-width: 850px) {
+
+            .checkout-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .security-card {
+                min-height: 300px;
+            }
+        }
+
+        @media (max-width: 600px) {
+
+            .checkout-card {
+                padding: 30px 20px;
+            }
+
+            .row {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+
+            .checkout-card h2 {
+                font-size: 25px;
+            }
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="checkout-container">
+
+    <div class="checkout-wrapper">
+
+        <!-- IZQUIERDA: PASARELA -->
+        <div class="checkout-card">
+
+            <div class="checkout-logo">
+                <img src="{{ url_for('static', filename='img/tarjetas3_transparentes.png') }}"
+                    alt="Tarjetas aceptadas">
+            </div>
+
+            <h2>Pago Seguro</h2>
+
+            <p class="orden">
+                {{ plan_nombre }} · {{ periodicidad }}
+            </p>
+
+            <div class="card-box">
+
+                <input type="text" id="numeroTarjeta" placeholder="4444 3333 2222 1111">
+
+                <div class="row">
+                    <input type="text" id="fechaTarjeta" placeholder="MM/AA">
+                    <input type="text" id="cvv" placeholder="CVV">
+                </div>
+
+                <div class="row">
+                    <input type="text" id="nombrePago" placeholder="Nombre">
+                    <input type="text" id="apellidoPago" placeholder="Apellido">
+                </div>
+
+                <input type="email" id="correoPago" placeholder="correo@mail.com">
+
+            </div>
+
+
+            <button
+                type="button"
+                onclick="pagar()"
+                class="btn-pagar">
+                Pagar S/. {{ precio }}
+            </button>
+
+        </div>
+
+
+        <!-- DERECHA: SEGURIDAD -->
+        <div class="security-card">
+
+            <img
+                src="{{ url_for('static', filename='img/acaaso-visa.png') }}"
+                alt="Protección y seguridad">
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+ 
+const planId = {{ plan_id }};
+ 
+
+function pagar1() {
+
+    console.log("=== INICIANDO PAGO ===");
+    console.log("planId:", planId);
+
+    fetch("/procesar_pago", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            plan_id: planId,
+
+            numero_tarjeta: document.getElementById("numeroTarjeta").value,
+            fecha_tarjeta: document.getElementById("fechaTarjeta").value,
+            cvv: document.getElementById("cvv").value,
+            nombre: document.getElementById("nombrePago").value,
+            apellido: document.getElementById("apellidoPago").value,
+            correo: document.getElementById("correoPago").value
+        })
+    })
+    .then(async response => {
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+            throw new Error(
+                data.mensaje || "Error desconocido"
+            );
+        }
+
+        return data;
+    })
+    .then(data => {
+
+        window.location.href = "/pago_exito";
+
+    })
+    .catch(error => {
+
+        console.error("ERROR COMPLETO:", error);
+
+        alert(
+            "Ocurrió el siguiente error:\n\n" +
+            error.message
+        );
+    });
+}
+function pagar() {
+
+    console.log("=== INICIANDO PAGO ===");
+    console.log("planId:", planId);
+
+    fetch("/procesar_pago", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            plan_id: planId,
+
+            numero_tarjeta: document.getElementById("numeroTarjeta").value,
+            fecha_tarjeta: document.getElementById("fechaTarjeta").value,
+            cvv: document.getElementById("cvv").value,
+            nombre: document.getElementById("nombrePago").value,
+            apellido: document.getElementById("apellidoPago").value,
+            correo: document.getElementById("correoPago").value
+        })
+    })
+    .then(async response => {
+
+        console.log("STATUS:", response.status);
+
+        const texto = await response.text();
+
+        console.log("RESPUESTA RAW:", texto);
+
+        let data;
+
+        try {
+            data = JSON.parse(texto);
+        } catch (e) {
+            throw new Error(
+                "El servidor devolvió una respuesta no válida: " + texto
+            );
+        }
+
+        console.log("RESPUESTA JSON:", data);
+
+        if (!response.ok || !data.ok) {
+            throw new Error(
+                data.mensaje || "Error HTTP " + response.status
+            );
+        }
+
+        return data;
+    })
+    .then(data => {
+
+        console.log("PAGO OK:", data);
+
+        window.location.href = "/pago_exito";
+    })
+    .catch(error => {
+
+        console.error("ERROR COMPLETO:", error);
+
+        alert(
+            "ERROR DEL PAGO:\n\n" +
+            error.message
+        );
+    });
+}
+</script>
+
+</body>
+</html>

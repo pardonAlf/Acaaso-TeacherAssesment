@@ -918,6 +918,106 @@
             font-size:14px;
 
         }
+
+        /* modal de enviar quiz*/
+         .modal-enviar-quiz {
+            max-width: 460px;
+        }
+
+        .modal-enviar-quiz .modal-body {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .alumno-envio {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 0px 0px;
+            border-bottom: 1px solid #96b9e4;
+            cursor: pointer;
+            min-height: 15px !important;
+        }
+
+        .alumno-check {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 17px !important;
+            height: 17px !important;
+            min-width: 17px;
+            border: 2px solid #36495c !important;
+            border-radius: 3px;
+            background: #ffffff !important;
+            cursor: pointer;
+            margin: 0 !important;
+            opacity: 1 !important;
+            position: relative;
+        }
+
+        .alumno-check:checked {
+            background: #0d6efd !important;
+            border-color: #0d6efd !important;
+        }
+
+        .alumno-check:checked::after {
+            content: "✓";
+            position: absolute;
+            color: white;
+            font-size: 13px;
+            font-weight: bold;
+            line-height: 13px;
+            left: 1px;
+            top: -1px;
+        }
+
+        .alumno-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .alumno-nombre {
+            font-weight: 600;
+            color: #2f3b4c;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .alumno-correo {
+            color: #6c757d;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .btn-cerrar-modal,
+        .btn-cerrar-modal:hover,
+        .btn-cerrar-modal:focus,
+        .btn-cerrar-modal:active {
+            width: 32px !important;
+            height: 32px !important;
+            border: none !important;
+            border-radius: 5px !important;
+            background-color: #111827 !important;
+            background-image: none !important;
+            color: #ffffff !important;
+            font-size: 26px !important;
+            font-weight: 300 !important;
+            line-height: 28px !important;
+            cursor: pointer !important;
+            padding: 0 !important;
+            opacity: 1 !important;
+            box-shadow: none !important;
+            outline: none !important;
+        }
+
+        .btn-cerrar-modal:hover {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+        }
             
     </style>
 
@@ -989,10 +1089,24 @@
                     <th>#</th>
                     <th>Alumno</th>
 
-                    {% for q in quizzes %}
+                   {% for q in quizzes %}
                         <th>
                             <div>{{ q.codigo }}</div>
                             <div>Q{{ loop.index }}</div>
+
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary mt-1"
+                                onclick="abrirEnviarQuiz(
+                                    {{ q.quiz_id }},
+                                    {{ q.id }},
+                                    '{{ q.codigo }}',
+                                    'Q{{ loop.index }}',
+                                    '{{ salon_seleccionado }}'
+                                )"
+                                style="font-size:10px; padding:2px 6px;">
+                                📧 Enviar Quiz
+                            </button>
                         </th>
                     {% endfor %}
 
@@ -1368,8 +1482,175 @@
         <h3>Seleccionar intento</h3>
         <div id="listaIntentos"></div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- MODAL: ENVIAR QUIZ A ALUMNOS PENDIENTES -->
+<div class="modal fade" id="modalEnviarQuiz" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable modal-enviar-quiz">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="tituloModalEnviarQuiz">
+                    Enviar Quiz
+                </h5>
+
+                <button type="button"
+                        class="btn-cerrar-modal"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar">
+                    ×
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- BOTONES GENERALES -->
+                <div class="d-flex gap-2 mb-3">
+                    <button type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            onclick="marcarTodosPendientes()">
+                        ✓ Marcar todos
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            onclick="desmarcarTodosPendientes()">
+                        Desmarcar todos
+                    </button>
+                </div>
+
+                <!-- LISTA -->
+                <div id="listaAlumnosPendientes">
+                    <div class="text-muted text-center">
+                        Cargando alumnos...
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button type="button"
+                        class="btn btn-primary"
+                        onclick="enviarAccesoSeleccionados()">
+                    📧 Enviar acceso
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let quizSeleccionado = null;
+    let salonQuizSeleccionado = null;
+    let codigoQuizSeleccionado = null;
+    let salonSeleccionado = null;
+
+    function abrirEnviarQuiz(
+        quizId,
+        salonQuizId,
+        codigoQuiz,
+        nombreQuiz,
+        salonId
+    ) {
+        quizSeleccionado = quizId;
+        salonQuizSeleccionado = salonQuizId;
+        codigoQuizSeleccionado = codigoQuiz;
+        salonSeleccionado = salonId;
+
+        document.getElementById("tituloModalEnviarQuiz").textContent =
+            `Enviar acceso — ${nombreQuiz} (${codigoQuiz})`;
+
+        document.getElementById("listaAlumnosPendientes").innerHTML = `
+            <div class="text-muted text-center">
+                Cargando alumnos del salón...
+            </div>
+        `;
+
+        const modal = new bootstrap.Modal(
+            document.getElementById("modalEnviarQuiz")
+        );
+
+        modal.show();
+        fetch("/obtener_alumnos_salon", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                salon_id: salonSeleccionado
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+
+            const lista = document.getElementById(
+                "listaAlumnosPendientes"
+            );
+
+            if (!data.ok) {
+                lista.innerHTML = `
+                    <div class="alert alert-danger">
+                        ${data.error || "No se pudieron cargar los alumnos."}
+                    </div>
+                `;
+                return;
+            }
+
+            if (!data.alumnos || data.alumnos.length === 0) {
+                lista.innerHTML = `
+                    <div class="text-muted text-center">
+                        No hay alumnos en este salón.
+                    </div>
+                `;
+                return;
+            }
+
+            lista.innerHTML = data.alumnos.map(alumno => `
+                <label
+                    class="alumno-envio"
+                    for="alumno_${alumno.id}"
+                >
+                    <input
+                        class="form-check-input alumno-check"
+                        type="checkbox"
+                        value="${alumno.id}"
+                        id="alumno_${alumno.id}"
+                    >
+
+                    <div class="alumno-info">
+                        <span class="alumno-nombre">
+                            ${alumno.nombre}
+                        </span>
+
+                        <span class="alumno-correo">
+                            ${alumno.correo || ""}
+                        </span>
+                    </div>
+                </label>
+            `).join("");
+
+        })
+        .catch(error => {
+
+            console.error("Error cargando alumnos:", error);
+
+            document.getElementById(
+                "listaAlumnosPendientes"
+            ).innerHTML = `
+                <div class="alert alert-danger">
+                    Error al cargar los alumnos del salón.
+                </div>
+            `;
+
+        });
+            }
+</script>
 
 
     <script>
@@ -1862,11 +2143,26 @@ Esta acción ocultará el intento de los resultados del salón, pero no eliminar
 
     });
 
-    </script>
-    <script>
+     
+    function marcarTodosPendientes() {
+        document
+            .querySelectorAll(".alumno-check")
+            .forEach(check => {
+                check.checked = true;
+            });
+    }
+
+    function desmarcarTodosPendientes() {
+        document
+            .querySelectorAll(".alumno-check")
+            .forEach(check => {
+                check.checked = false;
+            });
+    }
+     
 
     let salones = {{ salones | tojson }};
-    let salonSeleccionado = null;
+    salonSeleccionado = null;
 
     const input = document.getElementById("buscarSalon");
     const lista = document.getElementById("listaSalones");
@@ -1961,5 +2257,60 @@ Esta acción ocultará el intento de los resultados del salón, pero no eliminar
         });
 
     });
+
+    function enviarAccesoSeleccionados() {
+
+        const alumnosSeleccionados = Array.from(
+            document.querySelectorAll(".alumno-check:checked")
+        ).map(check => parseInt(check.value));
+
+        if (alumnosSeleccionados.length === 0) {
+            alert("Seleccione al menos un alumno.");
+            return;
+        }
+
+        if (!confirm(
+            `¿Desea enviar el acceso a ${alumnosSeleccionados.length} alumno(s)?`
+        )) {
+            return;
+        }
+
+        fetch("/enviar_acceso_salon", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                quiz_id: quizSeleccionado,
+                salon_quiz_id: salonQuizSeleccionado,
+                alumnos: alumnosSeleccionados
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+
+            if (!data.ok) {
+                alert(data.error || "No se pudo procesar el envío.");
+                return;
+            }
+
+            alert(
+                data.mensaje ||
+                `${data.enviados} correos agregados a la cola.`
+            );
+
+            const modalElement =
+                document.getElementById("modalEnviarQuiz");
+
+            bootstrap.Modal
+                .getInstance(modalElement)
+                .hide();
+
+        })
+        .catch(error => {
+            console.error("Error enviando accesos:", error);
+            alert("Ocurrió un error al enviar los accesos.");
+        });
+    }
 </script>
     {% endblock %}

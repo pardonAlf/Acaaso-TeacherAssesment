@@ -79,6 +79,9 @@
         .kpi-dark{
             color:#374151;
         }
+        .btn-plan {
+            cursor: pointer;
+        }
     </style>
      
 </head>
@@ -118,7 +121,11 @@
                     </span>
 
                     {% if session['rol'] in ['admin', 'profesor','root'] %}
-                        <a href="/splash" class="btn btn-success btn-sm">Procesos</a>
+
+                        <a href="#" class="btn btn-success btn-sm" onclick="entrarProcesos(event)">
+                            Procesos
+                        </a>
+
                     {% endif %}
 
                     <a href="/logout" class="btn btn-outline-light btn-sm">Salir</a>
@@ -231,119 +238,403 @@
     </div>
 </section>
 
-
 <section class="planes-section">
 
     <div class="container text-center">
+
         <h2 class="titulo-planes">Planes</h2>
         <p class="subtitulo">Elige el plan que mejor se adapte</p>
 
-        <!-- 🔹 TABS -->
-        <ul class="nav nav-pills justify-content-center mb-4" id="tabsPlanes">
+        <!-- ===================================================== -->
+        <!-- NIVEL 1: PERSONAL / INSTITUCIONAL -->
+        <!-- ===================================================== -->
+
+        <ul class="nav nav-pills justify-content-center mb-4"
+            id="tabsPlanes">
+
             <li class="nav-item">
-                <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#individual">
-                    Docente
+                <button class="nav-link active"
+                        data-bs-toggle="pill"
+                        data-bs-target="#individual">
+                    Personal
                 </button>
             </li>
+
             <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#empresarial">
+                <button class="nav-link"
+                        data-bs-toggle="pill"
+                        data-bs-target="#empresarial">
                     Institucional
                 </button>
             </li>
+
         </ul>
 
-        <!-- 🔹 CONTENIDO -->
+
         <div class="tab-content">
 
-            <!-- INDIVIDUAL -->
-            <div class="tab-pane fade show active" id="individual">
-                <div class="row justify-content-center">
 
-                    {% for p in planes_individual %}
-                    <div class="col-12 col-md-4 mb-4">
-                        <div class="plan-card">
+            <!-- ================================================= -->
+            <!-- PERSONAL -->
+            <!-- ================================================= -->
 
-                            <h4>{{ p[1] }}</h4>
+            <div class="tab-pane fade show active"
+                 id="individual">
 
-                            <div class="precioplan">
-                                <h6>S/.</h6>
-                                <h2>{{ p[2] }}</h2>
-                                <h6>por mes</h6>
-                            </div>
+                <!-- NIVEL 2 -->
+                <ul class="nav nav-pills justify-content-center mb-4"
+                    id="tabsPersonal">
 
-                            <ul>
-                                <li>✔ {{ p[3] }} admin</li>
-                                <li>✔ {{ p[4] }} profesores</li>
-                                <li>✔ {{ p[5] }} alumnos</li>
-                                <li>✔ {{ p[6] }} quizzes</li>
-                            </ul>
+                    <li class="nav-item">
+                        <button class="nav-link active"
+                                data-bs-toggle="pill"
+                                data-bs-target="#starter">
+                            Starter
+                        </button>
+                    </li>
 
-                            <button class="btn-plan">Elegir</button>
+                    <li class="nav-item">
+                        <button class="nav-link"
+                                data-bs-toggle="pill"
+                                data-bs-target="#docente">
+                            Docente
+                        </button>
+                    </li>
+
+                    <li class="nav-item">
+                        <button class="nav-link"
+                                data-bs-toggle="pill"
+                                data-bs-target="#centro">
+                            Centro
+                        </button>
+                    </li>
+
+                </ul>
+
+
+                <!-- CONTENIDO PERSONAL -->
+
+                <div class="tab-content">
+
+
+                    <!-- ========================================= -->
+                    <!-- STARTER -->
+                    <!-- ========================================= -->
+
+                    <div class="tab-pane fade show active"
+                         id="starter">
+
+                        <div class="d-flex justify-content-center gap-3 flex-nowrap pb-3">
+
+                            {% for p in planes_individual %}
+                                {% if p[1] == 'Starter' %}
+
+                                <div class="plan-card flex-shrink-0"
+                                     style="width: 300px;">
+
+                                    <h4>{{ p[1] }}</h4>
+
+                                    <div class="precioplan">
+
+                                        <h6>S/.</h6>
+
+                                        <h2>{{ p[2] }}</h2>
+
+                                        <h6>
+                                            {% if p[7] == 'SEMANAL' %}
+                                                por una semana
+                                            {% elif p[7] == 'MENSUAL' %}
+                                                por mes
+                                            {% elif p[7] == 'TRIMESTRAL' %}
+                                                por trimestre
+                                            {% elif p[7] == 'SEMESTRAL' %}
+                                                por semestre
+                                            {% elif p[7] == 'ANUAL' %}
+                                                por año
+                                            {% endif %}
+                                        </h6>
+
+                                    </div>
+
+                                    <ul>
+
+                                        <li>✔ {{ p[3] }} admin</li>
+
+                                        <li>✔ {{ p[4] }} profesores</li>
+
+                                        <li>✔ {{ p[5] }} alumnos</li>
+
+                                        <li>✔ {{ p[6] }} quizzes</li>
+
+                                    </ul>
+
+                                    <button class="btn-plan"
+                                            data-plan-id="{{ p[0] }}"
+                                            style="cursor: pointer !important;">
+                                        Elegir
+                                    </button>
+
+                                </div>
+
+                                {% endif %}
+                            {% endfor %}
+
                         </div>
+
                     </div>
-                    {% endfor %}
+
+
+                    <!-- ========================================= -->
+                    <!-- DOCENTE -->
+                    <!-- ========================================= -->
+
+                    <div class="tab-pane fade"
+                         id="docente">
+
+                        <div class="d-flex justify-content-center gap-3 flex-nowrap pb-3">
+
+                            {% for p in planes_individual %}
+                                {% if p[1] == 'Docente' %}
+
+                                <div class="plan-card flex-shrink-0"
+                                     style="width: 300px;">
+
+                                    <h4>{{ p[1] }}</h4>
+
+                                    <div class="precioplan">
+
+                                        <h6>S/.</h6>
+
+                                        <h2>{{ p[2] }}</h2>
+
+                                        <h6>
+                                            {% if p[7] == 'MENSUAL' %}
+                                                por mes
+                                            {% elif p[7] == 'TRIMESTRAL' %}
+                                                por trimestre
+                                            {% elif p[7] == 'SEMESTRAL' %}
+                                                por semestre
+                                            {% elif p[7] == 'ANUAL' %}
+                                                por año
+                                            {% endif %}
+                                        </h6>
+
+                                    </div>
+
+                                    <ul>
+
+                                        <li>✔ {{ p[3] }} admin</li>
+
+                                        <li>✔ {{ p[4] }} profesores</li>
+
+                                        <li>✔ {{ p[5] }} alumnos</li>
+
+                                        <li>✔ {{ p[6] }} quizzes</li>
+
+                                    </ul>
+
+                                    <button class="btn-plan"
+                                            data-plan-id="{{ p[0] }}">
+                                        Elegir
+                                    </button>
+
+                                </div>
+
+                                {% endif %}
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ========================================= -->
+                    <!-- CENTRO -->
+                    <!-- ========================================= -->
+
+                    <div class="tab-pane fade"
+                         id="centro">
+
+                        <div class="d-flex justify-content-center gap-3 flex-nowrap pb-3">
+
+                            {% for p in planes_individual %}
+                                {% if p[1] == 'Centro' %}
+
+                                <div class="plan-card flex-shrink-0"
+                                     style="width: 300px;">
+
+                                    <h4>{{ p[1] }}</h4>
+
+                                    <div class="precioplan">
+
+                                        <h6>S/.</h6>
+
+                                        <h2>{{ p[2] }}</h2>
+
+                                        <h6>
+                                            {% if p[7] == 'MENSUAL' %}
+                                                por mes
+                                            {% elif p[7] == 'TRIMESTRAL' %}
+                                                por trimestre
+                                            {% elif p[7] == 'SEMESTRAL' %}
+                                                por semestre
+                                            {% elif p[7] == 'ANUAL' %}
+                                                por año
+                                            {% endif %}
+                                        </h6>
+
+                                    </div>
+
+                                    <ul>
+
+                                        <li>✔ {{ p[3] }} admin</li>
+
+                                        <li>✔ {{ p[4] }} profesores</li>
+
+                                        <li>✔ {{ p[5] }} alumnos</li>
+
+                                        <li>✔ {{ p[6] }} quizzes</li>
+
+                                    </ul>
+
+                                    <button class="btn-plan"
+                                            data-plan-id="{{ p[0] }}">
+                                        Elegir
+                                    </button>
+
+                                </div>
+
+                                {% endif %}
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
 
                 </div>
+
             </div>
 
-            <!-- EMPRESARIAL -->
-            <div class="tab-pane fade" id="empresarial">
-                <div class="row justify-content-center">
 
-                    {% for p in planes_empresarial %}
-                    <div class="col-12 col-md-4 mb-4">
-                        <div class="plan-card">
+            <!-- ================================================= -->
+            <!-- INSTITUCIONAL -->
+            <!-- ================================================= -->
 
-                            <h4>{{ p[1] }}</h4>
+            <div class="tab-pane fade"
+                 id="empresarial">
 
-                            <div class="precioplan">
-                                <h6>S/.</h6>
-                                <h2>{{ p[2] }}</h2>
-                                <h6>por mes</h6>
-                            </div>
+                <!-- NIVEL 2 -->
+                <ul class="nav nav-pills justify-content-center mb-4">
 
-                            <ul>
-                                <li>✔ {{ p[3] }} admin</li>
-                                
-                                <li>
-                                    ✔ 
-                                    {% if p[4] %}
-                                        Hasta {{ p[4] }} profesores
-                                    {% else %}
-                                        Profesores ilimitados
-                                    {% endif %}
-                                </li>
+                    <li class="nav-item">
+                        <button class="nav-link active"
+                                data-bs-toggle="pill"
+                                data-bs-target="#corporativo">
+                            Corporativo
+                        </button>
+                    </li>
 
-                                <li>
-                                    ✔ 
-                                    {% if p[5] %}
-                                        Hasta {{ p[5] }} alumnos
-                                    {% else %}
-                                        Alumnos ilimitados
-                                    {% endif %}
-                                </li>
+                </ul>
 
-                                <li>
-                                    ✔ 
-                                    {% if p[6] %}
-                                        {{ p[6] }} quizzes
-                                    {% else %}
-                                        Quizzes ilimitados
-                                    {% endif %}
-                                </li>
-                            </ul>
 
-                            <button class="btn-plan">Contactar</button>
+                <div class="tab-content">
+
+                    <!-- ========================================= -->
+                    <!-- CORPORATIVO -->
+                    <!-- ========================================= -->
+
+                    <div class="tab-pane fade show active"
+                         id="corporativo">
+
+                        <div class="d-flex justify-content-center gap-3 flex-nowrap pb-3">
+
+                            {% for p in planes_empresarial %}
+                                {% if p[1] == 'Corporativo' %}
+
+                                <div class="plan-card flex-shrink-0"
+                                     style="width: 300px;">
+
+                                    <h4>{{ p[1] }}</h4>
+
+                                    <div class="precioplan">
+
+                                        <h6>S/.</h6>
+
+                                        <h2>{{ p[2] }}</h2>
+
+                                        <h6>
+                                            {% if p[7] == 'SEMANAL' %}
+                                                Por una semana
+                                            {% elif p[7] == 'MENSUAL' %}
+                                                Por mes
+                                            {% elif p[7] == 'TRIMESTRAL' %}
+                                                Por trimestre
+                                            {% elif p[7] == 'SEMESTRAL' %}
+                                                Por semestre
+                                            {% elif p[7] == 'ANUAL' %}
+                                                Por año
+                                            {% endif %}
+                                        </h6>
+
+                                    </div>
+
+                                    <ul>
+
+                                        <li>✔ {{ p[3] }} admin</li>
+
+                                        <li>
+                                            ✔
+                                            {% if p[4] == 999999 %}
+                                                Profesores ilimitados
+                                            {% else %}
+                                                Hasta {{ p[4] }} profesores
+                                            {% endif %}
+                                        </li>
+
+                                        <li>
+                                            ✔
+                                            {% if p[5] == 999999 %}
+                                                Alumnos ilimitados
+                                            {% else %}
+                                                Hasta {{ p[5] }} alumnos
+                                            {% endif %}
+                                        </li>
+
+                                        <li>
+                                            ✔
+                                            {% if p[6] == 999999 %}
+                                                Quizzes ilimitados
+                                            {% else %}
+                                                Hasta {{ p[6] }} quizzes
+                                            {% endif %}
+                                        </li>
+
+                                    </ul>
+
+                                    <button class="btn-plan"
+                                            data-plan-id="{{ p[0] }}">
+                                        Elegir
+                                    </button>
+
+                                </div>
+
+                                {% endif %}
+                            {% endfor %}
+
                         </div>
+
                     </div>
-                    {% endfor %}
 
                 </div>
+
             </div>
 
         </div>
+
     </div>
-</section>   
+
+</section>
+ 
 
 <section class="steps container">
     <h2 class="text-center mb-5" id="comofunciona">¿Cómo funciona?</h2>
@@ -525,6 +816,110 @@ document.addEventListener("DOMContentLoaded", () => {
     observer.observe(document.querySelector(".kpi-section"));
 
 });
+
+ 
+document.addEventListener("DOMContentLoaded", function () {
+
+    // ==========================================
+    // BOTONES DE PLANES
+    // ==========================================
+
+    const botonesPlan = document.querySelectorAll(".btn-plan");
+
+    console.log("BOTONES DE PLAN ENCONTRADOS:", botonesPlan.length);
+
+    botonesPlan.forEach(function (boton) {
+
+        boton.style.cursor = "pointer";
+
+        boton.addEventListener("click", function () {
+
+            const planId = this.dataset.planId;
+
+            console.log("PLAN SELECCIONADO:", planId);
+
+            window.location.href = "/login?plan_id=" + planId; 
+            /*alert("Elegiste el plan ID: " + planId);*/
+
+        });
+
+    });
+
+});
+
+ 
+function entrarProcesos(event) {
+
+    event.preventDefault();
+
+    const licenciaActiva = {{ 'true' if session.get('licencia_activa') else 'false' }};
+
+    if (licenciaActiva) {
+
+        window.location.href = "/splash";
+        return;
+    }
+
+    const modal = new bootstrap.Modal(
+        document.getElementById("modalSinLicencia")
+    );
+
+    modal.show();
+}
+ 
 </script>
+<div class="modal fade" id="modalSinLicencia" tabindex="-1" aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    🔒 Acceso no disponible
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <p>
+                    <strong>{{ session['usuario'] }}</strong>,
+                    actualmente no puede acceder a
+                    <strong>Procesos</strong>.
+                </p>
+
+                <p>
+                    Su empresa no cuenta con una licencia activa
+                    para utilizar ACAASO Teacher Assessment.
+                </p>
+
+                <p class="mb-0">
+                    La licencia puede no estar activada,
+                    encontrarse vencida o estar inactiva.
+                    Por favor, comuníquese con su administrador
+                    para activar o generar una licencia.
+                </p>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Entendido
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
 </body>
 </html>

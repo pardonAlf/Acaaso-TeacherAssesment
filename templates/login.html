@@ -10,16 +10,38 @@
     <style>
         /* 🔥 Inputs compactos profesionales */
         .form-control-sm {
-            height: 20px !important;
-            padding: 2px 7px !important;
+            height: 26px !important;
+            padding: 3px 8px !important;
             font-size: 10px !important;
+
+            border: 1px solid #aeb8c4 !important;
+            border-radius: 4px !important;
+
+            background-color: #ffffff !important;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
         }
 
+        .form-control-sm:focus {
+            border-color: #6c8ebf !important;
+            box-shadow: 0 0 0 1px rgba(108,142,191,0.15) !important;
+        }
+
+
         .form-select {
-            height: 20px !important;
-            padding: 2px 7px !important;
+            height: 26px !important;
+            padding: 3px 8px !important;
             font-size: 10px !important;
-            line-height: 12px;
+            line-height: 18px !important;
+
+            border: 1px solid #aeb8c4 !important;
+            border-radius: 4px !important;
+
+            background-color: #ffffff !important;
+        }
+
+        .form-select:focus {
+            border-color: #6c8ebf !important;
+            box-shadow: 0 0 0 1px rgba(108,142,191,0.15) !important;
         }
 
         /* 🔥 Labels más compactos */
@@ -52,6 +74,80 @@
             border: 2px solid #b2f0d3 !important;
             background-color: #f0fff4 !important;
         }
+
+        .empresa-container {
+            min-height: 48px;
+            margin-top: 2px;
+            margin-bottom: 4px;
+        }
+
+        .empresa-container.disabled {
+            opacity: 0.45;
+        }
+
+        .empresa-container.disabled .form-select {
+            background-color: #f1f3f5 !important;
+            color: #8a8f94 !important;
+            cursor: not-allowed;
+        }
+
+        /* ==========================================
+        BUSCADOR DE EMPRESAS
+        ========================================== */
+
+        .empresa-selector {
+            position: relative;
+            width: 100%;
+        }
+
+        .empresa-resultados {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+
+            background: #ffffff;
+
+            border: 1px solid #aeb8c4;
+            border-top: none;
+
+            border-radius: 0 0 4px 4px;
+
+            max-height: 220px;
+            overflow-y: auto;
+
+            z-index: 1000;
+
+            display: none;
+
+            box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+        }
+
+        .empresa-item {
+            padding: 5px 8px;
+
+            font-size: 10px;
+
+            cursor: pointer;
+
+            border-bottom: 1px solid #e5e8eb;
+        }
+
+        .empresa-item:last-child {
+            border-bottom: none;
+        }
+
+        .empresa-item:hover {
+            background: #eef3f8;
+        }
+
+        .empresa-sin-resultados {
+            padding: 6px 8px;
+
+            font-size: 10px;
+
+            color: #777;
+        }
     </style>
 </head>
 
@@ -82,6 +178,7 @@
         <h5 class="modal-title">Registro de Administrador</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
+       
 
       <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
 
@@ -90,8 +187,11 @@
              <!-- 🔹 IZQUIERDA (formulario) -->
             <div class="col-md-6 p-3">
                 <form id="formRegistro">
+                    <input type="hidden"
+                        name="plan_id"
+                        value="{{ session.get('plan_id', '') }}">
 
-                    <input type="text" id="usuario" class="form-control form-control-sm mb-2" placeholder="Usuario" required>
+                    <input type="text" id="usuario" class="form-control form-control-sm mb-2" placeholder="Usuario" autocomplete="off" required>
                      
                     <div class="row mb-2">
                     <div class="col-6">
@@ -111,32 +211,77 @@
 
                     </div>
                     </div>
-                    <input type="text" id="dni" class="form-control form-control-sm mb-2" placeholder="DNI" required>
+                    <input type="text" id="dni" class="form-control form-control-sm mb-2" placeholder="DNI" autocomplete="off" required>
                     <div class="row mb-2">
                         <div class="col-6">
-                            <input type="text" id="nombre" class="form-control form-control-sm" placeholder="Nombre" required>
+                            <input type="text" id="nombre" class="form-control form-control-sm" placeholder="Nombre" autocomplete="off" required>
                         </div>
                         <div class="col-6">
-                            <input type="text" id="apellido" class="form-control form-control-sm" placeholder="Apellido" required>
+                            <input type="text" id="apellido" class="form-control form-control-sm" placeholder="Apellido"  autocomplete="off" required>
                         </div>
                     </div>
-                    <input type="email" class="form-control form-control-sm mb-2" placeholder="Correo" required>
-                    <input type="email" class="form-control form-control-sm mb-2" placeholder="Confirmar Correo" required>
-                    <select class="form-select mb-2" id="empresaSelect" required>
-                        <option value="">Seleccionar empresa</option>
+                    <input type="email" class="form-control form-control-sm mb-2" autocomplete="off" placeholder="Correo" required>
+                    <input type="email" class="form-control form-control-sm mb-2" autocomplete="off" placeholder="Confirmar Correo" required>
+                    <!-- TIPO DE REGISTRO -->
+                    <div class="registro-tipo mb-2">
 
-                        {% for e in empresas %}
-                            <option value="{{ e[0] }}">{{ e[0] }}</option>
-                        {% endfor %}
+                        <label class="form-label">
+                            Tipo de registro
+                        </label>
 
-                        <option value="crear">+ Crear nueva empresa</option>
-                    </select>
-                    <label class="form-label small">Verificación</label>
-                    <input type="text" 
-                        id="codigoVerificacion" 
-                        class="form-control form-control-sm mb-2" 
-                        placeholder="Código de verificación" 
-                        required>
+                        <div class="d-flex align-items-center gap-4">
+
+                            <label class="tipo-opcion">
+                                <input type="radio"
+                                    name="tipoRegistro"
+                                    id="tipoNatural"
+                                    value="natural"
+                                    checked>
+                                <span>Persona natural</span>
+                            </label>
+
+                            <label class="tipo-opcion">
+                                <input type="radio"
+                                    name="tipoRegistro"
+                                    id="tipoEmpresa"
+                                    value="empresa">
+                                <span>Empresa</span>
+                            </label>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- EMPRESA -->
+                    <div id="contenedorEmpresa" class="empresa-container">
+
+                        <label class="form-label">
+                            Empresa
+                        </label>
+
+                        <div class="empresa-selector">
+
+                            <input type="text"
+                                id="empresaBuscar"
+                                class="form-control form-control-sm"
+                                placeholder="Buscar empresa..."
+                                autocomplete="off">
+
+                            <input type="hidden"
+                                id="empresaSelect"
+                                value="">
+                            <input type="hidden"
+                                id="rucRegistro"
+                                value="">
+
+                            <div id="empresaResultados"
+                                class="empresa-resultados">
+                            </div>
+
+                        </div>
+
+                    </div>
                     
                     <div class="mb-2">
                         <div class="d-flex align-items-center gap-2 mb-2"> 
@@ -184,7 +329,14 @@
       <div class="modal-body">
 
         <input type="text" id="nombreEmpresa" class="form-control mb-3" placeholder="Nombre de la empresa">
-
+        <input type="text"
+            id="rucEmpresa"
+            class="form-control mb-3"
+            placeholder="RUC"
+            maxlength="11"
+            minlength="11"
+            inputmode="numeric"
+            autocomplete="off">
         <button id="btnGuardarEmpresa" class="btn btn-success w-100">Guardar Empresa</button>
 
       </div>
@@ -192,34 +344,121 @@
     </div>
   </div>
 </div>
+<!-- ========================================================= -->
+<!-- MODAL LICENCIA STARTER -->
+<!-- ========================================================= -->
+
+<div class="modal fade" id="modalStarter" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content"
+             style="border:0; border-radius:12px; overflow:hidden;">
+
+            <!-- CABECERA -->
+            <div style="height:120px; overflow:hidden;">
+                <img src="{{ url_for('static', filename='img/banner_enviar3.png') }}"
+                     alt="Teacher Assessment"
+                     style="
+                        width:100%;
+                        height:120px;
+                        object-fit:cover;
+                        display:block;
+                     ">
+            </div>
+
+            <!-- CONTENIDO -->
+            <div class="modal-body text-center"
+                 style="padding:28px 30px;">
+
+                <h4 style="font-weight:600; margin-bottom:15px;">
+                    ¡Bienvenido a Teacher Assessment!
+                </h4>
+
+                <p style="margin-bottom:12px;">
+                    Tu licencia <strong>Starter</strong> ha sido
+                    generada correctamente.
+                </p>
+
+                <p style="margin-bottom:12px;">
+                    Hemos enviado un correo a tu dirección registrada
+                    con tu código de activación y las instrucciones
+                    para utilizarlo.
+                </p>
+
+                <div style="
+                    background:#f1f8f4;
+                    border:1px solid #b7e4c7;
+                    border-radius:8px;
+                    padding:12px;
+                    margin:18px 0;
+                ">
+                    <strong>7 días de acceso gratuito</strong>
+                    <br>
+                    <small>
+                        Ingresa a la aplicación y registra tu código
+                        desde <strong>Configuración</strong>.
+                    </small>
+                </div>
+
+                <p style="font-size:13px; color:#6c757d;">
+                    Sigue las instrucciones del correo para activar
+                    tu licencia.
+                </p>
+
+                <button type="button"
+                        class="btn btn-success px-4"
+                        data-bs-dismiss="modal">
+                    Entendido
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.getElementById("btnGuardarEmpresa").addEventListener("click", function() {
 
     let nombre = document.getElementById("nombreEmpresa").value.trim();
+    let ruc = document.getElementById("rucEmpresa").value.trim();
 
+    // Validar nombre
     if (!nombre) {
         alert("Ingrese nombre de empresa");
         return;
     }
 
-    let select = document.getElementById("empresaSelect");
+    // Validar RUC
+    if (!/^\d{11}$/.test(ruc)) {
+        alert("El RUC debe tener exactamente 11 dígitos.");
+        document.getElementById("rucEmpresa").focus();
+        return;
+    }
 
-    let option = document.createElement("option");
-    option.value = nombre;
-    option.text = nombre;
+    let empresaBuscar = document.getElementById("empresaBuscar");
+    let empresaSelect = document.getElementById("empresaSelect");
 
-    // insertar antes de "crear"
-    select.insertBefore(option, select.options[select.options.length - 1]);
+    empresaBuscar.value = nombre;
 
-    select.value = nombre;
+    // Como esta empresa acaba de ser creada,
+    // todavía no tenemos su cempre.
+    // Lo resolveremos en el servidor al registrar.
+    empresaSelect.value = nombre;
 
     // cerrar modal correctamente
-    let modalElement = document.getElementById('modalEmpresa');
-    let modalInstance = bootstrap.Modal.getInstance(modalElement);
+    let modalElement = document.getElementById("modalEmpresa");
+
+    let modalInstance =
+        bootstrap.Modal.getInstance(modalElement);
+
     modalInstance.hide();
 
+    // limpiar formulario
+    document.getElementById("rucRegistro").value = ruc;
+
     document.getElementById("nombreEmpresa").value = "";
+    document.getElementById("rucEmpresa").value = "";
+
 });
  
 
@@ -292,7 +531,9 @@ function generarCaptcha() {
 document.addEventListener("DOMContentLoaded", generarCaptcha);
 </script>
 <script>
-document.getElementById("btnRegistrar").addEventListener("click", function() {
+document.getElementById("btnRegistrar").addEventListener("click", function(event) {
+
+    event.preventDefault();
 
     function marcar(input, ok) {
         input.classList.remove("input-error", "input-ok");
@@ -311,8 +552,10 @@ document.getElementById("btnRegistrar").addEventListener("click", function() {
     let correo2 = document.querySelector("input[placeholder='Confirmar Correo']");
 
     let empresa = document.getElementById("empresaSelect");
-    let codigo = document.getElementById("codigoVerificacion").value.trim();
-    console.log("codigo:", codigo);
+    let tipoRegistro = document.querySelector(
+        'input[name="tipoRegistro"]:checked'
+    );
+    
     let captchaInput = document.getElementById("captchaInput");
 
     let captchaTexto = document.getElementById("captchaTexto").innerText;
@@ -328,22 +571,28 @@ document.getElementById("btnRegistrar").addEventListener("click", function() {
         if (!ok) valido = false;
     });
 
-    marcar(empresa, empresa.value !== "");
-    if (!empresa.value) valido = false;
+    if (tipoRegistro.value === "empresa") {
+
+        const empresaValida = empresa.value !== "";
+
+        marcar(empresa, empresaValida);
+
+        if (!empresaValida) {
+            valido = false;
+        }
+
+    } else {
+
+        // Persona natural no necesita seleccionar empresa
+        empresa.classList.remove("input-error", "input-ok");
+
+    }
 
     // correo
     let correoOk = correo.value === correo2.value && correo.value !== "";
     marcar(correo, correoOk);
     marcar(correo2, correoOk);
     if (!correoOk) valido = false;
-
-    // codigo de verificacion
-    if (!codigo) {
-        marcar(document.getElementById("codigoVerificacion"), false);
-        valido = false;
-    } else {
-        marcar(document.getElementById("codigoVerificacion"), true);
-    }
 
     // password reglas
     let passValido = pass.value.length >= 10 &&
@@ -383,29 +632,250 @@ document.getElementById("btnRegistrar").addEventListener("click", function() {
             apellido: apellido.value,
             correo: correo.value,
             empresa: empresa.value,
-            codigo: codigo
+            tipoRegistro: tipoRegistro.value,
+            ruc: document.getElementById("rucRegistro").value,
+            plan_id: document.querySelector('input[name="plan_id"]').value
         })
     })
     .then(res => res.json().then(data => ({ status: res.status, body: data })))
     .then(res => {
 
-        alert(res.body.mensaje);
+        if (res.status === 409 && res.body.campo === "dni") {
+
+            marcar(dni, false);
+            alert(res.body.mensaje);
+            return;
+        }
+        if (res.status !== 200) {
+
+            console.log("ERROR REGISTRO:", res.status, res.body);
+
+            alert(
+                "ERROR EN EL REGISTRO:\n\n" +
+                (res.body.mensaje || "Error desconocido")
+            );
+
+            return;
+        }
 
         if (res.status === 200) {
 
-            // cerrar modal
-            let modal = bootstrap.Modal.getInstance(document.getElementById('modalRegistro'));
-            modal.hide();
+            const planId = res.body.plan_id;
+            const precio = Number(res.body.precio);           
 
-            // redirigir a login
-            window.location.href = "/login";
+            // ==========================================
+            // PLAN GRATUITO
+            // ==========================================
+
+            if (precio === 0) {
+
+                const modalRegistro =
+                    bootstrap.Modal.getInstance(
+                        document.getElementById("modalRegistro")
+                    );
+
+                if (modalRegistro) {
+                    modalRegistro.hide();
+                }
+
+                const modalStarter =
+                    new bootstrap.Modal(
+                        document.getElementById("modalStarter")
+                    );
+
+                modalStarter.show();
+
+                return;
+            }
+
+
+            // ==========================================
+            // PLAN PAGADO
+            // ==========================================
+
+            window.location.href =
+                "/pago?plan_id=" + planId;
         }
-
     })
     .catch(err => {
         console.error(err);
         alert("Error en el registro");
     });
+});
+
+document.querySelectorAll('input[name="tipoRegistro"]').forEach(function(radio) {
+
+    radio.addEventListener("change", function() {
+
+        const contenedor = document.getElementById("contenedorEmpresa");
+        const empresaSelect = document.getElementById("empresaSelect");
+
+        if (this.value === "empresa") {
+
+            contenedor.classList.remove("disabled");
+            empresaSelect.disabled = false;
+
+        } else {
+
+            contenedor.classList.add("disabled");
+            empresaSelect.disabled = true;
+            empresaSelect.value = "";
+
+        }
+
+    });
+
+});
+
+
+/* Estado inicial */
+document.addEventListener("DOMContentLoaded", function() {
+
+    const contenedor = document.getElementById("contenedorEmpresa");
+    const empresaSelect = document.getElementById("empresaSelect");
+
+    contenedor.classList.add("disabled");
+    empresaSelect.disabled = true;
+
+});
+const empresaBuscar = document.getElementById("empresaBuscar");
+const empresaResultados = document.getElementById("empresaResultados");
+const empresaSelect = document.getElementById("empresaSelect");
+
+const empresas = [
+    {% for e in empresas %}
+        {
+            id: "{{ e[0] }}",
+            nombre: "{{ e[1] }}"
+        },
+    {% endfor %}
+];
+
+empresaBuscar.addEventListener("input", function() {
+
+    const texto = this.value.trim().toLowerCase();
+
+    empresaResultados.innerHTML = "";
+
+    // Menos de 4 letras:
+    // no buscar empresas
+    if (texto.length < 4) {
+
+        const crearEmpresa = document.createElement("div");
+
+        crearEmpresa.className = "empresa-item";
+        crearEmpresa.textContent = "+ Crear nueva empresa";
+
+        crearEmpresa.addEventListener("click", function() {
+
+            const modalElement =
+                document.getElementById("modalEmpresa");
+
+            const modalInstance =
+                new bootstrap.Modal(modalElement);
+
+            modalInstance.show();
+
+            empresaResultados.innerHTML = "";
+            empresaResultados.style.display = "none";
+        });
+
+        empresaResultados.appendChild(crearEmpresa);
+
+        empresaResultados.style.display = "block";
+
+        empresaSelect.value = "";
+
+        return;
+    }
+
+
+    // A partir de 4 letras buscar empresas
+    const coincidencias = empresas
+        .filter(empresa =>
+            empresa.nombre.toLowerCase().includes(texto)
+        )
+        .slice(0, 10);
+
+
+    // Mostrar coincidencias
+    coincidencias.forEach(function(empresa) {
+
+        const item = document.createElement("div");
+
+        item.className = "empresa-item";
+        item.textContent = empresa.nombre;
+
+        item.addEventListener("click", function() {
+
+            empresaBuscar.value = empresa.nombre;
+            empresaSelect.value = empresa.id;
+
+            empresaResultados.innerHTML = "";
+            empresaResultados.style.display = "none";
+
+        });
+
+        empresaResultados.appendChild(item);
+
+    });
+
+
+    // Siempre permitir crear una empresa nueva
+    const crearEmpresa = document.createElement("div");
+
+    crearEmpresa.className = "empresa-item";
+    crearEmpresa.textContent = "+ Crear nueva empresa";
+
+    crearEmpresa.addEventListener("click", function() {
+
+        const modalElement =
+            document.getElementById("modalEmpresa");
+
+        const modalInstance =
+            new bootstrap.Modal(modalElement);
+
+        modalInstance.show();
+
+        empresaResultados.innerHTML = "";
+        empresaResultados.style.display = "none";
+    });
+
+    empresaResultados.appendChild(crearEmpresa);
+
+    empresaResultados.style.display = "block";
+
+});
+empresaBuscar.addEventListener("focus", function() {
+
+    if (this.value.trim() === "") {
+
+        empresaResultados.innerHTML = "";
+
+        const crearEmpresa = document.createElement("div");
+
+        crearEmpresa.className = "empresa-item";
+        crearEmpresa.textContent = "+ Crear nueva empresa";
+
+        crearEmpresa.addEventListener("click", function() {
+
+            const modalElement =
+                document.getElementById("modalEmpresa");
+
+            const modalInstance =
+                new bootstrap.Modal(modalElement);
+
+            modalInstance.show();
+
+            empresaResultados.innerHTML = "";
+            empresaResultados.style.display = "none";
+        });
+
+        empresaResultados.appendChild(crearEmpresa);
+
+        empresaResultados.style.display = "block";
+    }
+
 });
 </script>
 

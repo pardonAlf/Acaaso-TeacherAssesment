@@ -427,7 +427,7 @@ PLANES
 /* 🔹 SECCIÓN PLANES */
 .planes-section {
     background: #0f172a;
-    padding: 80px 20px;
+    padding: 85px 70px;
     color: white;
 }
 
@@ -464,7 +464,7 @@ PLANES
     background: linear-gradient(145deg, #1e293b, #0f172a);
     border: 1px solid #334155;
     border-radius: 15px;
-    padding: 25px;
+    padding: 15px;
     transition: 0.3s;
     height: 100%;
     position: relative;
@@ -475,6 +475,13 @@ PLANES
 .plan-card:hover {
     transform: translateY(-5px);
     border-color: #22c55e;
+}
+
+.btn-plan {
+    position: relative;
+    z-index: 9999;
+    cursor: pointer !important;
+    pointer-events: auto !important;
 }
 
 /* título */

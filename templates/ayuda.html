@@ -30,65 +30,407 @@
         background-color: #2563eb;
         color: white;
     }
-    
-        .licencia-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 80vh;
-        }
 
-        .licencia-box {
-            width: 500px;
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(10px);
-            border: 1px solid #374151;
-            border-radius: 10px;
-            padding: 20px;
-            color: white;
-        }
+    /* =====================================================
+   LICENCIA - PANEL PROFESIONAL
+===================================================== */
 
-        .licencia-title {
-            font-size: 20px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+/* =========================================================
+   LICENCIA - ESTILO ACERO WINDOWS / SALESFORCE
+   MAYOR CONTRASTE PARA MONITORES DE ALTO BRILLO
+========================================================= */
 
-        .licencia-title i {
-            color: #22c55e;
-        }
+.licencia-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 18px 20px;
+}
 
-        .licencia-form label {
-            width: 170px;
-            color: #9ca3af;
-            font-size: 13px;
-        }
 
-        .licencia-form input {
-            width: 250px;
-            background: #111827;
-            border: 1px solid #374151;
-            color: white;
-            font-size: 13px;
-            padding: 3px 6px;
-        }
+/* =========================================================
+   CAJA PRINCIPAL - GRIS ACERO
+========================================================= */
 
-        .licencia-table {
-            margin-top: 15px;
-            font-size: 13px;
-        }
+.licencia-box {
+    width: 900px;
+    max-width: 100%;
 
-        .licencia-table th {
-            background: #1f2937;
-            color: #9ca3af;
-            font-weight: normal;
-        }
+    background: #d7dde2;
 
-        .licencia-table td {
-            border-top: 1px solid #374151;
-        }
+    border: 1px solid #536675;
+    border-radius: 6px;
+
+    padding: 18px 20px;
+
+    box-shadow:
+        0 4px 14px rgba(30, 45, 55, 0.30),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+
+/* =========================================================
+   CABECERA
+========================================================= */
+
+.licencia-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding-bottom: 12px;
+
+    border-bottom: 1px solid #718391;
+}
+
+.licencia-header-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #17232d;
+}
+
+.licencia-header-status {
+    font-size: 11px;
+    font-weight: 600;
+
+    color: #253640;
+
+    padding: 6px 10px;
+
+    border: 1px solid #657986;
+    background: #c8d1d7;
+
+    border-radius: 3px;
+}
+
+.licencia-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 5px;
+    border-radius: 50%;
+    background: #168553;
+}
+
+
+/* =========================================================
+   ACTIVAR LICENCIA
+========================================================= */
+
+.licencia-activar {
+    padding: 14px 0;
+
+    border-bottom: 1px solid #718391;
+}
+
+.licencia-activar label {
+    display: block;
+    margin-bottom: 6px;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    color: #263641;
+}
+
+.licencia-activar-row {
+    display: flex;
+    gap: 8px;
+}
+
+.licencia-activar-row input {
+    flex: 1;
+
+    height: 34px;
+    padding: 0 10px;
+
+    background: #ffffff;
+
+    border: 1px solid #657986;
+
+    color: #17232d;
+
+    outline: none;
+
+    font-size: 13px;
+    border-radius: 3px;
+
+    box-shadow:
+        inset 0 1px 2px rgba(30, 45, 55, 0.10);
+}
+
+.licencia-activar-row input::placeholder {
+    color: #667783;
+}
+
+.licencia-activar-row input:focus {
+    border-color: #258b87;
+
+    box-shadow:
+        0 0 0 2px rgba(37, 139, 135, 0.18),
+        inset 0 1px 2px rgba(30, 45, 55, 0.08);
+}
+
+
+/* =========================================================
+   BOTÓN ACTIVAR - TURQUESA
+========================================================= */
+
+.btn-activar-licencia {
+    min-width: 100px;
+    height: 34px;
+
+    padding: 0 16px;
+
+    background: #168f8b;
+
+    border: 1px solid #0c6f6b;
+
+    color: #ffffff;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    cursor: pointer;
+    border-radius: 3px;
+
+    transition: 0.15s ease;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 1px 2px rgba(20, 50, 55, 0.20);
+}
+
+.btn-activar-licencia:hover {
+    background: #0d7f7b;
+}
+
+.btn-activar-licencia:active {
+    transform: translateY(1px);
+}
+
+
+/* =========================================================
+   MENSAJE DE AYUDA
+========================================================= */
+
+.licencia-ayuda {
+    margin-top: 6px;
+
+    font-size: 10px;
+    color: #4f606b;
+}
+
+
+/* =========================================================
+   TÍTULOS DE SECCIÓN
+========================================================= */
+
+.licencia-section-title {
+    margin: 14px 0 8px;
+    padding-bottom: 6px;
+
+    border-bottom: 1px solid #718391;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    color: #263641;
+}
+
+.licencia-section-title-limits {
+    margin-top: 18px;
+}
+
+
+/* =========================================================
+   DATOS PRINCIPALES
+========================================================= */
+
+.licencia-datos {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 18px;
+}
+
+.licencia-dato {
+    display: flex;
+    align-items: center;
+    color:black;
+    font-weight: 900;
+    min-height: 29px;
+    padding: 5px 8px;
+
+     background: #ffffff;
+
+    border: 1px solid #718391;
+}
+
+.licencia-label {
+    width: 145px;
+    flex-shrink: 0;
+
+    font-size: 11px;
+    color: #334550;
+}
+
+.licencia-value {
+    font-size: 12px;
+    font-weight: 600;
+
+    color: #182630;
+}
+
+.licencia-activa {
+    color: #137a4d;
+}
+
+.licencia-dias {
+    color: #182630;
+}
+
+
+/* =========================================================
+   TABLA DE CAPACIDADES
+========================================================= */
+
+.licencia-table {
+    width: 100%;
+
+    border-collapse: collapse;
+
+    font-size: 12px;
+
+    border: 1px solid #536675;
+    border-radius: 4px;
+
+    overflow: hidden;
+}
+
+
+/* CABECERA ACERO + TURQUESA */
+
+.licencia-table th {
+    padding: 8px 10px;
+
+    background: rgb(58, 37, 250);
+
+    border: 1px solid #527c7a;
+
+    color: white;
+
+    font-weight: 600;
+    text-align: left;
+}
+
+
+/* FILAS */
+
+.licencia-table td {
+    padding: 8px 10px;
+
+    background: #ffffff;
+
+    border: 1px solid #7a8b97;
+
+    color: #263641;
+}
+
+.licencia-table tbody tr:nth-child(even) td {
+    background: #dddddf;
+}
+
+.licencia-table tbody tr:hover td {
+    background: #d0e4e3;
+}
+
+
+/* =========================================================
+   ESTADO ACTIVO
+========================================================= */
+
+.licencia-estado-ok {
+    font-size: 11px;
+    font-weight: 600;
+
+    color: #137a4d;
+}
+
+
+/* =========================================================
+   PIE
+========================================================= */
+
+.licencia-footer {
+    display: flex;
+    justify-content: space-between;
+
+    gap: 15px;
+
+    margin-top: 12px;
+    padding-top: 10px;
+
+    border-top: 1px solid #718391;
+
+    font-size: 10px;
+    color: #4f606b;
+}
+
+.licencia-footer-right {
+    white-space: nowrap;
+}
+
+.estado-excedido {
+    color: #b42318;
+    font-weight: 600;
+}
+
+.estado-activo {
+    color: #16803c;
+    font-weight: 600;
+}
+
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 700px) {
+
+    .licencia-container {
+        padding: 10px;
+    }
+
+    .licencia-box {
+        padding: 14px;
+    }
+
+    .licencia-datos {
+        grid-template-columns: 1fr;
+    }
+
+    .licencia-footer {
+        flex-direction: column;
+    }
+
+    .licencia-activar-row {
+        flex-direction: column;
+    }
+
+    .btn-activar-licencia {
+        width: 100%;
+    }
+
+    .licencia-label {
+        width: 135px;
+    }
+}
+
+    /*=================================
+        fodno dinamico
+    ===================================*/
+        
         #fondo-dinamico.fondo-oscuro::before {
             content: "";
             position: absolute;
@@ -131,7 +473,144 @@
         .card-full span {
             font-size:12px;
         }
-         
+
+        /* =========================================================
+        ACTIVACIÓN EN UNA SOLA LÍNEA
+        ========================================================= */
+
+        .licencia-activar-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .licencia-activar-row label {
+            display: block;
+            width: 130px;
+            flex-shrink: 0;
+            margin: 0;
+            font-size: 11px;
+            font-weight: 600;
+            color: #263641;
+        }
+
+        .licencia-activar-row input {
+            flex: 1;
+            min-width: 0;
+        }
+
+
+        /* =========================================================
+        SUBIR Y COMPACTAR UN POCO MÁS EN LAPTOP
+        ========================================================= */
+
+      
+        /* lap top max 1100
+        * =========================================================
+        AJUSTE PARA LAPTOPS Y PANTALLAS MEDIANAS
+        ========================================================= */
+
+        /* =========================================================
+        LAPTOPS - LICENCIA MÁS COMPACTA
+        ========================================================= */
+        @media (max-width: 1400px) and (max-height: 900px) {
+
+            .licencia-container {
+                padding-top: 4px;
+                align-items: flex-start;
+            }
+
+            .licencia-box {
+                margin-top: 0;
+                padding: 12px 16px;
+                width: 780px;
+                max-width: 100%;
+                 
+            }
+
+            /* Cabecera */
+            .licencia-header {
+                padding-bottom: 8px;
+            }
+
+            .licencia-header-title {
+                font-size: 16px;
+            }
+
+            .licencia-header-status {
+                padding: 5px 8px;
+                font-size: 10px;
+            }
+
+            /* Activación */
+            .licencia-activar {
+                 
+                padding: 8px 0;
+            }
+
+            .licencia-activar-row input,
+            .btn-activar-licencia {
+                height: 32px;
+            }
+
+            /* Títulos */
+            .licencia-section-title {
+                margin: 10px 0 6px;
+                padding-bottom: 5px;
+                font-size: 11px;
+            }
+
+            /* Datos */
+            .licencia-datos {
+                gap: 5px 10px;
+            }
+
+            .licencia-dato {
+                min-height: 27px;
+                padding: 4px 7px;
+            }
+
+            .licencia-label {
+                width: 120px;
+                font-size: 10px;
+            }
+
+            .licencia-value {
+                font-size: 11px;
+            }
+
+            /* Tabla */
+            .licencia-table {
+                font-size: 11px;
+            }
+
+            .licencia-table th,
+            .licencia-table td {
+                padding: 6px 8px;
+            }
+
+            /* Pie */
+            .licencia-footer {
+                margin-top: 8px;
+                padding-top: 7px;
+                font-size: 9px;
+            }
+
+             .licencia-ayuda {
+                margin-top: 4px;
+            }
+        }
+        }
+        @media (max-width: 850px) {
+
+            .licencia-box {
+                max-width: 100%;
+            }
+
+            .licencia-datos {
+                grid-template-columns: 1fr;
+            }
+        }       
     </style>
 
 </head>
@@ -261,6 +740,7 @@
                         color: #9ca3af;
                     }
 
+                  
                     
                     </style>
 
@@ -379,120 +859,238 @@
                 <div id="resultados"  class="contenido" style="display:none;">
                      
                 </div>
+                <div id="licencia" class="contenido" style="display:none;">
 
-                <div id="licencia" class="contenido" style="display:none;"> 
+                    <div class="licencia-container">
 
-                    {% if usuario_logeado %}
-                        <div class="licencia-container">
+                        <div class="licencia-box">
 
-                            <div class="licencia-box">
+                            <!-- =========================================
+                                TÍTULO
+                            ========================================== -->
+                            <div class="licencia-header">
 
-                                <!-- 🔑 TÍTULO -->
-                                <div class="licencia-title">
+                                <div class="licencia-header-title">
                                     🔑 Licencia
                                 </div>
 
-                                <!-- 🔹 FORMULARIO -->
-                                <div class="licencia-form">
+                                <div class="licencia-header-status">
+                                    <span class="licencia-dot"></span>
+                                    {{ licencia[4] if licencia else 'SIN LICENCIA' }}
+                                </div>
 
-                                    <div class="mb-2 d-flex align-items-center">
-                                        <label>Número de serie:</label>
-                                        <input type="text" value="{{ plan[0] }}-001" readonly>
-                                    </div>
+                            </div>
 
-                                    <div class="mb-2 d-flex align-items-center">
-                                        <label>Licenciado a:</label>
-                                        <input type="text" value="{{ session['usuario'] }}" readonly>
-                                    </div>
 
-                                    <div class="mb-2 d-flex align-items-center">
-                                        <label>Tipo de licencia:</label>
-                                        <input type="text" value="{{ plan[0] }}" readonly>
-                                    </div>
+                            <!-- =========================================
+                                INGRESAR / REEMPLAZAR LICENCIA
+                            ========================================== -->
+                            <div class="licencia-activar">
 
-                                    <div class="mb-2 d-flex align-items-center">
-                                        <label>Fecha de expiración:</label>
-                                        <input type="text" value="31/12/2026" readonly>
-                                    </div>
+                                <div class="licencia-activar-row">
+
+                                    <label for="codigoLicencia">
+                                        Código de licencia
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        id="codigoLicencia"
+                                        placeholder="Pegue aquí el código de licencia"
+                                    >
+
+                                    <button
+                                        type="button"
+                                        id="btnActivarLicencia"
+                                        class="btn-activar-licencia"
+                                        onclick="activarLicencia()">
+                                        Activar
+                                    </button>
 
                                 </div>
 
-                                <!-- 🔹 TABLA -->
-                                <table class="table table-sm licencia-table">
+                                <div class="licencia-ayuda">
+                                    Ingrese un nuevo código para activar o reemplazar la licencia actual.
+                                </div>
 
-                                    <thead>
-                                        <tr>
-                                            <th>Módulo</th>
-                                            <th>Valor</th>
-                                            <th>Estado</th>
-                                        </tr>
-                                    </thead>
+                            </div>
 
-                                    <tbody>
 
-                                        <tr>
-                                            <td>Profesores</td>
-                                            <td>
-                                                {% if plan[2] %}
-                                                    {{ plan[2] }}
-                                                {% else %}
-                                                    Ilimitado
-                                                {% endif %}
-                                            </td>
-                                            <td style="color:#22c55e;">Activo</td>
-                                        </tr>
+                            <!-- =========================================
+                                DATOS PRINCIPALES
+                            ========================================== -->
 
-                                        <tr>
-                                            <td>Alumnos</td>
-                                            <td>
-                                                {% if plan[3] %}
-                                                    {{ plan[3] }}
-                                                {% else %}
-                                                    Ilimitado
-                                                {% endif %}
-                                            </td>
-                                            <td style="color:#22c55e;">Activo</td>
-                                        </tr>
+                            <div class="licencia-section-title">
+                                Información de la licencia
+                            </div>
 
-                                        <tr>
-                                            <td>Quizzes</td>
-                                            <td>
-                                                {% if plan[4] %}
-                                                    {{ plan[4] }}
-                                                {% else %}
-                                                    Ilimitado
-                                                {% endif %}
-                                            </td>
-                                            <td style="color:#22c55e;">Activo</td>
-                                        </tr>
+                            <div class="licencia-datos">
 
-                                        <tr>
-                                            <td>Intentos</td>
-                                            <td>Ilimitado</td>
-                                            <td style="color:#22c55e;">Activo</td>
-                                        </tr>
+                                <div class="licencia-dato">
+                                    <span class="licencia-label">Código</span>
+                                    <span class="licencia-value">
+                                        {{ licencia[0] if licencia else 'Sin licencia' }}
+                                    </span>
+                                </div>
 
-                                        <tr>
-                                            <td>IA</td>
-                                            <td>Habilitado</td>
-                                            <td style="color:#22c55e;">Activo</td>
-                                        </tr>
+                                <div class="licencia-dato">
+                                    <span class="licencia-label">Estado</span>
+                                    <span class="licencia-value licencia-activa">
+                                        {{ licencia[4] if licencia else 'SIN LICENCIA' }}
+                                    </span>
+                                </div>
 
-                                    </tbody>
+                                <div class="licencia-dato">
+                                    <span class="licencia-label">Periodicidad</span>
+                                    <span class="licencia-value">
+                                        {{ licencia[5] if licencia else '-' }}
+                                    </span>
+                                </div>
 
-                                </table>
+                                <div class="licencia-dato">
+                                    <span class="licencia-label">Períodos contratados</span>
+                                    <span class="licencia-value">
+                                        {{ licencia[6] if licencia else '-' }}
+                                    </span>
+                                </div>
+
+                                <div class="licencia-dato">
+                                    <span class="licencia-label">Fecha de emisión</span>
+                                    <span class="licencia-value">
+                                        {{ licencia[1].strftime('%d/%m/%Y') if licencia and licencia[1] else '-' }}
+                                    </span>
+                                </div>
+
+                                <div class="licencia-dato">
+                                    <span class="licencia-label">Fecha de inicio</span>
+                                    <span class="licencia-value">
+                                        {{ licencia[2].strftime('%d/%m/%Y') if licencia and licencia[2] else '-' }}
+                                    </span>
+                                </div>
+
+                                <div class="licencia-dato">
+                                    <span class="licencia-label">Fecha de expiración</span>
+                                    <span class="licencia-value">
+                                        {{ licencia[3].strftime('%d/%m/%Y') if licencia and licencia[3] else '-' }}
+                                    </span>
+                                </div>
+
+                                <div class="licencia-dato">
+                                    <span class="licencia-label">Fecha de activación</span>
+                                    <span class="licencia-value">
+                                        {{ licencia[11].strftime('%d/%m/%Y') if licencia and licencia[11] else 'Pendiente' }}
+                                    </span>
+                                </div>
+
+                            </div>
+
+
+                            <!-- =========================================
+                                CAPACIDADES
+                            ========================================== -->
+                            <div class="licencia-section-title licencia-section-title-limits">
+                                Capacidades y límites
+                            </div>
+
+                            <table class="licencia-table">
+
+                                <thead>
+                                    <tr>
+                                        <th>Recurso</th>
+                                        <th>Máximo</th>
+                                        <th>Utilizado</th>
+                                        <th>Disponible</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+
+                                    <tr>
+                                        <td>Administradores</td>
+                                        <td>{{ licencia[7] if licencia else 0 }}</td>
+                                        <td>{{ uso['admins'] }}</td>
+                                        <td>{{ uso['disp_admins'] }}</td>
+                                        <td>
+                                             
+                                            {% if licencia and uso['admins'] > licencia[7] %}
+                                                <span class="estado-excedido">● Límite excedido</span>
+                                            {% else %}
+                                                <span class="estado-activo">● Activo</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Profesores</td>
+                                        <td>{{ licencia[8] if licencia else 0 }}</td>
+                                        <td>{{ uso['profesores'] }}</td>
+                                        <td>{{ uso['disp_profesores'] }}</td>
+                                        <td>
+                                            {% if licencia and uso['profesores'] > licencia[8] %}
+                                                <span class="estado-excedido">● Límite excedido</span>
+                                            {% else %}
+                                                <span class="estado-activo">● Activo</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Alumnos</td>
+                                        <td>{{ licencia[9] if licencia else 0 }}</td>
+                                        <td>{{ uso['alumnos'] }}</td>
+                                        <td>{{ uso['disp_alumnos'] }}</td>
+                                        <td>
+                                            {% if licencia and uso['alumnos'] > licencia[9] %}
+                                                <span class="estado-excedido">● Límite excedido</span>
+                                            {% else %}
+                                                <span class="estado-activo">● Activo</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Quizzes</td>
+                                        <td>{{ licencia[10] if licencia else 0 }}</td>
+                                        <td>{{ uso['quizzes'] }}</td>
+                                        <td>{{ uso['disp_quizzes'] }}</td>
+                                        <td>
+                                            {% if licencia and uso['quizzes'] > licencia[10] %}
+                                                <span class="estado-excedido">● Límite excedido</span>
+                                            {% else %}
+                                                <span class="estado-activo">● Activo</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+
+                            </table>
+
+
+                            <!-- =========================================
+                                PIE
+                            ========================================== -->
+                            <div class="licencia-footer">
+
+                                <div>
+                                    La licencia se encuentra vigente y habilita el uso
+                                    de los recursos indicados.
+                                </div>
+
+                                <div class="licencia-footer-right">
+                                    Última actualización:
+                                    20/08/2026
+                                </div>
 
                             </div>
 
                         </div>
-                    {% else %}
 
-                        <div style="padding:40px; color:#9ca3af;">
-                            Debes iniciar sesión para ver esta información.
-                        </div>
+                    </div>
+                </div>
 
-                    {% endif %}   
-                </div >
+                
             </div>   
         </div>
 
@@ -570,6 +1168,81 @@ function mostrar(seccion, elemento=null) {
         }
     }
 }
+</script>
+
+<script>
+async function activarLicencia() {
+
+    const codigo = document
+        .getElementById('codigoLicencia')
+        .value
+        .trim();
+
+    if (!codigo) {
+        alert("Ingrese el código de licencia.");
+        return;
+    }
+
+    try {
+
+        const respuesta = await fetch('/activar_licencia', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                codigo: codigo
+            })
+        });
+
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.ok) {
+            alert(data.mensaje || 'No fue posible activar la licencia.');
+            return;
+        }
+
+        alert(
+            data.mensaje +
+            '\n\nCódigo: ' + data.codigo +
+            '\nEstado: ' + data.estado
+        );
+
+        // Recargar la pantalla para mostrar
+        // Guardar la pestaña donde estamos
+        sessionStorage.setItem('pestanaAyuda', 'licencia');
+
+        window.location.reload();
+
+    } catch (error) {
+
+        console.error('ERROR ACTIVANDO LICENCIA:', error);
+
+        alert('Error de comunicación con el servidor.');
+    }
+}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const pestana = sessionStorage.getItem('pestanaAyuda');
+
+    if (pestana === 'licencia') {
+
+        // Buscar el botón/pestaña Licencia
+        const botonLicencia = document.querySelector(
+            '[data-bs-target="#licencia"]'
+        );
+
+        if (botonLicencia) {
+            botonLicencia.click();
+        }
+
+        // Limpiar para futuras entradas normales
+        sessionStorage.removeItem('pestanaAyuda');
+    }
+
+});
 </script>
 
 </body>
