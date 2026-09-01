@@ -36,6 +36,46 @@
             color: #07152f;
         }
 
+        /* =========================================================
+        AJUSTE COMPACTO
+        ========================================================= */
+
+        .empresas-table th:nth-child(6),
+        .empresas-table td:nth-child(6),
+        .empresas-table th:nth-child(7),
+        .empresas-table td:nth-child(7) {
+            text-align: center;
+        }
+
+        .empresas-table th:nth-child(8),
+        .empresas-table td:nth-child(8),
+        .empresas-table th:nth-child(9),
+        .empresas-table td:nth-child(9) {
+            font-size: 9px;
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+
+        .empresas-table th:nth-child(6),
+        .empresas-table td:nth-child(6) {
+            width: 60px;
+        }
+
+        .empresas-table th:nth-child(7),
+        .empresas-table td:nth-child(7) {
+            width: 65px;
+        }
+
+        .empresas-table th:nth-child(8),
+        .empresas-table td:nth-child(8) {
+            width: 105px;
+        }
+
+        .empresas-table th:nth-child(9),
+        .empresas-table td:nth-child(9) {
+            width: 105px;
+        }
+
 
         /* =========================================================
         BOTÓN NUEVA EMPRESA
@@ -206,6 +246,202 @@
             background: #bb2d3b;
         }
 
+        /* =========================================================
+        MODAL EMPRESA - ESTILO APP DE ESCRITORIO
+        ========================================================= */
+
+        #modalEmpresa .modal-dialog {
+            max-width: 520px;
+        }
+
+        #modalEmpresa .modal-content {
+            background: #e2e7eb;
+
+            border: 1px solid #637687;
+            border-radius: 6px;
+
+            box-shadow:
+                0 12px 32px rgba(25, 40, 50, 0.32);
+
+            overflow: hidden;
+        }
+
+
+        /* =========================================================
+        CABECERA
+        ========================================================= */
+
+        #modalEmpresa .modal-header {
+            min-height: 42px;
+
+            padding: 8px 14px;
+
+            background: #91b9db;
+
+            border-bottom: 1px solid #7c8d9b;
+        }
+
+        #modalEmpresa .modal-title {
+            margin: 0;
+
+            font-size: 15px;
+            font-weight: 600;
+
+            color: #263746;
+        }
+
+
+        /* BOTÓN CERRAR */
+
+        #modalEmpresa .btn-close {
+            width: 12px;
+            height: 12px;
+
+            opacity: 0.65;
+        }
+
+        #modalEmpresa .btn-close:hover {
+            opacity: 1;
+        }
+
+
+        /* =========================================================
+        CUERPO
+        ========================================================= */
+
+        #modalEmpresa .modal-body {
+            padding: 14px 16px 10px;
+
+            background: #eef2f5;
+        }
+
+
+        /* =========================================================
+        ETIQUETAS
+        ========================================================= */
+
+        #modalEmpresa .form-label {
+            margin-bottom: 4px;
+
+            font-size: 11px;
+            font-weight: 600;
+
+            color: #344654;
+        }
+
+
+        /* =========================================================
+        CAMPOS
+        ========================================================= */
+
+        #modalEmpresa .form-control,
+        #modalEmpresa .form-select {
+
+            height: 31px;
+
+            padding: 4px 8px;
+
+            background: #ffffff;
+
+            border: 1px solid #718493;
+            border-radius: 3px;
+
+            color: #263746;
+
+            font-size: 11px;
+
+            box-shadow:
+                inset 0 1px 2px rgba(40, 55, 65, 0.08);
+        }
+
+        #modalEmpresa .form-control:focus,
+        #modalEmpresa .form-select:focus {
+
+            border-color: #2e8d8a;
+
+            box-shadow:
+                0 0 0 2px rgba(46, 141, 138, 0.14);
+        }
+
+
+        /* =========================================================
+        ESPACIADO
+        ========================================================= */
+
+        #modalEmpresa .mb-3 {
+            margin-bottom: 10px !important;
+        }
+
+        #modalEmpresa .mb-2 {
+            margin-bottom: 5px !important;
+        }
+
+
+        /* =========================================================
+        PIE
+        ========================================================= */
+
+        #modalEmpresa .modal-footer {
+
+            min-height: 48px;
+
+            padding: 8px 14px;
+
+            background: #dce3e8;
+
+            border-top: 1px solid #7c8d9b;
+
+            display: flex;
+            justify-content: flex-end;
+            gap: 7px;
+        }
+
+
+        /* =========================================================
+        BOTONES
+        ========================================================= */
+
+        #modalEmpresa .modal-footer .btn {
+
+            height: 29px;
+
+            padding: 3px 12px;
+
+            font-size: 11px;
+
+            border-radius: 3px;
+        }
+
+
+        /* CANCELAR */
+
+        #modalEmpresa .modal-footer .btn-secondary {
+
+            background: #71808b;
+            border: 1px solid #5e6c76;
+
+            color: #ffffff;
+        }
+
+        #modalEmpresa .modal-footer .btn-secondary:hover {
+            background: #626f79;
+        }
+
+
+        /* GUARDAR */
+
+        #modalEmpresa .modal-footer .btn-primary {
+
+            background: #168f8b;
+            border: 1px solid #0e716e;
+
+            color: #ffffff;
+        }
+
+        #modalEmpresa .modal-footer .btn-primary:hover {
+            background: #0f7e7a;
+        }
+
 
         /* =========================================================
         RESPONSIVE
@@ -239,9 +475,21 @@
 
         <h3>Gestión de Empresas</h3>
 
+         <label class="empresas-check-inactivos">
+            <input
+                type="checkbox"
+                id="mostrarInactivos"
+                {% if mostrar_inactivos %}checked{% endif %}
+                onchange="filtrarEmpresas()">
+            Mostrar inactivos
+        </label>
+
         <button
             type="button"
-            class="btn-nueva-empresa">
+            class="btn-nueva-empresa"
+            data-bs-toggle="modal"
+            data-bs-target="#modalEmpresa"
+            onclick="prepararNuevaEmpresa()">
             Nueva empresa
         </button>
 
@@ -255,6 +503,8 @@
                 <tr>
                     <th>ID</th>
                     <th>Empresa</th>
+                    <th>Nombre comercial</th>
+                    <th>Dirección</th>
                     <th>RUC</th>
                     <th>Licencia</th>
                     <th>Estado</th>
@@ -273,6 +523,10 @@
                     <td>{{ empresa[0] }}</td>
 
                     <td>{{ empresa[1] }}</td>
+
+                    <td>{{ empresa[7] or '-' }}</td>
+
+                    <td>{{ empresa[8] or '-' }}</td>
 
                     <td>{{ empresa[2] or '-' }}</td>
 
@@ -306,14 +560,19 @@
 
                         <button
                             type="button"
-                            class="btn btn-sm btn-secondary btn-editar-empresa">
+                            class="btn btn-sm btn-secondary btn-editar-empresa"
+                            onclick="editarEmpresa({{ empresa[0] }})">
                             Editar
                         </button>
 
                         <button
                             type="button"
-                            class="btn btn-sm btn-danger btn-eliminar-empresa">
-                            Eliminar
+                            class="btn btn-sm btn-danger btn-desactivar-empresa"
+                            onclick='desactivarEmpresa(
+                                {{ empresa[0] }},
+                                {{ empresa[1]|tojson }}
+                            )'>
+                            Desactivar
                         </button>
 
                     </td>
@@ -337,5 +596,630 @@
     </div>
 
 </div>
+<!-- =========================================================
+     MODAL NUEVA / EDITAR EMPRESA
+========================================================= -->
+
+<div class="modal fade" id="modalEmpresa" tabindex="-1" aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <!-- CABECERA -->
+            <div class="modal-header">
+
+                <h5 class="modal-title" id="modalEmpresaTitulo">
+                    Nueva empresa
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Cerrar">
+                </button>
+
+            </div>
+
+
+            <!-- CUERPO -->
+            <div class="modal-body">
+
+                <!-- ID OCULTO PARA EDICIÓN -->
+                <input
+                    type="hidden"
+                    id="empresaId">
+
+
+                <!-- RAZÓN SOCIAL -->
+                <div class="mb-3">
+
+                    <label
+                        for="empresaRazonSocial"
+                        class="form-label">
+                        Nombre o razón social
+                    </label>
+
+                    <input
+                        type="text"
+                        id="empresaRazonSocial"
+                        class="form-control"
+                        maxlength="100"
+                        autocomplete="off">
+
+                </div>
+
+
+                <!-- RUC -->
+                <div class="mb-3">
+
+                    <label
+                        for="empresaRuc"
+                        class="form-label">
+                        RUC
+                    </label>
+
+                    <input
+                        type="text"
+                        id="empresaRuc"
+                        class="form-control"
+                        maxlength="11"
+                        inputmode="numeric"
+                        autocomplete="off">
+
+                </div>
+
+
+                <!-- NOMBRE COMERCIAL -->
+                <div class="mb-3">
+
+                    <label
+                        for="empresaNombreComercial"
+                        class="form-label">
+                        Nombre comercial
+                    </label>
+
+                    <input
+                        type="text"
+                        id="empresaNombreComercial"
+                        class="form-control"
+                        maxlength="150"
+                        autocomplete="off">
+
+                </div>
+
+
+                <!-- DIRECCIÓN -->
+                <div class="mb-3">
+
+                    <label
+                        for="empresaDireccion"
+                        class="form-label">
+                        Dirección del domicilio
+                    </label>
+
+                    <input
+                        type="text"
+                        id="empresaDireccion"
+                        class="form-control"
+                        maxlength="250"
+                        autocomplete="off">
+
+                </div>
+
+
+                <!-- ESTADO -->
+                <div class="mb-2">
+
+                    <label
+                        for="empresaEstado"
+                        class="form-label">
+                        Estado
+                    </label>
+
+                    <select
+                        id="empresaEstado"
+                        class="form-select">
+
+                        <option value="true">
+                            Activa
+                        </option>
+
+                        <option value="false">
+                            Inactiva
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <!-- PIE -->
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button
+                    type="button"
+                    id="btnGuardarEmpresa"
+                    class="btn btn-primary">
+                    Guardar
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+<!-- =========================================================
+     MODAL CONFIRMAR DESACTIVACIÓN
+========================================================= -->
+
+<div class="modal fade" id="modalDesactivarEmpresa"
+     tabindex="-1"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h5 class="modal-title">
+                    Desactivar empresa
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <input type="hidden"
+                       id="empresaDesactivarId">
+
+                <p id="mensajeDesactivarEmpresa"
+                   class="mb-0">
+                </p>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button
+                    type="button"
+                    id="btnConfirmarDesactivacion"
+                    class="btn btn-danger">
+                    Desactivar
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+
+document.getElementById(
+    "btnConfirmarDesactivacion"
+).addEventListener("click", async function () {
+
+    const id =
+        document.getElementById(
+            "empresaDesactivarId"
+        ).value;
+
+    if (!id) {
+        return;
+    }
+
+    try {
+
+        const respuesta = await fetch(
+            "/desactivar_empresa/" + id,
+            {
+                method: "POST"
+            }
+        );
+
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.ok) {
+
+            alert(
+                data.mensaje ||
+                "No fue posible desactivar la empresa."
+            );
+
+            return;
+        }
+
+        alert(data.mensaje);
+
+        const modalElemento =
+            document.getElementById(
+                "modalDesactivarEmpresa"
+            );
+
+        const modal =
+            bootstrap.Modal.getInstance(
+                modalElemento
+            );
+
+        if (modal) {
+            modal.hide();
+        }
+
+        window.location.reload();
+
+    } catch (error) {
+
+        console.error(
+            "ERROR DESACTIVANDO EMPRESA:",
+            error
+        );
+
+        alert(
+            "Error de comunicación con el servidor."
+        );
+    }
+
+});
+
+</script>
+<script>
+function prepararNuevaEmpresa() {
+
+    document.getElementById("modalEmpresaTitulo").textContent =
+        "Nueva empresa";
+
+    document.getElementById("empresaId").value = "";
+
+    document.getElementById("empresaRazonSocial").value = "";
+    document.getElementById("empresaRuc").value = "";
+    document.getElementById("empresaNombreComercial").value = "";
+    document.getElementById("empresaDireccion").value = "";
+
+    document.getElementById("empresaEstado").value = "true";
+
+    document.getElementById("btnGuardarEmpresa").textContent =
+        "Guardar";
+}
+</script>
+<script>
+document.getElementById("btnGuardarEmpresa").addEventListener("click", async function () {
+
+    const empresaId = document.getElementById("empresaId").value.trim();
+
+    const razonSocial = document
+        .getElementById("empresaRazonSocial")
+        .value
+        .trim();
+
+    const ruc = document
+        .getElementById("empresaRuc")
+        .value
+        .trim();
+
+    const nombreComercial = document
+        .getElementById("empresaNombreComercial")
+        .value
+        .trim();
+
+    const direccion = document
+        .getElementById("empresaDireccion")
+        .value
+        .trim();
+
+    const estado = document
+        .getElementById("empresaEstado")
+        .value === "true";
+
+
+    // =========================================================
+    // DESACTIVAR
+    //
+    // Si existe empresa y el nuevo estado es INACTIVA,
+    // no validamos RUC ni ningún otro dato.
+    // =========================================================
+
+    if (empresaId && !estado) {
+
+        console.log("DESACTIVANDO EMPRESA:", empresaId);
+
+        await guardarEmpresa({
+            empresa_id: empresaId,
+            estado: false
+        });
+
+        return;
+    }
+
+
+    // =========================================================
+    // CREAR / EDITAR / REACTIVAR
+    // =========================================================
+
+    if (!razonSocial) {
+        alert("Ingrese el nombre o razón social.");
+        return;
+    }
+
+    if (!ruc) {
+        alert("Ingrese el RUC.");
+        return;
+    }
+
+    if (!/^\d{11}$/.test(ruc)) {
+        alert("El RUC debe contener exactamente 11 dígitos.");
+        return;
+    }
+
+    if (!nombreComercial) {
+        alert("Ingrese el nombre comercial.");
+        return;
+    }
+
+    if (!direccion) {
+        alert("Ingrese la dirección del domicilio.");
+        return;
+    }
+
+
+    // =========================================================
+    // GUARDAR NORMAL
+    // =========================================================
+
+    await guardarEmpresa({
+        empresa_id: empresaId || null,
+        razon_social: razonSocial,
+        ruc: ruc,
+        nombre_comercial: nombreComercial,
+        direccion: direccion,
+        estado: estado
+    });
+
+});
+
+
+/* =========================================================
+   FUNCIÓN COMÚN DE GUARDADO
+========================================================= */
+
+async function guardarEmpresa(datos) {
+
+    try {
+
+        const respuesta = await fetch("/guardar_empresa", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify(datos)
+        });
+
+
+        const data = await respuesta.json();
+
+
+        if (!respuesta.ok || !data.ok) {
+
+            alert(
+                data.mensaje ||
+                "No fue posible guardar la empresa."
+            );
+
+            return;
+        }
+
+
+        alert(data.mensaje);
+
+
+        // =====================================================
+        // CERRAR MODAL
+        // =====================================================
+
+        const modalElemento =
+            document.getElementById("modalEmpresa");
+
+        const modal =
+            bootstrap.Modal.getInstance(modalElemento);
+
+        if (modal) {
+            modal.hide();
+        }
+
+
+        // =====================================================
+        // ACTUALIZAR LISTADO
+        // =====================================================
+
+        window.location.reload();
+
+
+    } catch (error) {
+
+        console.error(
+            "ERROR GUARDANDO EMPRESA:",
+            error
+        );
+
+        alert(
+            "Error de comunicación con el servidor."
+        );
+    }
+}
+</script>
+ 
+<script>
+async function editarEmpresa(id) {
+
+    try {
+
+        const respuesta = await fetch(
+            "/obtener_empresa/" + id
+        );
+
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.ok) {
+
+            alert(
+                data.mensaje ||
+                "No fue posible obtener la empresa."
+            );
+
+            return;
+        }
+
+        const empresa = data.empresa;
+
+        document.getElementById("modalEmpresaTitulo").textContent =
+            "Editar empresa";
+
+        document.getElementById("empresaId").value =
+            empresa.id;
+
+        document.getElementById("empresaRazonSocial").value =
+            empresa.razon_social;
+
+        document.getElementById("empresaRuc").value =
+            empresa.ruc;
+
+        document.getElementById("empresaNombreComercial").value =
+            empresa.nombre_comercial;
+
+        document.getElementById("empresaDireccion").value =
+            empresa.direccion;
+
+        document.getElementById("empresaEstado").value =
+            empresa.estado ? "true" : "false";
+
+        document.getElementById("btnGuardarEmpresa").textContent =
+            "Guardar cambios";
+
+        const modalElemento =
+            document.getElementById("modalEmpresa");
+
+        const modal =
+            bootstrap.Modal.getOrCreateInstance(
+                modalElemento
+            );
+
+        modal.show();
+
+    } catch (error) {
+
+        console.error(
+            "ERROR CARGANDO EMPRESA:",
+            error
+        );
+
+        alert(
+            "Error de comunicación con el servidor."
+        );
+    }
+}
+</script>
+<script>
+function filtrarEmpresas() {
+
+    const mostrarInactivos =
+        document.getElementById("mostrarInactivos").checked;
+
+    if (mostrarInactivos) {
+        window.location.href = "/empresas?inactivos=1";
+    } else {
+        window.location.href = "/empresas";
+    }
+}
+</script>
+<script>
+async function desactivarEmpresa(id, nombre) {
+
+    const confirmar = confirm(
+        '¿Está seguro de desactivar la empresa "' +
+        nombre +
+        '"?'
+    );
+
+    if (!confirmar) {
+        return;
+    }
+
+    try {
+
+        const respuesta = await fetch("/guardar_empresa", {
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                empresa_id: id,
+                estado: false
+            })
+        });
+
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.ok) {
+
+            alert(
+                data.mensaje ||
+                "No fue posible desactivar la empresa."
+            );
+
+            return;
+        }
+
+        alert(data.mensaje);
+
+        window.location.reload();
+
+    } catch (error) {
+
+        console.error(
+            "ERROR DESACTIVANDO EMPRESA:",
+            error
+        );
+
+        alert(
+            "Error de comunicación con el servidor."
+        );
+    }
+}
+</script>
+
 
 {% endblock %}

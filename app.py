@@ -6218,9 +6218,9 @@ def enviar_codigo_quiz(
     #import resend
     
     if tipo_acceso == "salon":
-        link_quiz = f"https://acaaso-teacherassessment.onrender.com/salon/{codigo_quiz}"
+        link_quiz = f"https://teacherassessment.onrender.com/salon/{codigo_quiz}"
     else:
-        link_quiz = f"https://acaaso-teacherassessment.onrender.com/quiz/{codigo_quiz}"
+        link_quiz = f"https://teacherassessment.onrender.com/quiz/{codigo_quiz}"
         
     qr_png = generar_qr(link_quiz)
     #banner_url = "https://acaaso-teacherassessment.onrender.com/static/img/banner_enviar_quiz.png"
@@ -8530,23 +8530,52 @@ def empresas():
     if session.get('rol') != 'root':
         return redirect(url_for('home'))
 
+    # =========================================================
+    # FILTRO DE EMPRESAS
+    # =========================================================
+
+    mostrar_inactivos = request.args.get('inactivos') == '1'
+
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
 
-        cur.execute("""
-        SELECT
-            cempre,
-            dempre,
-            ruc,
-            licencia,
-            estado,
-            fcreacion,
-            fecha_modificacion
-        FROM empresa
-        ORDER BY dempre
-        """)
+        if mostrar_inactivos:
+
+            cur.execute("""
+                SELECT
+                    cempre,
+                    dempre,
+                    ruc,
+                    licencia,
+                    estado,
+                    fcreacion,
+                    fecha_modificacion,
+                    nombre_comercial,
+                    direccion_domicilio
+                FROM empresa
+                WHERE estado = FALSE
+                ORDER BY dempre
+            """)
+
+        else:
+
+            cur.execute("""
+                SELECT
+                    cempre,
+                    dempre,
+                    ruc,
+                    licencia,
+                    estado,
+                    fcreacion,
+                    fecha_modificacion,
+                    nombre_comercial,
+                    direccion_domicilio
+                FROM empresa
+                WHERE estado = TRUE
+                ORDER BY dempre
+            """)
 
         empresas = cur.fetchall()
 
@@ -8557,8 +8586,499 @@ def empresas():
 
     return render_template(
         'empresas.html',
-        empresas=empresas
+        empresas=empresas,
+        mostrar_inactivos=mostrar_inactivos
     )
+    
+@app.route('/guardar_empresa', methods=['POST'])
+def guardar_empresa():
+
+    # =========================================================
+    # SOLO ROOT
+    # =========================================================
+    if 'user_id' not in session:
+        return jsonify({
+            'ok': False,
+            'mensaje': 'Sesión no válida.'
+        }), 401
+
+    if session.get('rol') != 'root':
+        return jsonify({
+            'ok': False,
+            'mensaje': 'No tiene autorización para administrar empresas.'
+        }), 403
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({
+            'ok': False,
+            'mensaje': 'No se recibieron datos.'
+        }), 400
+
+    # =========================================================
+    # DATOS BÁSICOS
+    # =========================================================
+
+    empresa_id = data.get('empresa_id')
+
+    try:
+        empresa_id = int(empresa_id) if empresa_id else None
+    except (ValueError, TypeError):
+
+        return jsonify({
+            'ok': False,
+            'mensaje': 'Empresa inválida.'
+        }), 400
+
+    estado_recibido = data.get('estado', True)
+
+    if isinstance(estado_recibido, bool):
+        estado = estado_recibido
+    else:
+        estado = str(estado_recibido).strip().lower() == 'true'
+
+    # =========================================================
+    # SI HAY EMPRESA, PRIMERO DETERMINAMOS
+    # SI LA OPERACIÓN ES DESACTIVAR
+    # =========================================================
+
+    if empresa_id:
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        try:
+
+            cur.execute("""
+                SELECT
+                    estado,
+                    dempre
+                FROM empresa
+                WHERE cempre = %s
+            """, (empresa_id,))
+
+            empresa_actual = cur.fetchone()
+
+            if not empresa_actual:
+
+                return jsonify({
+                    'ok': False,
+                    'mensaje': 'La empresa no existe.'
+                }), 404
+
+            estado_actual = bool(empresa_actual[0])
+            nombre_empresa = empresa_actual[1]
+
+            estado_nuevo = estado
+
+            # =================================================
+            # DESACTIVAR
+            # AQUÍ SALIMOS DIRECTAMENTE
+            # NO VALIDAMOS RUC
+            # NO VALIDAMOS NOMBRE COMERCIAL
+            # NO VALIDAMOS DIRECCIÓN
+            # =================================================
+
+            if estado_actual and not estado_nuevo:
+
+                cur.execute("""
+                    UPDATE empresa
+                    SET
+                        estado = FALSE,
+                        fecha_modificacion = CURRENT_TIMESTAMP
+                    WHERE cempre = %s
+                """, (empresa_id,))
+
+                conn.commit()
+
+                return jsonify({
+                    'ok': True,
+                    'mensaje': f'La empresa "{nombre_empresa}" fue desactivada correctamente.',
+                    'cempre': empresa_id
+                })
+
+        except Exception as e:
+
+            conn.rollback()
+
+            print("❌ ERROR DESACTIVANDO EMPRESA:", str(e))
+
+            return jsonify({
+                'ok': False,
+                'mensaje': 'Error al desactivar la empresa.'
+            }), 500
+
+        finally:
+
+            cur.close()
+            conn.close()
+
+    # =========================================================
+    # A PARTIR DE AQUÍ:
+    # CREAR / EDITAR / REACTIVAR
+    #
+    # Estas operaciones SÍ VALIDAN LOS DATOS
+    # =========================================================
+
+    razon_social = data.get('razon_social', '').strip()
+    ruc = data.get('ruc', '').strip()
+    nombre_comercial = data.get('nombre_comercial', '').strip()
+    direccion = data.get('direccion', '').strip()
+
+    # =========================================================
+    # VALIDAR CAMPOS OBLIGATORIOS
+    # =========================================================
+
+    if not razon_social:
+        return jsonify({
+            'ok': False,
+            'campo': 'razon_social',
+            'mensaje': 'Ingrese el nombre o razón social.'
+        }), 400
+
+    if not ruc:
+        return jsonify({
+            'ok': False,
+            'campo': 'ruc',
+            'mensaje': 'Ingrese el RUC.'
+        }), 400
+
+    if not ruc.isdigit() or len(ruc) != 11:
+        return jsonify({
+            'ok': False,
+            'campo': 'ruc',
+            'mensaje': 'El RUC debe contener exactamente 11 dígitos.'
+        }), 400
+
+    if not nombre_comercial:
+        return jsonify({
+            'ok': False,
+            'campo': 'nombre_comercial',
+            'mensaje': 'Ingrese el nombre comercial.'
+        }), 400
+
+    if not direccion:
+        return jsonify({
+            'ok': False,
+            'campo': 'direccion',
+            'mensaje': 'Ingrese la dirección del domicilio.'
+        }), 400
+
+    # =========================================================
+    # CONEXIÓN
+    # =========================================================
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+
+        # =====================================================
+        # VALIDAR RUC
+        # =====================================================
+
+        if empresa_id:
+
+            cur.execute("""
+                SELECT cempre
+                FROM empresa
+                WHERE ruc = %s
+                  AND cempre <> %s
+            """, (ruc, empresa_id))
+
+        else:
+
+            cur.execute("""
+                SELECT cempre
+                FROM empresa
+                WHERE ruc = %s
+            """, (ruc,))
+
+        if cur.fetchone():
+
+            return jsonify({
+                'ok': False,
+                'campo': 'ruc',
+                'mensaje': 'El RUC ya está registrado en otra empresa.'
+            }), 409
+
+        # =====================================================
+        # EDITAR / REACTIVAR
+        # =====================================================
+
+        if empresa_id:
+
+            # -----------------------------------------------
+            # Verificar estado actual
+            # -----------------------------------------------
+            cur.execute("""
+                SELECT
+                    estado,
+                    dempre
+                FROM empresa
+                WHERE cempre = %s
+            """, (empresa_id,))
+
+            empresa_actual = cur.fetchone()
+
+            if not empresa_actual:
+
+                return jsonify({
+                    'ok': False,
+                    'mensaje': 'La empresa no existe.'
+                }), 404
+
+            estado_actual = bool(empresa_actual[0])
+            estado_nuevo = bool(estado)
+
+            cur.execute("""
+                UPDATE empresa
+                SET
+                    dempre = %s,
+                    ruc = %s,
+                    nombre_comercial = %s,
+                    direccion_domicilio = %s,
+                    estado = %s,
+                    fecha_modificacion = CURRENT_TIMESTAMP
+                WHERE cempre = %s
+            """, (
+                razon_social,
+                ruc,
+                nombre_comercial,
+                direccion,
+                estado_nuevo,
+                empresa_id
+            ))
+
+            if not estado_actual and estado_nuevo:
+
+                mensaje = 'Empresa reactivada correctamente.'
+
+            else:
+
+                mensaje = 'Empresa actualizada correctamente.'
+
+            cempre = empresa_id
+
+        # =====================================================
+        # CREAR
+        # =====================================================
+
+        else:
+
+            cur.execute("""
+                INSERT INTO empresa (
+                    dempre,
+                    ruc,
+                    nombre_comercial,
+                    direccion_domicilio,
+                    licencia,
+                    estado,
+                    fcreacion
+                )
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    FALSE,
+                    TRUE,
+                    CURRENT_TIMESTAMP
+                )
+                RETURNING cempre
+            """, (
+                razon_social,
+                ruc,
+                nombre_comercial,
+                direccion
+            ))
+
+            cempre = cur.fetchone()[0]
+
+            mensaje = 'Empresa creada correctamente.'
+
+        # =====================================================
+        # CONFIRMAR
+        # =====================================================
+
+        conn.commit()
+
+        return jsonify({
+            'ok': True,
+            'mensaje': mensaje,
+            'cempre': cempre
+        })
+
+    except Exception as e:
+
+        conn.rollback()
+
+        print("❌ ERROR GUARDANDO EMPRESA:", str(e))
+
+        return jsonify({
+            'ok': False,
+            'mensaje': 'Error al guardar la empresa.'
+        }), 500
+
+    finally:
+
+        cur.close()
+        conn.close()
+        
+@app.route('/desactivar_empresa/<int:empresa_id>', methods=['POST'])
+def desactivar_empresa(empresa_id):
+
+    # =========================================================
+    # SOLO ROOT
+    # =========================================================
+    if 'user_id' not in session:
+        return jsonify({
+            'ok': False,
+            'mensaje': 'Sesión no válida.'
+        }), 401
+
+    if session.get('rol') != 'root':
+        return jsonify({
+            'ok': False,
+            'mensaje': 'No tiene autorización para desactivar empresas.'
+        }), 403
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+
+        # =====================================================
+        # VERIFICAR EMPRESA
+        # =====================================================
+        cur.execute("""
+            SELECT
+                cempre,
+                dempre,
+                estado
+            FROM empresa
+            WHERE cempre = %s
+        """, (empresa_id,))
+
+        empresa = cur.fetchone()
+
+        if not empresa:
+            return jsonify({
+                'ok': False,
+                'mensaje': 'La empresa no existe.'
+            }), 404
+
+        if not empresa[2]:
+            return jsonify({
+                'ok': False,
+                'mensaje': 'La empresa ya está inactiva.'
+            }), 400
+
+        # =====================================================
+        # DESACTIVAR
+        # =====================================================
+        cur.execute("""
+            UPDATE empresa
+            SET
+                estado = FALSE,
+                fecha_modificacion = CURRENT_TIMESTAMP
+            WHERE cempre = %s
+        """, (empresa_id,))
+
+        conn.commit()
+
+        return jsonify({
+            'ok': True,
+            'mensaje': f'La empresa "{empresa[1]}" fue desactivada correctamente.'
+        })
+
+    except Exception as e:
+
+        conn.rollback()
+
+        print("❌ ERROR DESACTIVANDO EMPRESA:", str(e))
+
+        return jsonify({
+            'ok': False,
+            'mensaje': 'Error al desactivar la empresa.'
+        }), 500
+
+    finally:
+
+        cur.close()
+        conn.close()
+               
+@app.route('/obtener_empresa/<int:empresa_id>')
+def obtener_empresa(empresa_id):
+
+    # =========================================================
+    # SOLO ROOT
+    # =========================================================
+    if 'user_id' not in session:
+        return jsonify({
+            'ok': False,
+            'mensaje': 'Sesión no válida.'
+        }), 401
+
+    if session.get('rol') != 'root':
+        return jsonify({
+            'ok': False,
+            'mensaje': 'No autorizado.'
+        }), 403
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+
+        cur.execute("""
+            SELECT
+                cempre,
+                dempre,
+                ruc,
+                nombre_comercial,
+                direccion_domicilio,
+                estado
+            FROM empresa
+            WHERE cempre = %s
+        """, (empresa_id,))
+
+        empresa = cur.fetchone()
+
+        if not empresa:
+            return jsonify({
+                'ok': False,
+                'mensaje': 'La empresa no existe.'
+            }), 404
+
+        return jsonify({
+            'ok': True,
+            'empresa': {
+                'id': empresa[0],
+                'razon_social': empresa[1],
+                'ruc': empresa[2] or '',
+                'nombre_comercial': empresa[3] or '',
+                'direccion': empresa[4] or '',
+                'estado': empresa[5]
+            }
+        })
+
+    except Exception as e:
+
+        print("❌ ERROR OBTENIENDO EMPRESA:", str(e))
+
+        return jsonify({
+            'ok': False,
+            'mensaje': 'Error al consultar la empresa.'
+        }), 500
+
+    finally:
+
+        cur.close()
+        conn.close()
+        
+
     
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
