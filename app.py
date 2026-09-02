@@ -6223,8 +6223,6 @@ def enviar_codigo_quiz(
         link_quiz = f"https://teacherassessment.onrender.com/quiz/{codigo_quiz}"
         
     qr_png = generar_qr(link_quiz)
-    #banner_url = "https://acaaso-teacherassessment.onrender.com/static/img/banner_enviar_quiz.png"
-    #banner_url = "http://localhost:5000/static/img/banner_enviar_quiz.png"
     with open("static/img/banner_enviar3.png", "rb") as f:
         banner_png = f.read() 
     banner_base64 = base64.b64encode(banner_png).decode("utf-8")
