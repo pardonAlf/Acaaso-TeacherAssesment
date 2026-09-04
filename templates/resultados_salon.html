@@ -1527,6 +1527,16 @@
                             ▣ QR
                         </button>
                     </li>
+                     <li class="nav-item" role="presentation">
+                        <button class="nav-link"
+                                id="tab-resultados"
+                                data-bs-toggle="tab"
+                                data-bs-target="#contenido-resultados"
+                                type="button"
+                                role="tab">
+                            📧 Resultados
+                        </button>
+                    </li>
 
                 </ul>
 
@@ -1596,6 +1606,35 @@
                         </div>
 
                     </div>
+                    <div class="tab-pane fade"
+                        id="contenido-resultados"
+                        role="tabpanel">
+
+                        <div class="mb-3">
+
+                            <label for="mensajeReenvioResultados"
+                                class="form-label fw-semibold">
+                                Mensaje para los alumnos
+                            </label>
+
+                            <textarea id="mensajeReenvioResultados"
+                                    class="form-control"
+                                    rows="6">Hola,
+
+Te envío nuevamente el resultado obtenido en este quiz.
+Si tienes alguna consulta, comunícate conmigo.
+Correo: {{ correo_personal }}
+
+Saludos.
+                            </textarea>
+
+                            <div class="form-text">
+                                Este mensaje será enviado a los alumnos seleccionados.
+                            </div>
+
+                        </div>
+
+                    </div>
 
                 </div>
 
@@ -1610,8 +1649,17 @@
 
                 <button type="button"
                         class="btn btn-primary"
+                        id="btnEnviarAcceso"
                         onclick="enviarAccesoSeleccionados()">
                     📧 Enviar acceso
+                </button>
+
+                <button type="button"
+                        class="btn btn-primary"
+                        id="btnReenviarResultados"
+                        onclick="reenviarResultadosSeleccionados()"
+                        style="display:none;">
+                    📧 Reenviar resultados
                 </button>
             </div>
 
@@ -1633,10 +1681,28 @@
         nombreQuiz,
         salonId
     ) {
+
+        console.log("🔵 abrirEnviarQuiz EJECUTADA");
+
         quizSeleccionado = quizId;
         salonQuizSeleccionado = salonQuizId;
         codigoQuizSeleccionado = codigoQuiz;
         salonSeleccionado = salonId;
+
+        console.log("📋 Parámetros recibidos:", {
+            quizId: quizId,
+            salonQuizId: salonQuizId,
+            codigoQuiz: codigoQuiz,
+            nombreQuiz: nombreQuiz,
+            salonId: salonId
+        });
+
+        console.log("🏫 salonSeleccionado:", salonSeleccionado);
+
+
+        // =====================================================
+        // GENERAR LINK QR
+        // =====================================================
 
         const linkQR =
             `https://teacherassessment.onrender.com/salon/${codigoQuizSeleccionado}`;
@@ -1645,7 +1711,7 @@
             "contenedorQREnviarQuiz"
         );
 
-        // Limpiar el QR anterior antes de generar uno nuevo
+        // Limpiar QR anterior
         contenedorQR.innerHTML = "";
 
         new QRCode(contenedorQR, {
@@ -1654,75 +1720,247 @@
             height: 216
         });
 
-        document.getElementById("codigoQREnviarQuiz").textContent =
-            codigoQuizSeleccionado;
 
-        const linkCompleto = document.getElementById("linkQREnviarQuiz");
+        // =====================================================
+        // MOSTRAR CÓDIGO Y LINK
+        // =====================================================
+
+        document.getElementById(
+            "codigoQREnviarQuiz"
+        ).textContent = codigoQuizSeleccionado;
+
+        const linkCompleto = document.getElementById(
+            "linkQREnviarQuiz"
+        );
 
         linkCompleto.href = linkQR;
         linkCompleto.textContent = linkQR;
 
-        document.getElementById("tituloModalEnviarQuiz").textContent =
+
+        // =====================================================
+        // TÍTULO DEL MODAL
+        // =====================================================
+
+        document.getElementById(
+            "tituloModalEnviarQuiz"
+        ).textContent =
             `Enviar acceso — ${nombreQuiz} (${codigoQuiz})`;
 
-        document.getElementById("listaAlumnosPendientes").innerHTML = `
+
+        // =====================================================
+        // MOSTRAR MENSAJE DE CARGA
+        // =====================================================
+
+        const lista = document.getElementById(
+            "listaAlumnosPendientes"
+        );
+
+        // =====================================================
+        // ACTIVAR SIEMPRE LA PESTAÑA QUE CONTIENE LOS ALUMNOS
+        // =====================================================
+
+        const panelAlumnos = lista.closest(".tab-pane");
+
+        if (panelAlumnos) {
+
+            console.log(
+                "📌 Panel de alumnos encontrado:",
+                panelAlumnos.id
+            );
+
+            const selectorTab = `[data-bs-target="#${panelAlumnos.id}"]`;
+
+            const botonTab = document.querySelector(selectorTab);
+
+            if (botonTab) {
+
+                console.log(
+                    "👥 Activando pestaña Alumnos"
+                );
+
+                bootstrap.Tab
+                    .getOrCreateInstance(botonTab)
+                    .show();
+
+            } else {
+
+                console.warn(
+                    "⚠️ No se encontró el botón de la pestaña Alumnos:",
+                    selectorTab
+                );
+            }
+        }
+
+
+        // =====================================================
+        // MENSAJE DE CARGA
+        // =====================================================
+
+        lista.innerHTML = `
             <div class="text-muted text-center">
                 Cargando alumnos del salón...
             </div>
         `;
 
-        const modal = new bootstrap.Modal(
-            document.getElementById("modalEnviarQuiz")
+
+        // =====================================================
+        // ABRIR MODAL
+        // =====================================================
+
+       const modalElement = document.getElementById(
+            "modalEnviarQuiz"
         );
 
+        const modal = bootstrap.Modal.getOrCreateInstance(
+            modalElement
+        );
+
+
+        // =====================================================
+        // AL TERMINAR DE ABRIR EL MODAL,
+        // RESTAURAR EL CONTENIDO DE LAS PESTAÑAS
+        // =====================================================
+
+        modalElement.addEventListener(
+            "shown.bs.modal",
+            function restaurarContenido() {
+
+                const tabContent = modalElement.querySelector(
+                    ".tab-content"
+                );
+
+                if (tabContent) {
+
+                    console.log(
+                        "🔧 Restaurando tab-content"
+                    );
+
+                    tabContent.style.display = "block";
+
+                }
+
+
+                // Eliminar este listener después de ejecutarse
+                modalElement.removeEventListener(
+                    "shown.bs.modal",
+                    restaurarContenido
+                );
+
+            }
+        );
+
+
+        // =====================================================
+        // ABRIR MODAL
+        // =====================================================
+
         modal.show();
+
+
+        // =====================================================
+        // CARGAR ALUMNOS
+        // =====================================================
+
+        console.log("📤 Enviando fetch:", {
+            salon_id: salonSeleccionado
+        });
+
+
         fetch("/obtener_alumnos_salon", {
+
             method: "POST",
+
             headers: {
                 "Content-Type": "application/json"
             },
+
             body: JSON.stringify({
                 salon_id: salonSeleccionado
             })
+
         })
-        .then(response => response.json())
+
+        .then(response => {
+
+            console.log(
+                "📡 Respuesta HTTP:",
+                response.status
+            );
+
+            return response.json();
+
+        })
+
         .then(data => {
+
+            console.log(
+                "📥 Datos recibidos:",
+                data
+            );
+
 
             const lista = document.getElementById(
                 "listaAlumnosPendientes"
             );
 
+
             if (!data.ok) {
+
+                console.error(
+                    "❌ El servidor respondió con error:",
+                    data
+                );
+
                 lista.innerHTML = `
                     <div class="alert alert-danger">
-                        ${data.error || "No se pudieron cargar los alumnos."}
+                        ${data.error ||
+                            "No se pudieron cargar los alumnos."}
                     </div>
                 `;
+
                 return;
             }
 
+
             if (!data.alumnos || data.alumnos.length === 0) {
+
+                console.warn(
+                    "⚠️ El servidor respondió correctamente pero sin alumnos."
+                );
+
                 lista.innerHTML = `
                     <div class="text-muted text-center">
                         No hay alumnos en este salón.
                     </div>
                 `;
+
                 return;
             }
 
+
+            console.log(
+                "✅ Cantidad de alumnos:",
+                data.alumnos.length
+            );
+
+
             lista.innerHTML = data.alumnos.map(alumno => `
+
                 <label
                     class="alumno-envio"
                     for="alumno_${alumno.id}"
                 >
+
                     <input
                         class="form-check-input alumno-check"
                         type="checkbox"
                         value="${alumno.id}"
                         id="alumno_${alumno.id}"
+                        checked
                     >
 
                     <div class="alumno-info">
+
                         <span class="alumno-nombre">
                             ${alumno.nombre}
                         </span>
@@ -1730,14 +1968,49 @@
                         <span class="alumno-correo">
                             ${alumno.correo || ""}
                         </span>
+
                     </div>
+
                 </label>
+
             `).join("");
 
+            console.log(
+                "✅ HTML después de cargar alumnos:",
+                lista.innerHTML
+            );
+
+            console.log(
+                "🔎 Visible después:",
+                lista.offsetParent !== null
+            );
+            
+            let elemento = lista;
+
+            while (elemento) {
+
+                const estilo = window.getComputedStyle(elemento);
+
+                console.log("🔍 PADRE:", {
+                    tag: elemento.tagName,
+                    id: elemento.id,
+                    clase: elemento.className,
+                    display: estilo.display,
+                    visibility: estilo.visibility,
+                    opacity: estilo.opacity
+                });
+
+                elemento = elemento.parentElement;
+            }
         })
+
+
         .catch(error => {
 
-            console.error("Error cargando alumnos:", error);
+            console.error(
+                "❌ Error cargando alumnos:",
+                error
+            );
 
             document.getElementById(
                 "listaAlumnosPendientes"
@@ -1748,7 +2021,8 @@
             `;
 
         });
-            }
+
+    }
 </script>
 
 
@@ -2411,5 +2685,85 @@ Esta acción ocultará el intento de los resultados del salón, pero no eliminar
             alert("Ocurrió un error al enviar los accesos.");
         });
     }
+
+    document.getElementById('tab-alumnos').addEventListener('shown.bs.tab', function () {
+    document.getElementById('btnEnviarAcceso').style.display = '';
+    document.getElementById('btnReenviarResultados').style.display = 'none';
+    });
+
+    document.getElementById('tab-qr').addEventListener('shown.bs.tab', function () {
+        document.getElementById('btnEnviarAcceso').style.display = '';
+        document.getElementById('btnReenviarResultados').style.display = 'none';
+    });
+
+    document.getElementById('tab-resultados').addEventListener('shown.bs.tab', function () {
+        document.getElementById('btnEnviarAcceso').style.display = 'none';
+        document.getElementById('btnReenviarResultados').style.display = '';
+    });
+
+
+    function reenviarResultadosSeleccionados() {
+
+        const alumnosSeleccionados = Array.from(
+            document.querySelectorAll(".alumno-check:checked")
+        ).map(check => parseInt(check.value));
+
+        if (alumnosSeleccionados.length === 0) {
+            alert("Seleccione al menos un alumno.");
+            return;
+        }
+
+        const mensaje = document
+            .getElementById("mensajeReenvioResultados")
+            .value
+            .trim();
+
+        if (!confirm(
+            `¿Desea reenviar los resultados a ${alumnosSeleccionados.length} alumno(s)?`
+        )) {
+            return;
+        }
+
+        fetch("/reenviar_resultados_salon", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                quiz_id: quizSeleccionado,
+                salon_quiz_id: salonQuizSeleccionado,
+                alumnos: alumnosSeleccionados,
+                mensaje: mensaje
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+
+            console.log("DATOS RECIBIDOS:", data.resultado);
+
+            if (!data.ok) {
+                alert(data.error || "No se pudieron reenviar los resultados.");
+                return;
+            }
+
+            alert(
+                data.mensaje ||
+                `${data.enviados} resultado(s) agregado(s) a la cola.`
+            );
+
+            const modalElement =
+                document.getElementById("modalEnviarQuiz");
+
+            bootstrap.Modal
+                .getInstance(modalElement)
+                .hide();
+
+        })
+        .catch(error => {
+            console.error("Error reenviando resultados:", error);
+            alert("Ocurrió un error al reenviar los resultados.");
+        });
+    }
+
 </script>
     {% endblock %}

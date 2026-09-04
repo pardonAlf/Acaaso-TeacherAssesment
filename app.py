@@ -282,7 +282,7 @@ def login():
                 password,
                 rol,
                 cempre,
-                usuario
+                correo
             FROM usuarios
             WHERE usuario = %s
         """, (usuario,))
@@ -299,7 +299,7 @@ def login():
                 session['usuario'] = user[1]
                 session['rol'] = user[3]
                 session['cempre'] = user[4]
-                session['usuario'] = user[5]
+                session['correo'] = user[5]
                 
                 
                 # =========================================================
@@ -1503,36 +1503,52 @@ def ingresar_dni():
 
 @app.route('/resolver_quiz_salon/<int:salon_quiz_id>/<int:alumno_id>')
 def resolver_quiz_salon(salon_quiz_id, alumno_id):
-   
 
     conn = get_db_connection()
     cur = conn.cursor()
-    
-    # 🔍 obtener quiz_id (robusto)
+
+    # =========================================================
+    # OBTENER QUIZ REAL DESDE salon_quiz
+    # =========================================================
+
     quiz_id = None
 
     if salon_quiz_id:
+
         cur.execute("""
             SELECT quiz_id
             FROM salon_quiz
             WHERE id = %s
         """, (salon_quiz_id,))
-        
+
         row = cur.fetchone()
-        
+
         if row:
             quiz_id = row[0]
 
-    # 🔥 fallback (por si no viene de salón)
+
+    # Fallback por si no viene de salón
     if not quiz_id:
         quiz_id = request.args.get("quiz_id")
 
-    # 🔥 última defensa
+
     if not quiz_id:
+
+        cur.close()
+        conn.close()
+
         return "No se pudo determinar el quiz", 400
-    
+
+
+    # =========================================================
+    # DATOS DEL QUIZ
+    # =========================================================
+
     cur.execute("""
-        SELECT config_json, multiple_intentos, titulo
+        SELECT
+            config_json,
+            multiple_intentos,
+            titulo
         FROM quiz
         WHERE id = %s
     """, (quiz_id,))
@@ -1543,20 +1559,41 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
     multiple_intentos = row[1] if row else False
     titulo = row[2] if row else "Titulo del quiz"
 
+
+    # =========================================================
+    # OBTENER SIGUIENTE NÚMERO DE INTENTO
+    #
+    # IMPORTANTE:
+    # Ahora los intentos deben estar separados por salon_quiz_id
+    # =========================================================
+
     cur.execute("""
         SELECT COALESCE(MAX(intento_numero), 0)
         FROM intentos_quiz
-        WHERE alumno_id = %s AND quiz_id = %s
-        AND activo=TRUE
-    """, (alumno_id, quiz_id))
+        WHERE alumno_id = %s
+          AND salon_quiz_id = %s
+          AND activo = TRUE
+    """, (
+        alumno_id,
+        salon_quiz_id
+    ))
 
     ultimo = cur.fetchone()[0]
+
     nuevo_intento = ultimo + 1
+
+
+    # =========================================================
+    # CREAR INTENTO
+    #
+    # AQUÍ SE GUARDA LA RELACIÓN CON salon_quiz
+    # =========================================================
 
     cur.execute("""
         INSERT INTO intentos_quiz (
             alumno_id,
             quiz_id,
+            salon_quiz_id,
             intento_numero,
             fecha_inicio
         )
@@ -1564,54 +1601,91 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
             %s,
             %s,
             %s,
+            %s,
             NOW()
         )
         RETURNING id
-    """, (alumno_id, quiz_id, nuevo_intento))
+    """, (
+        alumno_id,
+        quiz_id,
+        salon_quiz_id,
+        nuevo_intento
+    ))
 
     intento_id = cur.fetchone()[0]
 
-    print("INTENTO CREADO:", intento_id)
+    print(
+        "INTENTO CREADO:",
+        intento_id,
+        "| alumno:",
+        alumno_id,
+        "| quiz:",
+        quiz_id,
+        "| salon_quiz:",
+        salon_quiz_id,
+        "| intento:",
+        nuevo_intento
+    )
 
     conn.commit()
 
-    # 👇 AGREGA ESTO AQUÍ
+
+    # =========================================================
+    # VERIFICACIÓN
+    # =========================================================
+
     cur.execute("""
-        SELECT id
+        SELECT
+            id,
+            alumno_id,
+            quiz_id,
+            salon_quiz_id,
+            intento_numero,
+            activo
         FROM intentos_quiz
         WHERE id = %s
-         AND activo=TRUE
     """, (intento_id,))
 
     print("VERIFICACION:", cur.fetchone())
 
-    # luego continúa con:
-    # obtener preguntas
+
+    # =========================================================
+    # OBTENER PREGUNTAS
+    # =========================================================
+
     cur.execute("""
-        SELECT id, texto, tipo, explicacion
-        FROM preguntas
-        WHERE quiz_id = %s
-    """, (quiz_id,))
-
-    row = cur.fetchone()
-
-    if not row:
-        return "Error", 404
-
-    # 🔍 obtener preguntas (igual que resolver_quiz)
-    cur.execute("""
-        SELECT id, texto, tipo, explicacion
+        SELECT
+            id,
+            texto,
+            tipo,
+            explicacion
         FROM preguntas
         WHERE quiz_id = %s
     """, (quiz_id,))
 
     preguntas = cur.fetchall()
 
+
+    if not preguntas:
+
+        cur.close()
+        conn.close()
+
+        return "Error", 404
+
+
+    # =========================================================
+    # CONSTRUIR DATOS DE PREGUNTAS
+    # =========================================================
+
     data = []
 
     for p in preguntas:
+
         cur.execute("""
-            SELECT id, texto
+            SELECT
+                id,
+                texto
             FROM opciones
             WHERE pregunta_id = %s
         """, (p[0],))
@@ -1619,37 +1693,48 @@ def resolver_quiz_salon(salon_quiz_id, alumno_id):
         opciones_db = cur.fetchall()
 
         opciones = []
+
         for op in opciones_db:
+
             opciones.append({
                 "id": op[0],
                 "texto": op[1]
             })
 
+
         data.append({
-            'id': p[0],
-            'texto': p[1],
-            'tipo': p[2],
-            'explicacion': p[3],
-            'opciones': opciones
+
+            "id": p[0],
+            "texto": p[1],
+            "tipo": p[2],
+            "explicacion": p[3],
+            "opciones": opciones
+
         })
+
 
     cur.close()
     conn.close()
-    
+
+
     print("DATA DEBUG:", data)
 
+
+    # =========================================================
+    # MOSTRAR QUIZ
+    # =========================================================
+
     return render_template(
-        'resolver_quiz.html',
+        "resolver_quiz.html",
         preguntas=data,
         quiz_id=quiz_id,
         alumno_id=alumno_id,
-        salon_quiz_id=salon_quiz_id , # 🔥 clave
+        salon_quiz_id=salon_quiz_id,
         intento_id=intento_id,
         config_json=config_json,
         multiple_intentos=multiple_intentos,
         titulo=titulo
     )
- 
 
 @app.route('/obtener_asignaciones/<int:salon_id>')
 def obtener_asignaciones(salon_id):
@@ -3952,6 +4037,7 @@ def resultados_salon():
     user_id = session['user_id']
     rol = session['rol']
     cempre = session['cempre']
+    correo_personal = session['correo']
 
 
     conn = get_db_connection()
@@ -4576,7 +4662,7 @@ def resultados_salon():
         resultado=tabla,
         codigo =codigo,
         descripcion=descripcion,
-
+        correo_personal=correo_personal,
         cantidad_alumnos=cantidad_alumnos,
         cantidad_evaluaciones=cantidad_evaluaciones,
         fecha_creacion=fecha_creacion,
@@ -4597,10 +4683,355 @@ def resultados_salon():
         intentos=intentos,
         preguntas_top=preguntas_top
     )
+    
+@app.route('/reenviar_resultados_salon', methods=['POST'])
+def reenviar_resultados_salon():
+
+    data = request.get_json()
+
+    # quiz_id puede venir del frontend, pero la referencia
+    # principal para este endpoint es salon_quiz_id
+    salon_quiz_id = data.get('salon_quiz_id')
+
+    alumnos = data.get('alumnos', [])
+    mensaje = data.get('mensaje', '')
+
+    # Empresa actual
+    cempre = session.get('cempre')
+
+
+    # =========================================================
+    # VALIDACIONES
+    # =========================================================
+
+    if not salon_quiz_id:
+        return jsonify({
+            "ok": False,
+            "error": "No se recibió la evaluación del salón."
+        }), 400
+
+
+    if not alumnos:
+        return jsonify({
+            "ok": False,
+            "error": "No se seleccionaron alumnos."
+        }), 400
+
+
+    # =========================================================
+    # CONEXIÓN
+    # =========================================================
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    resultado = []
+
+
+    try:
+
+        # =====================================================
+        # OBTENER EL QUIZ REAL DESDE salon_quiz
+        # =====================================================
+
+        cur.execute("""
+            SELECT quiz_id
+            FROM salon_quiz
+            WHERE id = %s
+        """, (salon_quiz_id,))
+
+        salon_quiz = cur.fetchone()
+
+        if not salon_quiz:
+
+            return jsonify({
+                "ok": False,
+                "error": "No se encontró la evaluación seleccionada."
+            }), 404
+
+
+        quiz_id = salon_quiz[0]
+
+
+        # =====================================================
+        # OBTENER TÍTULO DEL QUIZ
+        # =====================================================
+
+        cur.execute("""
+            SELECT titulo
+            FROM quiz
+            WHERE id = %s
+        """, (quiz_id,))
+
+        quiz = cur.fetchone()
+
+        if not quiz:
+
+            return jsonify({
+                "ok": False,
+                "error": "No se encontró el quiz."
+            }), 404
+
+
+        titulo_quiz = quiz[0]
+
+
+        # =====================================================
+        # PROCESAR ALUMNOS
+        # =====================================================
+
+        for alumno_id in alumnos:
+
+
+            # -------------------------------------------------
+            # DATOS DEL ALUMNO
+            # -------------------------------------------------
+
+            cur.execute("""
+                SELECT nombre, apellido, correo
+                FROM alumnos
+                WHERE id = %s
+            """, (alumno_id,))
+
+            alumno = cur.fetchone()
+
+            if not alumno:
+                continue
+
+
+            nombre = f"{alumno[0]} {alumno[1]}"
+            correo_alumno = alumno[2]
+
+
+            # -------------------------------------------------
+            # OBTENER LAS NOTAS REALES DE LOS INTENTOS
+            #
+            # IMPORTANTE:
+            # No recalculamos respuestas.
+            # Usamos la misma nota que resultados_salon utiliza.
+            # -------------------------------------------------
+
+            cur.execute("""
+                SELECT DISTINCT
+                    iq.intento_numero,
+                    iq.nota_final
+                FROM intentos_quiz iq
+                JOIN respuestas_alumno ra
+                    ON ra.intento_id = iq.id
+                WHERE iq.alumno_id = %s
+                AND ra.salon_quiz_id = %s
+                AND iq.activo = TRUE
+                AND iq.nota_final IS NOT NULL
+                ORDER BY iq.intento_numero
+            """, (
+                alumno_id,
+                salon_quiz_id
+            ))
+
+            intentos_alumno = cur.fetchall()
+
+
+            # -------------------------------------------------
+            # CONSTRUIR LISTA DE INTENTOS
+            # -------------------------------------------------
+
+            notas_intentos = []
+
+            for intento_numero, nota in intentos_alumno:
+
+                if nota is not None:
+
+                    notas_intentos.append({
+                        "intento": intento_numero,
+                        "nota": float(nota)
+                    })
+
+
+            # -------------------------------------------------
+            # NOTA FINAL
+            #
+            # 1 intento  -> nota del intento
+            # varios     -> promedio
+            # -------------------------------------------------
+
+            if len(notas_intentos) == 1:
+
+                nota_final = notas_intentos[0]["nota"]
+
+
+            elif len(notas_intentos) > 1:
+
+                nota_final = round(
+                    sum(
+                        item["nota"]
+                        for item in notas_intentos
+                    ) / len(notas_intentos),
+                    2
+                )
+
+
+            else:
+
+                nota_final = 0
+
+
+            # -------------------------------------------------
+            # GUARDAR RESULTADO PARA RESPUESTA / DEBUG
+            # -------------------------------------------------
+
+            resultado.append({
+
+                "alumno_id": alumno_id,
+
+                "nombre": nombre,
+
+                "correo": correo_alumno,
+
+                "cantidad_intentos": len(notas_intentos),
+
+                "intentos": notas_intentos,
+
+                "nota_final": nota_final
+
+            })
+
+
+            # -------------------------------------------------
+            # DEBUG
+            # -------------------------------------------------
+
+            print(
+                "📊 RESULTADO A ENVIAR:",
+                nombre,
+                "| Salon Quiz:",
+                salon_quiz_id,
+                "| Quiz:",
+                quiz_id,
+                "| Intentos:",
+                notas_intentos,
+                "| Nota final:",
+                nota_final
+            )
+
+
+            # -------------------------------------------------
+            # GUARDAR EN COLA
+            # -------------------------------------------------
+
+            cur.execute("""
+                INSERT INTO cola_email (
+
+                    destinatario,
+                    nombre,
+                    titulo_quiz,
+                    tipo_acceso,
+                    nota_final,
+                    mensaje,
+                    estado,
+                    intentos,
+                    fecha,
+                    cempre
+
+                )
+                VALUES (
+
+                    %s,
+                    %s,
+                    %s,
+                    'RESULTADO',
+                    %s,
+                    %s,
+                    'PENDIENTE',
+                    0,
+                    NOW(),
+                    %s
+
+                )
+            """, (
+
+                correo_alumno,
+                nombre,
+                titulo_quiz,
+                nota_final,
+                mensaje,
+                cempre
+
+            ))
+
+
+        # =====================================================
+        # GUARDAR TODA LA COLA
+        # =====================================================
+
+        conn.commit()
+
+
+    except Exception as e:
+
+        conn.rollback()
+
+        print(
+            "❌ ERROR EN reenviar_resultados_salon:",
+            str(e)
+        )
+
+        return jsonify({
+            "ok": False,
+            "error": str(e)
+        }), 500
+
+
+    finally:
+
+        cur.close()
+        conn.close()
+
+
+    # =========================================================
+    # LOG FINAL
+    # =========================================================
+
+    print("\n📧 RESULTADOS GUARDADOS EN COLA:")
+
+    for item in resultado:
+
+        print(
+            item["nombre"],
+            "|",
+            item["correo"],
+            "| Intentos:",
+            item["cantidad_intentos"],
+            item["intentos"],
+            "| Nota final:",
+            item["nota_final"]
+        )
+
+
+    # =========================================================
+    # RESPUESTA
+    # =========================================================
+
+    return jsonify({
+
+        "ok": True,
+
+        "mensaje":
+            f"Solicitud recibida para {len(resultado)} alumno(s).",
+
+        "enviados":
+            len(resultado),
+
+        "resultado":
+            resultado
+
+    })
+    
 @app.route('/obtener_alumnos_salon', methods=['POST'])
 def obtener_alumnos_salon():
 
     data = request.json
+    
+    print("📥 DATOS RECIBIDOS:", data)
 
     salon_id = data.get('salon_id')
 
@@ -5972,6 +6403,155 @@ def eliminar_intento():
         cur.close()
         conn.close()
 
+
+def enviar_resultado_quiz(
+        correo,
+        nombre,
+        titulo_quiz,
+        nota_final,
+        mensaje,
+        cempre
+    ):
+
+# =========================================================
+# OBTENER LOGO DE LA EMPRESA
+# =========================================================
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT logo_header
+        FROM configuracion_reportes
+        WHERE cempre = %s
+    """, (cempre,))
+
+    config_logo = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+
+    # Logo por defecto ACAASO
+    logo_path = "static/img/logo.png"
+
+
+    # Logo configurado por la empresa
+    if config_logo and config_logo[0]:
+        logo_path = config_logo[0].lstrip("/")
+        
+    
+    # =========================================================
+    # CONVERTIR LOGO A BASE64
+    # =========================================================
+
+    try:
+        with open(logo_path, "rb") as archivo:
+            logo_base64 = base64.b64encode(
+                archivo.read()
+            ).decode("utf-8")
+
+    except Exception as e:
+        print("❌ Error cargando logo:", str(e))
+        logo_base64 = None  
+        
+         
+    if resend is None:
+        raise Exception("Servicio de correo Resend no disponible.")
+
+
+    resend.Emails.send({
+
+        "from": "ACAASO <pardoalf@acaaso.com>",
+
+        "to": correo,
+
+        "subject": f"Resultado de tu Quiz - {titulo_quiz}",
+
+        "html": f"""
+            <div style="
+                font-family: Arial, sans-serif;
+                max-width:600px;
+                margin:auto;
+                border:1px solid #e5e7eb;
+                border-radius:12px;
+                overflow:hidden;
+                color:#334155;
+            ">
+            <div style="
+                text-align:center;
+                padding:20px 25px;
+                border-bottom:1px solid #e5e7eb;
+            ">
+                <img
+                    src="cid:logo_empresa"
+                    style="
+                        max-width:180px;
+                        max-height:80px;
+                        display:inline-block;
+                    "
+                >
+            </div>
+
+            <div style="
+                max-width:600px;
+                margin:auto;
+                background:white;
+                border-radius:8px;
+                overflow:hidden;
+            ">
+
+                <div style="
+                    padding:25px;
+                    color:#333;
+                ">
+
+                    <p style="font-size:16px;">
+                        Hola <b>{nombre}</b>,
+                    </p>
+
+                    <div style="
+                        white-space:pre-line;
+                        line-height:1.6;
+                        margin:20px 0;
+                    ">{mensaje}</div>
+
+                    <div style="
+                        background:#f1f5fb;
+                        padding:15px;
+                        border-radius:6px;
+                        margin:25px 0;
+                        text-align:center;
+                    ">
+
+                        <p style="margin-bottom:8px;">
+                            Su nota final en <b>{titulo_quiz}</b> es:
+                        </p>
+
+                        <span style="
+                            font-size:28px;
+                            font-weight:bold;
+                            color:#0d47a1;
+                        ">
+                            {nota_final}
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+        """,
+        "attachments": [
+        {
+            "filename": "logo_empresa.png",
+            "content": logo_base64,
+            "content_id": "logo_empresa"
+        }
+    ]
+    })
 
 @app.route('/enviar_codigo_quiz', methods=['POST'])
 def endpoint_enviar_codigo_quiz():

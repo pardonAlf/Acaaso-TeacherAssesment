@@ -1,6 +1,7 @@
 import time
 from app import enviar_codigo_quiz
 from app import get_db_connection
+from app import enviar_resultado_quiz
 
 print("Worker Email iniciado...")
 
@@ -16,7 +17,10 @@ while True:
             nombre,
             titulo_quiz,
             codigo_quiz,
-            tipo_acceso
+            tipo_acceso,
+            nota_final,
+            mensaje,
+            cempre
         FROM cola_email
         WHERE estado='PENDIENTE'
         OR (estado='ERROR' AND intentos < 3)
@@ -34,18 +38,34 @@ while True:
         titulo = correo[3]
         codigo = correo[4]
         tipo_acceso = correo[5]
+        nota_final = correo[6]
+        mensaje = correo[7]
+        cempre = correo[8]
 
         print(f"Enviando a {destinatario}")
 
         try:
 
-            enviar_codigo_quiz(
-                destinatario,
-                nombre,
-                titulo,
-                codigo,
-                tipo_acceso
-            )
+            if tipo_acceso == "RESULTADO":
+    
+                enviar_resultado_quiz(
+                    destinatario,
+                    nombre,
+                    titulo,
+                    nota_final,
+                    mensaje,
+                    cempre
+                )
+
+            else:
+
+                enviar_codigo_quiz(
+                    destinatario,
+                    nombre,
+                    titulo,
+                    codigo,
+                    tipo_acceso
+    )
 
             cur.execute("""
                 UPDATE cola_email
